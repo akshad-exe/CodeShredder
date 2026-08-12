@@ -1,0 +1,87 @@
+[package]
+name = "codeshredder"
+version = "0.1.0"
+description = "Fast, safe desktop cleanup for developers"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/akshad/codeshredder"
+
+[lib]
+name = "codeshredder_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-process = "2"
+tauri-plugin-os-info = "2"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_with = "3"
+
+# Error handling
+thiserror = "1"
+anyhow = "1"
+
+# Async
+tokio = { version = "1", features = ["full", "macros"] }
+futures = "0.3"
+
+# File system
+walkdir = "2"
+jwalk = { version = "0.8", features = ["rayon", "ignore"] }
+ignore = "0.4"
+directories = "5"
+
+# Trash
+trash = "5"
+
+# System info
+sysinfo = "0.30"
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Platform-specific
+#[cfg(target_os = "windows")]
+winapi = { version = "0.3", features = ["fileapi", "handleapi", "winbase", "winnt", "minwindef", "errhandlingapi"] }
+
+# WSL support
+#[cfg(target_os = "windows")]
+wmi = "0.7"
+
+# Clippy lints
+[lints]
+workspace = true
+
+[workspace.lints.rust]
+future_incompatible = "warn"
+nonstandard_style = "deny"
+unused = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = 10 }
+redundant_clone = { level = "deny", priority = 9 }
+large_enum_variant = { level = "warn", priority = 8 }
+needless_collect = { level = "deny", priority = 7 }
+clone_on_copy = { level = "deny", priority = 6 }
+manual_ok_or = { level = "deny", priority = 5 }
+unnecessary_wraps = { level = "warn", priority = 4 }
+pedantic = { level = "warn", priority = 3 }
+nursery = { level = "warn", priority = 2 }

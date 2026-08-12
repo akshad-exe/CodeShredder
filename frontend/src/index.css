@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #07090D;
+    --sidebar: #0B0D12;
+    --panel: #101217;
+    --panel-2: #151922;
+    --border: #262B36;
+    --text: #F5F7FA;
+    --text-muted: #8B93A7;
+    --text-faint: #596070;
+    --accent: #168BFF;
+    --danger: #FF4D4F;
+    --safe: #3DDC97;
+    --warning: #FFB020;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent/90 active:bg-accent;
+  }
+
+  .btn-secondary {
+    @apply btn bg-panel-2 text-text border border-border hover:bg-panel border-border/50;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger text-white hover:bg-danger/90;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-panel-2;
+  }
+
+  .input {
+    @apply w-full rounded-lg bg-panel border border-border px-3 py-2 text-sm text-text placeholder:text-faint transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent;
+  }
+
+  .card {
+    @apply rounded-xl bg-panel border border-border p-4;
+  }
+
+  .card-hover {
+    @apply card hover:border-border/50 transition-colors duration-150;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-safe {
+    @apply badge bg-safe/10 text-safe;
+  }
+
+  .badge-medium {
+    @apply badge bg-warning/10 text-warning;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger/10 text-danger;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

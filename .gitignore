@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+tauri-app/node_modules/
+
+# Build outputs
+dist/
+frontend/dist/
+tauri-app/dist/
+
+# Tauri
+src-tauri/target/
+tauri-app/src-tauri/target/
+**/target/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Cache
+.cache/
+.eslintcache
+.turbo/
+
+# Codegraph index
+.codegraph/
+
+# Tauri specific
+*.app
+*.dmg
+*.deb
+*.rpm
+*.msi
+*.exe
+*.AppImage
+
+# Testing
+coverage/
+
+# Misc
+*.tmp
+*.temp
