@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CleanupTarget, AppSettings, ScanResult, SafetyLevel } from '@/types/cleanup'
+import type { CleanupTarget, AppSettings, SafetyLevel } from '@/types/cleanup'
+import { MOCK_SCAN_ROOTS, MOCK_TARGETS, MOCK_TOTAL_RECLAIMABLE } from '@/data/mock'
 
 interface CleanupState {
   // Scan state
@@ -60,16 +61,16 @@ const defaultSettings: AppSettings = {
 
 export const useCleanupStore = create<CleanupState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Initial state
-      scanRoots: [],
+      scanRoots: MOCK_SCAN_ROOTS,
       enabledPatterns: defaultSettings.enabledPatterns,
-      scanStatus: 'idle',
+      scanStatus: 'complete',
       scanProgress: 0,
       currentScanPath: '',
-      targets: [],
+      targets: MOCK_TARGETS,
       selectedTargets: new Set(),
-      totalReclaimable: 0,
+      totalReclaimable: MOCK_TOTAL_RECLAIMABLE,
       scanError: null,
       settings: defaultSettings,
       

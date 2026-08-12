@@ -41,6 +41,9 @@ bun-debug.log*
 # Codegraph index
 .codegraph/
 
+# Docs (kept local, not committed)
+docs/
+
 # Tauri specific
 *.app
 *.dmg
