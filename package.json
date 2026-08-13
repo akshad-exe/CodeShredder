@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "frontend",
-    "tauri-app"
+    "frontend"
   ],
   "scripts": {
-    "dev": "bun run --filter frontend dev",
-    "build": "bun run --filter frontend build",
-    "tauri:dev": "bun run --filter tauri-app tauri dev",
-    "tauri:build": "bun run --filter tauri-app tauri build"
+    "dev": "bun run --filter codeshredder-frontend dev",
+    "build": "bun run --filter codeshredder-frontend build",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"

@@ -13,4 +13,8 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  server: {
+    port: 1420,
+    strictPort: true,
+  },
 })
