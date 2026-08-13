@@ -30,9 +30,10 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
 
   const handleDelete = async () => {
     const store = useCleanupStore.getState()
+    const mode = store.settings.deleteMode
     if (!isTauri()) {
       store.setCleanupStatus('complete')
-      store.setCleanupSummary({ total: 1, trashed: 1, failed: 0, errors: [] })
+      store.setCleanupSummary({ total: 1, affected: 1, failed: 0, mode, errors: [] })
       store.removeTargets([target.id])
       toast.success(`Moved ${target.folderName} to Trash`)
       return
@@ -40,14 +41,16 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
     store.setCleanupStatus('cleaning')
     store.setCleanupSummary(null)
     try {
-      const summary = await cleanupTargets([target.path])
+      const summary = await cleanupTargets([target.path], mode)
       store.setCleanupStatus(summary.failed > 0 ? 'error' : 'complete')
       store.setCleanupSummary(summary)
       store.removeTargets([target.id])
       if (summary.failed > 0) {
-        toast.error(`Couldn't move ${target.folderName} to Trash`, {
+        toast.error(`Couldn't clean ${target.folderName}`, {
           description: summary.errors[0]?.error,
         })
+      } else if (mode === 'permanent') {
+        toast.success(`Permanently deleted ${target.folderName}`)
       } else {
         toast.success(`Moved ${target.folderName} to Trash`)
       }
@@ -55,13 +58,14 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
       store.setCleanupStatus('error')
       store.setCleanupSummary({
         total: 1,
-        trashed: 0,
+        affected: 0,
         failed: 1,
+        mode,
         errors: [
           { path: target.path, error: err instanceof Error ? err.message : String(err) },
         ],
       })
-      toast.error(`Couldn't move ${target.folderName} to Trash`, {
+      toast.error(`Couldn't clean ${target.folderName}`, {
         description: err instanceof Error ? err.message : String(err),
       })
     }

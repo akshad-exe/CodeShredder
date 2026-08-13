@@ -1,6 +1,7 @@
 import { ArrowRight, Trash2, HardDrive, FolderTree } from 'lucide-react'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { formatBytes, formatCount } from '@/lib/format'
+import { RecentCleanups } from '@/components/overview/RecentCleanups'
 import type { PageId } from '@/lib/navigation'
 
 function StatCard({
@@ -94,6 +95,8 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: PageId) => void }
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
+
+      <RecentCleanups />
     </div>
   )
 }

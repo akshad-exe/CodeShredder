@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Trash2 } from 'lucide-react'
 import { toast } from '@/components/ui/sonner'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { ShredHeader } from '@/components/shred/ShredHeader'
@@ -7,6 +7,7 @@ import { ScopeTabs } from '@/components/shred/ScopeTabs'
 import { PatternPills } from '@/components/shred/PatternPills'
 import { ReclaimSummary } from '@/components/shred/ReclaimSummary'
 import { SegmentedBar } from '@/components/shred/SegmentedBar'
+import { DeleteModeSelect } from '@/components/shred/DeleteModeSelect'
 import { ResultsList } from '@/components/shred/ResultsList'
 import { ConfirmCleanupDialog } from '@/components/shred/ConfirmCleanupDialog'
 import { isTauri, scanDevFolders, cleanupTargets, onScanTarget, onScanComplete } from '@/lib/tauri'
@@ -44,12 +45,29 @@ async function runRealScan() {
 export function ShredPage() {
   const timerRef = useRef<number | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   const targets = useCleanupStore((s) => s.targets)
   const selectedTargets = useCleanupStore((s) => s.selectedTargets)
   const scanStatus = useCleanupStore((s) => s.scanStatus)
   const scanError = useCleanupStore((s) => s.scanError)
+  const mode = useCleanupStore((s) => s.settings.deleteMode)
   const populateDefaultRoots = useCleanupStore((s) => s.populateDefaultRoots)
+
+  // Track scrolling on the main content column so the floating action bar and
+  // scroll-to-top button only appear when they're actually useful.
+  useEffect(() => {
+    const scroller = document.querySelector('main')
+    if (!scroller) return
+    const onScroll = () => setScrolled(scroller.scrollTop > 240)
+    scroller.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => scroller.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     populateDefaultRoots()
@@ -114,11 +132,18 @@ export function ShredPage() {
     const store = useCleanupStore.getState()
     const selected = store.targets.filter((t) => store.selectedTargets.has(t.id))
     if (selected.length === 0) return
+    const mode = store.settings.deleteMode
 
     if (!isTauri()) {
-      console.log('[ShredPage] mock cleanup of', selected.length, 'targets')
+      console.log('[ShredPage] mock cleanup of', selected.length, 'targets in mode', mode)
       store.setCleanupStatus('complete')
-      store.setCleanupSummary({ total: selected.length, trashed: selected.length, failed: 0, errors: [] })
+      store.setCleanupSummary({
+        total: selected.length,
+        affected: selected.length,
+        failed: 0,
+        mode,
+        errors: [],
+      })
       store.removeTrashedTargets()
       toast.success(`Moved ${selected.length} folders to Trash`)
       return
@@ -127,25 +152,31 @@ export function ShredPage() {
     store.setCleanupStatus('cleaning')
     store.setCleanupSummary(null)
     try {
-      const summary = await cleanupTargets(selected.map((t) => t.path))
+      const summary = await cleanupTargets(
+        selected.map((t) => t.path),
+        mode,
+      )
       console.log('[ShredPage] Cleanup result:', summary)
       store.setCleanupStatus(summary.failed > 0 ? 'error' : 'complete')
       store.setCleanupSummary(summary)
       store.removeTrashedTargets()
       if (summary.failed > 0) {
         toast.error(
-          `Moved ${summary.trashed} of ${summary.total} folders to Trash`,
+          `Cleaned ${summary.affected} of ${summary.total} folders`,
           { description: summary.errors.map((e) => e.error).join('; ') },
         )
+      } else if (mode === 'permanent') {
+        toast.success(`Permanently deleted ${summary.affected} folders`)
       } else {
-        toast.success(`Moved ${summary.trashed} folders to Trash`)
+        toast.success(`Moved ${summary.affected} folders to Trash`)
       }
     } catch (err) {
       store.setCleanupStatus('error')
       store.setCleanupSummary({
         total: selected.length,
-        trashed: 0,
+        affected: 0,
         failed: selected.length,
+        mode,
         errors: selected.map((t) => ({ path: t.path, error: err instanceof Error ? err.message : String(err) })),
       })
       toast.error('Cleanup failed', {
@@ -179,10 +210,14 @@ export function ShredPage() {
           <SegmentedBar />
         </div>
 
+        <div className="card space-y-4">
+          <DeleteModeSelect />
+        </div>
+
         <ResultsList />
 
         {!nothingSelected && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-accent/40 bg-panel px-5 py-4">
+          <div className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center justify-between gap-6 rounded-xl border border-accent/40 bg-panel/95 px-5 py-3.5 shadow-xl backdrop-blur">
             <div className="flex items-baseline gap-3">
               <p className="text-sm text-muted">
                 <span className="font-semibold text-text">
@@ -200,9 +235,21 @@ export function ShredPage() {
               onClick={() => setDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4" />
-              Move to Trash
+              {mode === 'permanent' ? 'Permanently delete' : 'Move to Trash'}
             </button>
           </div>
+        )}
+
+        {scrolled && (
+          <button
+            type="button"
+            title="Scroll to top"
+            aria-label="Scroll to top"
+            onClick={scrollToTop}
+            className="btn-secondary fixed bottom-20 right-6 z-40 !h-10 !w-10 !p-0"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
         )}
       </div>
 

@@ -6,6 +6,8 @@ import type {
   ScanInput,
   ScanResult,
   CleanSummary,
+  CleanMode,
+  CleanupHistoryEntry,
   CleanupTarget,
   TrashItem,
   TrashResult,
@@ -41,9 +43,21 @@ export async function onScanComplete(
   return listen<ScanResult>('scan-complete', (event) => handler(event.payload))
 }
 
-/** Moves the given folders to the OS Trash (MVP v0.3 backend command). */
-export async function cleanupTargets(paths: string[]): Promise<CleanSummary> {
-  return invoke<CleanSummary>('cleanup_targets', { input: { paths } })
+/** Runs a cleanup over the given paths in the given mode (v0.3 backend command). */
+export async function cleanupTargets(
+  paths: string[],
+  mode: CleanMode = 'trash',
+): Promise<CleanSummary> {
+  return invoke<CleanSummary>('cleanup_targets', { input: { paths, mode } })
+}
+
+/** Returns the most recent cleanup history entries, newest first. */
+export async function getCleanupHistory(
+  limit?: number,
+): Promise<CleanupHistoryEntry[]> {
+  return invoke<CleanupHistoryEntry[]>('get_cleanup_history', {
+    limit: limit ?? 50,
+  })
 }
 
 /** Reveals a folder in the OS file explorer (uses the opener plugin). */

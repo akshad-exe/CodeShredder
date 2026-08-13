@@ -26,21 +26,34 @@ export type ScanResult = {
   scanDuration: number
 }
 
+export type CleanMode = 'trash' | 'permanent'
+
 export type CleanInput = {
   paths: string[]
+  mode: CleanMode
 }
 
 export type CleanSummary = {
   total: number
-  trashed: number
+  affected: number
   failed: number
+  mode: CleanMode
   errors: { path: string; error: string }[]
+}
+
+export type CleanupHistoryEntry = {
+  timestamp: string
+  mode: CleanMode
+  paths: string[]
+  affected: number
+  failed: number
+  total: number
 }
 
 export type AppSettings = {
   scanRoots: string[]
   enabledPatterns: string[]
-  deleteMode: 'dry-run' | 'trash' | 'permanent'
+  deleteMode: CleanMode
   confirmDangerous: boolean
   confirmMedium: boolean
 }
