@@ -99,3 +99,57 @@ export type TrashResult = {
   failed: number
   errors: string[]
 }
+
+// --- Explore feature types -------------------------------------------------
+// UI-contract for the v1.0 "Discover" backend commands. Wired in the frontend
+// now; the commands themselves ship later.
+
+export type CacheSafety = 'safe' | 'medium' | 'dangerous'
+
+export type CacheEntry = {
+  id: string
+  name: string
+  path: string
+  sizeBytes: number
+  category: string
+  safety: CacheSafety
+}
+
+export type LargeFileEntry = {
+  id: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAt?: string
+  ext: string
+}
+
+export type DuplicateFile = {
+  id: string
+  path: string
+  name: string
+  modifiedAt?: string
+}
+
+export type DuplicateGroup = {
+  id: string
+  sizeBytes: number
+  files: DuplicateFile[]
+}
+
+export type VideoEntry = {
+  id: string
+  path: string
+  name: string
+  sizeBytes: number
+  ext: string
+  durationSec?: number
+}
+
+export type TreemapNode = {
+  path: string
+  name: string
+  sizeBytes: number
+  fileCount: number
+  children?: TreemapNode[]
+}

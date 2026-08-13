@@ -11,6 +11,11 @@ import type {
   WslDistro,
   WslCompactResult,
   WslCleanupResult,
+  CacheEntry,
+  LargeFileEntry,
+  DuplicateGroup,
+  VideoEntry,
+  TreemapNode,
 } from '@/types/cleanup'
 
 /** True when the frontend is running inside the Tauri webview. */
@@ -91,4 +96,39 @@ export async function wslRunCleanup(
   commands: string,
 ): Promise<WslCleanupResult> {
   return invoke<WslCleanupResult>('wsl_run_cleanup', { distro, commands })
+}
+
+/** Lists known cache locations with their sizes and safety levels. */
+export async function listCaches(): Promise<CacheEntry[]> {
+  return invoke<CacheEntry[]>('list_caches')
+}
+
+/** Scans roots for the largest files above a size threshold. */
+export async function scanLargeFiles(input: {
+  roots: string[]
+  minSizeBytes?: number
+  limit?: number
+}): Promise<LargeFileEntry[]> {
+  return invoke<LargeFileEntry[]>('scan_large_files', { input })
+}
+
+/** Scans roots for groups of identical files (by size + content hash). */
+export async function scanDuplicates(input: {
+  roots: string[]
+  minSizeBytes?: number
+}): Promise<DuplicateGroup[]> {
+  return invoke<DuplicateGroup[]>('scan_duplicates', { input })
+}
+
+/** Scans roots for video files. */
+export async function scanVideos(input: {
+  roots: string[]
+  minSizeBytes?: number
+}): Promise<VideoEntry[]> {
+  return invoke<VideoEntry[]>('scan_videos', { input })
+}
+
+/** Builds a folder-size tree for treemap visualization of a root. */
+export async function getTreemap(root: string): Promise<TreemapNode> {
+  return invoke<TreemapNode>('get_treemap', { root })
 }
