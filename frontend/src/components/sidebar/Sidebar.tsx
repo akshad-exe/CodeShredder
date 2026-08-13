@@ -29,6 +29,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                 key={item.id}
                 icon={item.icon}
                 label={item.label}
+                tone={item.tone}
                 active={activePage === item.id}
                 onClick={() => onNavigate(item.id)}
               />
