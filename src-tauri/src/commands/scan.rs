@@ -7,6 +7,14 @@ use tauri::Emitter;
 use crate::domain::scan::{ScanInput, ScanResult, ScanTarget};
 use crate::services::scanner::ScannerEngine;
 
+/// Asks the in-progress scan to stop early. Targets already streamed stay
+/// visible; the scanner just stops descending into new folders.
+#[tauri::command]
+pub fn cancel_scan() {
+    tracing::info!("cancel_scan called");
+    ScannerEngine::request_cancel();
+}
+
 /// Scans the given roots for known developer-junk folders.
 ///
 /// The heavy walk runs on rayon's thread pool inside a blocking task, so the

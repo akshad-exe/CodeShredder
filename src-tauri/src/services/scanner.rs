@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, SystemTime};
@@ -16,10 +16,20 @@ use crate::domain::pattern::{category_for, is_venv_name, DEFAULT_PATTERNS};
 use crate::domain::scan::{ScanInput, ScanTarget};
 use crate::services::safety::classify;
 
+/// Raised when the user asks to stop a running scan. Read (never written) by
+/// the walker, so it is safe to call from any thread.
+static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
+
 /// Finds known developer-junk folders inside the given scan roots.
 pub struct ScannerEngine;
 
 impl ScannerEngine {
+    /// Asks an in-progress scan to stop early. The next time the walker checks
+    /// the flag it will stop descending and finish with whatever it found.
+    pub fn request_cancel() {
+        CANCEL_REQUESTED.store(true, Ordering::Relaxed);
+    }
+
     /// Runs a scan and streams every matched target to `tx` as soon as it is
     /// measured. Returns the elapsed time once the walk finishes.
     ///
@@ -27,6 +37,7 @@ impl ScannerEngine {
     /// global thread pool, so a large scan uses every available core.
     pub fn scan_stream(input: &ScanInput, tx: &Sender<ScanTarget>) -> f64 {
         let started = Instant::now();
+        CANCEL_REQUESTED.store(false, Ordering::Relaxed);
 
         let patterns: Arc<HashSet<String>> = Arc::new(build_patterns(input));
 
@@ -56,6 +67,9 @@ fn walk_under(
     tx: Sender<ScanTarget>,
     scope: &rayon::Scope<'_>,
 ) {
+    if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+        return;
+    }
     let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or_default();
     let is_venv = is_venv_name(name);
     if patterns.contains(name) || (is_venv && venv_enabled(&patterns)) {
@@ -121,6 +135,9 @@ fn measure_under(
     latest: Arc<Mutex<Option<SystemTime>>>,
     scope: &rayon::Scope<'_>,
 ) {
+    if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+        return;
+    }
     let Ok(meta) = fs::symlink_metadata(dir) else {
         return;
     };

@@ -20,6 +20,7 @@ pub fn run() -> Result<()> {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             crate::commands::scan::scan_dev_folders,
+            crate::commands::scan::cancel_scan,
             crate::commands::clean::cleanup_targets,
             crate::commands::history::get_cleanup_history,
             crate::commands::trash::list_trash,
