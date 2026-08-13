@@ -21,6 +21,8 @@ export function Shred() {
   const selectedTargets = useCleanupStore((s) => s.selectedTargets)
   const scanError = useCleanupStore((s) => s.scanError)
   const mode = useCleanupStore((s) => s.settings.deleteMode)
+  const confirmDangerous = useCleanupStore((s) => s.settings.confirmDangerous)
+  const confirmMedium = useCleanupStore((s) => s.settings.confirmMedium)
   const populateDefaultRoots = useCleanupStore((s) => s.populateDefaultRoots)
 
   const { scanStatus, start: startScan, stop: stopScan } = useScan()
@@ -48,6 +50,29 @@ export function Shred() {
   const selected = targets.filter((t) => selectedTargets.has(t.id))
   const selectedSize = selected.reduce((acc, t) => acc + t.sizeBytes, 0)
   const nothingSelected = selected.length === 0
+
+  // The confirmation dialog is skipped when the safety settings say the
+  // selection needs no warning: safe-only targets never confirm, dangerous and
+  // medium selections confirm only while their toggle is on. Permanent deletes
+  // are irreversible, so they always confirm.
+  const handleCleanupClick = () => {
+    if (mode === 'permanent') {
+      setDialogOpen(true)
+      return
+    }
+    const hasDangerous = selected.some((t) => t.safetyLevel === 'dangerous')
+    const hasMedium = selected.some((t) => t.safetyLevel === 'medium')
+    const needsConfirm = hasDangerous
+      ? confirmDangerous
+      : hasMedium
+        ? confirmMedium
+        : false
+    if (needsConfirm) {
+      setDialogOpen(true)
+    } else {
+      void runCleanup()
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
@@ -96,7 +121,7 @@ export function Shred() {
             <button
               type="button"
               className="btn-primary"
-              onClick={() => setDialogOpen(true)}
+              onClick={handleCleanupClick}
             >
               <Trash2 className="h-4 w-4" />
               {mode === 'permanent' ? 'Permanently delete' : 'Move to Trash'}
