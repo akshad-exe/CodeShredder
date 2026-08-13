@@ -1,6 +1,7 @@
 import { FolderOpen, Trash2 } from 'lucide-react'
 import type { CleanupTarget, SafetyLevel } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
+import { categoryLabel } from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -91,7 +92,7 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
             {target.folderName}
           </span>
           <span className={cn('shrink-0', SAFETY_BADGE[target.safetyLevel])}>
-            {target.category.toUpperCase()}
+            {categoryLabel(target.category).toUpperCase()}
           </span>
         </div>
         <div className="mt-1 flex items-center gap-2 truncate font-mono text-[11px] leading-tight text-faint">

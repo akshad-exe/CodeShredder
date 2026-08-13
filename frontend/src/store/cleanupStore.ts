@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CleanupTarget, AppSettings, SafetyLevel, CleanSummary } from '@/types/cleanup'
+import { ALL_PATTERNS, DEFAULT_ENABLED_PATTERNS } from '@/lib/patterns'
 
 interface CleanupState {
   // Scan state
@@ -51,18 +52,7 @@ interface CleanupState {
 
 const defaultSettings: AppSettings = {
   scanRoots: [],
-  enabledPatterns: [
-    'node_modules',
-    '.next',
-    '.nuxt',
-    'dist',
-    'build',
-    'target',
-    '__pycache__',
-    '.pytest_cache',
-    '.parcel-cache',
-    '.turbo',
-  ],
+  enabledPatterns: [...DEFAULT_ENABLED_PATTERNS],
   deleteMode: 'trash',
   confirmDangerous: true,
   confirmMedium: true,
@@ -166,9 +156,15 @@ export const useCleanupStore = create<CleanupState>()(
           totalReclaimable: Math.max(0, state.totalReclaimable - reclaimed),
         }
       }),
-      setSettings: (settings) => set((state) => ({ 
-        settings: { ...state.settings, ...settings } 
-      })),
+      setSettings: (settings) => set((state) => {
+        const next = { ...state.settings, ...settings }
+        if (settings.enabledPatterns) {
+          const known = new Set(ALL_PATTERNS)
+          const cleaned = settings.enabledPatterns.filter((p) => known.has(p))
+          next.enabledPatterns = cleaned.length > 0 ? cleaned : [...DEFAULT_ENABLED_PATTERNS]
+        }
+        return { settings: next }
+      }),
       resetScan: () => set({
         scanStatus: 'idle',
         scanProgress: 0,
@@ -194,6 +190,18 @@ export const useCleanupStore = create<CleanupState>()(
         scanRoots: state.scanRoots,
         enabledPatterns: state.enabledPatterns,
       }),
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as object) }
+        // Drop any patterns that are no longer known (e.g. the old `env`
+        // pattern) so stale localStorage values never reach the scanner.
+        const known = new Set(ALL_PATTERNS)
+        const enabledPatterns = (merged.enabledPatterns as string[] | undefined ?? [])
+          .filter((p) => known.has(p))
+        if (enabledPatterns.length === 0) {
+          enabledPatterns.push(...DEFAULT_ENABLED_PATTERNS)
+        }
+        return { ...merged, enabledPatterns }
+      },
     }
   )
 )

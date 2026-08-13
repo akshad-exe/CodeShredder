@@ -1,56 +1,10 @@
 import { cn } from '@/lib/utils'
+import {
+  DEFAULT_PATTERNS,
+  EXTENDED_PATTERNS,
+  PATTERN_LABELS,
+} from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
-
-const PATTERN_LABELS: Record<string, string> = {
-  node_modules: 'Node',
-  '.next': 'Next',
-  '.nuxt': 'Nuxt',
-  dist: 'dist',
-  build: 'build',
-  target: 'Rust',
-  '__pycache__': 'Python',
-  '.pytest_cache': 'PyTest',
-  '.parcel-cache': 'Parcel',
-  '.turbo': 'Turbo',
-  '.npm': 'npm cache',
-  '.pnpm-store': 'pnpm store',
-  '.yarn': 'Yarn',
-  '.bun': 'Bun',
-  '.cargo': 'Cargo',
-  '.gradle': 'Gradle',
-  Pods: 'CocoaPods',
-  vendor: 'Composer',
-  '.venv': 'venv',
-  venv: 'venv',
-  env: 'venv',
-}
-
-const DEFAULT_PATTERNS = [
-  'node_modules',
-  '.next',
-  '.nuxt',
-  'dist',
-  'build',
-  'target',
-  '__pycache__',
-  '.pytest_cache',
-  '.parcel-cache',
-  '.turbo',
-]
-
-const EXTENDED_PATTERNS = [
-  '.npm',
-  '.pnpm-store',
-  '.yarn',
-  '.bun',
-  '.cargo',
-  '.gradle',
-  'Pods',
-  'vendor',
-  '.venv',
-  'venv',
-  'env',
-]
 
 export function PatternPills() {
   const enabledPatterns = useCleanupStore((s) => s.enabledPatterns)
@@ -77,7 +31,7 @@ export function PatternPills() {
                 : 'cursor-pointer hover:border-accent/50',
               enabledPatterns.includes(pattern)
                 ? 'border-accent/40 bg-accent/10 text-accent'
-                : 'border-border bg-panel text-faint line-through',
+                : 'border-border bg-panel text-faint',
             )}
           >
             {PATTERN_LABELS[pattern] ?? pattern}
@@ -99,7 +53,7 @@ export function PatternPills() {
                 : 'cursor-pointer hover:border-accent/50',
               enabledPatterns.includes(pattern)
                 ? 'border-accent/40 bg-accent/10 text-accent'
-                : 'border-border bg-panel text-faint line-through',
+                : 'border-border bg-panel text-faint',
             )}
           >
             {PATTERN_LABELS[pattern] ?? pattern}

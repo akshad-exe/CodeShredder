@@ -1,4 +1,7 @@
 import type { CleanupTarget } from '@/types/cleanup'
+import { PATTERN_COLORS } from '@/lib/patterns'
+
+export { PATTERN_COLORS }
 
 export const MOCK_SCAN_ROOTS = [
   '~/Developer',
@@ -11,7 +14,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't1',
     projectName: 'taskmanager',
     folderName: 'node_modules',
-    category: 'node_modules',
+    category: 'web',
     path: '/Users/apple/Developer/taskmanager/node_modules',
     displayPath: 'taskmanager\\node_modules',
     sizeBytes: 226 * 1024 * 1024,
@@ -24,7 +27,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't2',
     projectName: 'portfolio-next',
     folderName: '.next',
-    category: 'next',
+    category: 'web',
     path: '/Users/apple/Developer/portfolio-next/.next',
     displayPath: 'portfolio-next\\.next',
     sizeBytes: 152 * 1024 * 1024,
@@ -37,7 +40,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't3',
     projectName: 'api-server',
     folderName: 'target',
-    category: 'target',
+    category: 'systems',
     path: '/Users/apple/Developer/api-server/target',
     displayPath: 'Developer\\api-server',
     sizeBytes: 1_240_614_912,
@@ -50,7 +53,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't4',
     projectName: 'web-app',
     folderName: 'node_modules',
-    category: 'node_modules',
+    category: 'web',
     path: '/Users/apple/code/web-app/node_modules',
     displayPath: 'web-app\\node_modules',
     sizeBytes: 98 * 1024 * 1024,
@@ -63,7 +66,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't5',
     projectName: 'helix-content',
     folderName: '.nuxt',
-    category: 'nuxt',
+    category: 'web',
     path: '/Users/apple/code/helix-content/.nuxt',
     displayPath: 'helix-content\\.nuxt',
     sizeBytes: 64 * 1024 * 1024,
@@ -76,7 +79,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't6',
     projectName: 'ml-labs',
     folderName: '.venv',
-    category: 'venv',
+    category: 'python',
     path: 'E:/Repos/ml-labs/.venv',
     displayPath: 'ml-labs\\.venv',
     sizeBytes: 1_888_383_744,
@@ -102,7 +105,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't8',
     projectName: 'next-remix',
     folderName: 'build',
-    category: 'build',
+    category: 'web',
     path: '/Users/apple/code/next-remix/build',
     displayPath: 'next-remix\\build',
     sizeBytes: 44 * 1024 * 1024,
@@ -115,7 +118,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     id: 't9',
     projectName: 'monorepo',
     folderName: '.turbo',
-    category: 'turbo',
+    category: 'web',
     path: '/Users/apple/Developer/monorepo/.turbo',
     displayPath: 'monorepo\\.turbo',
     sizeBytes: 6_291_456,
@@ -125,19 +128,6 @@ export const MOCK_TARGETS: CleanupTarget[] = [
     selected: false,
   },
 ]
-
-export const PATTERN_COLORS: Record<string, string> = {
-  node_modules: 'bg-accent',
-  next: 'bg-[#a78bfa]',
-  nuxt: 'bg-safe',
-  target: 'bg-[#22d3ee]',
-  build: 'bg-[#ff8a00]',
-  dist: 'bg-[#f472b6]',
-  venv: 'bg-warning',
-  python: 'bg-[#eab308]',
-  turbo: 'bg-[#6366f1]',
-  parcel: 'bg-danger',
-}
 
 export function sumMockSize(targets: CleanupTarget[]): number {
   return targets.reduce((acc, t) => acc + t.sizeBytes, 0)

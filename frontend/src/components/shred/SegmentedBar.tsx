@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { formatBytes } from '@/lib/format'
 import { PATTERN_COLORS } from '@/data/mock'
+import { categoryLabel } from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 export function SegmentedBar() {
@@ -31,7 +32,7 @@ export function SegmentedBar() {
             key={category}
             className={`h-full ${PATTERN_COLORS[category] ?? 'bg-accent'}`}
             style={{ width: `${(size / total) * 100}%` }}
-            title={`${category} — ${formatBytes(size)}`}
+            title={`${categoryLabel(category)} — ${formatBytes(size)}`}
           />
         ))}
       </div>
@@ -41,7 +42,7 @@ export function SegmentedBar() {
             <span
               className={`h-2 w-2 rounded-sm ${PATTERN_COLORS[category] ?? 'bg-accent'}`}
             />
-            <span className="font-mono text-muted">{category}</span>
+            <span className="font-mono text-muted">{categoryLabel(category)}</span>
             <span className="text-faint">{formatBytes(size)}</span>
           </div>
         ))}
