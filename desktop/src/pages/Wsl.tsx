@@ -1,8 +1,8 @@
-import { PlaceholderPage } from './PlaceholderPage'
+import { Placeholder } from './Placeholder'
 
-export function WslPage() {
+export function Wsl() {
   return (
-    <PlaceholderPage
+    <Placeholder
       title="WSL"
       description="Optimize WSL distros and reclaim space from virtual disks."
     />

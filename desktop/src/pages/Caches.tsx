@@ -1,8 +1,8 @@
-import { PlaceholderPage } from './PlaceholderPage'
+import { Placeholder } from './Placeholder'
 
-export function CachesPage() {
+export function Caches() {
   return (
-    <PlaceholderPage
+    <Placeholder
       title="Caches"
       description="Clean package manager and system caches safely."
     />

@@ -1,8 +1,8 @@
-import { PlaceholderPage } from './PlaceholderPage'
+import { Placeholder } from './Placeholder'
 
-export function LargeFilesPage() {
+export function LargeFiles() {
   return (
-    <PlaceholderPage
+    <Placeholder
       title="Large Files"
       description="Discover large videos, archives, logs, and installer dumps."
     />

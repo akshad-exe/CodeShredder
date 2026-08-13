@@ -33,7 +33,7 @@ function StatCard({
   )
 }
 
-export function OverviewPage({ onNavigate }: { onNavigate: (p: PageId) => void }) {
+export function Overview({ onNavigate }: { onNavigate: (p: PageId) => void }) {
   const totalReclaimable = useCleanupStore((s) => s.totalReclaimable)
   const targets = useCleanupStore((s) => s.targets)
   const scanRoots = useCleanupStore((s) => s.scanRoots)

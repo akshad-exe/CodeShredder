@@ -1,8 +1,8 @@
-import { PlaceholderPage } from './PlaceholderPage'
+import { Placeholder } from './Placeholder'
 
-export function SettingsPage() {
+export function Settings() {
   return (
-    <PlaceholderPage
+    <Placeholder
       title="Settings"
       description="Control scan roots, enabled patterns, and deletion behavior."
     />

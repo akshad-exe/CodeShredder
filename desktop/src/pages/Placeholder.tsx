@@ -1,11 +1,11 @@
 import { Construction } from 'lucide-react'
 
-interface PlaceholderPageProps {
+interface PlaceholderProps {
   title: string
   description: string
 }
 
-export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
+export function Placeholder({ title, description }: PlaceholderProps) {
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
       <h1 className="text-2xl font-bold text-text">{title}</h1>
