@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CleanupTarget, AppSettings, SafetyLevel, CleanSummary } from '@/types/cleanup'
-import { ALL_PATTERNS, DEFAULT_ENABLED_PATTERNS } from '@/lib/patterns'
+import { ALL_PATTERNS, DEFAULT_ENABLED_PATTERNS, patternsForCategory } from '@/lib/patterns'
 
 interface CleanupState {
   // Scan state
@@ -28,6 +28,7 @@ interface CleanupState {
   removeScanRoot: (root: string) => void
   setEnabledPatterns: (patterns: string[]) => void
   togglePattern: (pattern: string) => void
+  toggleCategory: (category: string) => void
   setScanStatus: (status: CleanupState['scanStatus']) => void
   setScanProgress: (progress: number) => void
   setCurrentScanPath: (path: string) => void
@@ -89,6 +90,17 @@ export const useCleanupStore = create<CleanupState>()(
           ? state.enabledPatterns.filter((p) => p !== pattern)
           : [...state.enabledPatterns, pattern]
       })),
+      toggleCategory: (category) => set((state) => {
+        const groupPatterns = patternsForCategory(category)
+        const allEnabled = groupPatterns.every((p) => state.enabledPatterns.includes(p))
+        const enabledSet = new Set(state.enabledPatterns)
+        if (allEnabled) {
+          groupPatterns.forEach((p) => enabledSet.delete(p))
+        } else {
+          groupPatterns.forEach((p) => enabledSet.add(p))
+        }
+        return { enabledPatterns: [...enabledSet] }
+      }),
       setScanStatus: (scanStatus) => set({ scanStatus }),
       setScanProgress: (scanProgress) => set({ scanProgress }),
       setCurrentScanPath: (currentScanPath) => set({ currentScanPath }),

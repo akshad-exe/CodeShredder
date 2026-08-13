@@ -32,7 +32,6 @@ export const EXTENDED_PATTERNS: readonly string[] = [
   '.venv',
   'venv',
   '.svelte-kit',
-  '.vercel',
   '.output',
   '.astro',
   '.docusaurus',
@@ -51,7 +50,6 @@ export const EXTENDED_PATTERNS: readonly string[] = [
   'cmake-build-debug',
   'cmake-build-release',
   '.obj',
-  '.docker',
   '.gatsby',
 ]
 
@@ -60,6 +58,69 @@ export const ALL_PATTERNS: readonly string[] = [
   ...DEFAULT_PATTERNS,
   ...EXTENDED_PATTERNS,
 ]
+
+/** Maps each pattern to its ecosystem group key. Mirrors backend `category_for`. */
+export const PATTERN_CATEGORIES: Record<string, string> = {
+  // Web & JavaScript
+  node_modules: 'web',
+  '.next': 'web',
+  '.nuxt': 'web',
+  '.turbo': 'web',
+  '.output': 'web',
+  '.svelte-kit': 'web',
+  '.astro': 'web',
+  '.docusaurus': 'web',
+  '.parcel-cache': 'web',
+  '.gatsby': 'web',
+  dist: 'web',
+  build: 'web',
+  out: 'web',
+  '.cache': 'web',
+  '.eslintcache': 'web',
+  // Python
+  '__pycache__': 'python',
+  '.pytest_cache': 'python',
+  '.mypy_cache': 'python',
+  '.ruff_cache': 'python',
+  '.tox': 'python',
+  '.venv': 'python',
+  venv: 'python',
+  // Systems
+  target: 'systems',
+  '.zig-cache': 'systems',
+  'zig-out': 'systems',
+  CMakeFiles: 'systems',
+  'cmake-build-debug': 'systems',
+  'cmake-build-release': 'systems',
+  '.obj': 'systems',
+  // Mobile
+  DerivedData: 'mobile',
+  '.gradle': 'mobile',
+  '.dart_tool': 'mobile',
+  Pods: 'mobile',
+  '.expo': 'mobile',
+  // Package caches
+  '.npm': 'package_caches',
+  '.pnpm-store': 'package_caches',
+  '.yarn': 'package_caches',
+  '.bun': 'package_caches',
+  '.cargo': 'package_caches',
+  vendor: 'package_caches',
+}
+
+/** Ordered ecosystem groups with their display labels. */
+export const CATEGORY_GROUPS: readonly { key: string; label: string }[] = [
+  { key: 'web', label: 'Web' },
+  { key: 'python', label: 'Python' },
+  { key: 'systems', label: 'Systems' },
+  { key: 'mobile', label: 'Mobile' },
+  { key: 'package_caches', label: 'Package caches' },
+]
+
+/** Patterns belonging to a given category key, in display order. */
+export function patternsForCategory(category: string): string[] {
+  return ALL_PATTERNS.filter((p) => PATTERN_CATEGORIES[p] === category)
+}
 
 /** Short human-readable label for pills. */
 export const PATTERN_LABELS: Record<string, string> = {
@@ -81,10 +142,9 @@ export const PATTERN_LABELS: Record<string, string> = {
   '.gradle': 'Gradle',
   Pods: 'CocoaPods',
   vendor: 'Composer',
-  '.venv': 'venv',
-  venv: 'venv',
+  '.venv': '.venv',
+  venv: 'venv (bare)',
   '.svelte-kit': 'SvelteKit',
-  '.vercel': 'Vercel',
   '.output': 'Nitro',
   '.astro': 'Astro',
   '.docusaurus': 'Docusaurus',
@@ -103,7 +163,6 @@ export const PATTERN_LABELS: Record<string, string> = {
   'cmake-build-debug': 'CLion (debug)',
   'cmake-build-release': 'CLion (release)',
   '.obj': 'obj',
-  '.docker': 'Docker',
   '.gatsby': 'Gatsby',
 }
 
