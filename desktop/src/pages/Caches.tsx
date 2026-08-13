@@ -7,7 +7,7 @@ import type { CacheEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
 
-const CATEGORIES = ['All categories', 'Package managers', 'Browsers', 'System']
+const CATEGORIES = ['All categories', 'Node.js', 'Python', 'Rust', 'Java', '.NET', 'Go', 'PHP']
 
 const SAFETY_CLASS: Record<CacheEntry['safety'], string> = {
   safe: 'bg-safe/10 text-safe',
@@ -105,12 +105,13 @@ export function Caches() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="w-full px-8 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Caches</h1>
           <p className="mt-1 text-sm text-muted">
-            Reclaim space from package manager, browser and system caches.
+            Global Deep Clean — clear system-wide package manager caches that
+            can trap hundreds of gigabytes.
           </p>
           {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">

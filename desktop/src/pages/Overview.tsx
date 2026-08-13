@@ -44,7 +44,7 @@ export function Overview({ onNavigate }: { onNavigate: (p: PageId) => void }) {
       : null
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-8 py-8">
+    <div className="w-full space-y-6 px-8 py-8">
       <div>
         <h1 className="text-2xl font-bold text-text">Overview</h1>
         <p className="mt-1 text-sm text-muted">

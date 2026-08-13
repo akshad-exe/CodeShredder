@@ -140,7 +140,7 @@ export function Treemap() {
   }, [root])
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="w-full px-8 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Treemap</h1>
@@ -228,7 +228,7 @@ export function Treemap() {
 
           <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_260px]">
             {/* Treemap */}
-            <div className="card h-[440px] p-3">
+            <div className="card h-[560px] p-3">
               <div className="flex h-full gap-[3px]">
                 {(root.children ?? []).map((child) => (
                   <div
