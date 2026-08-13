@@ -23,19 +23,24 @@ export function Caches() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [cleaning, setCleaning] = useState(false)
   const preview = !isTauri()
+  const [usingSample, setUsingSample] = useState(false)
+  const sample = usingSample || preview
 
   const refresh = useCallback(async () => {
     if (preview) {
       setEntries(SAMPLE_CACHES)
+      setUsingSample(true)
       setLoading(false)
       return
     }
     setLoading(true)
     try {
       setEntries(await listCaches())
+      setUsingSample(false)
     } catch (err) {
       console.error('[Caches] list failed:', err)
-      setEntries([])
+      setEntries(SAMPLE_CACHES)
+      setUsingSample(true)
     } finally {
       setLoading(false)
     }
@@ -70,8 +75,8 @@ export function Caches() {
     })
 
   const handleClean = async (id: string) => {
-    if (preview) {
-      toast.success('Sample cache removed (preview only)')
+    if (sample) {
+      toast.success('Sample cache removed')
       setEntries((prev) => prev.filter((c) => c.id !== id))
       return
     }
@@ -85,7 +90,7 @@ export function Caches() {
   }
 
   const handleCleanSelected = async () => {
-    if (preview) {
+    if (sample) {
       toast.success(`Freed ${formatBytes(selectedSize)} (sample data)`)
       setEntries((prev) => prev.filter((c) => !selected.has(c.id)))
       setSelected(new Set())
@@ -107,9 +112,9 @@ export function Caches() {
           <p className="mt-1 text-sm text-muted">
             Reclaim space from package manager, browser and system caches.
           </p>
-          {preview && (
+          {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">
-              Sample data — browser preview
+              Sample data — {preview ? 'browser preview' : 'backend not connected'}
             </span>
           )}
         </div>

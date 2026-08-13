@@ -27,19 +27,24 @@ export function Duplicates() {
   const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const preview = !isTauri()
+  const [usingSample, setUsingSample] = useState(false)
+  const sample = usingSample || preview
 
   const refresh = useCallback(async () => {
     if (preview) {
       setGroups(SAMPLE_DUPLICATES)
+      setUsingSample(true)
       setLoading(false)
       return
     }
     setLoading(true)
     try {
       setGroups(await scanDuplicates({ roots: [] }))
+      setUsingSample(false)
     } catch (err) {
       console.error('[Duplicates] scan failed:', err)
-      setGroups([])
+      setGroups(SAMPLE_DUPLICATES)
+      setUsingSample(true)
     } finally {
       setLoading(false)
     }
@@ -79,7 +84,7 @@ export function Duplicates() {
     })
 
   const handleTrash = async (ids: string[]) => {
-    if (preview) {
+    if (sample) {
       toast.success(`Freed ${formatBytes(ids.reduce((acc, id) => {
         for (const g of groups) {
           const file = g.files.find((f) => f.id === id)
@@ -112,9 +117,9 @@ export function Duplicates() {
           <p className="mt-1 text-sm text-muted">
             Find and remove identical files across your drives.
           </p>
-          {preview && (
+          {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">
-              Sample data — browser preview
+              Sample data — {preview ? 'browser preview' : 'backend not connected'}
             </span>
           )}
         </div>

@@ -78,18 +78,22 @@ export function Treemap() {
   const [history, setHistory] = useState<TreemapNode[]>([])
   const [loading, setLoading] = useState(true)
   const preview = !isTauri()
+  const [usingSample, setUsingSample] = useState(false)
+  const sample = usingSample || preview
 
   const refresh = useCallback(
     async (target?: string) => {
       if (preview) {
         setRoot(SAMPLE_TREEMAP)
         setHistory([SAMPLE_TREEMAP])
+        setUsingSample(true)
         setLoading(false)
         return
       }
       const path = target ?? scanRoots[0]
       if (!path) {
         setRoot(null)
+        setUsingSample(true)
         setLoading(false)
         return
       }
@@ -98,9 +102,12 @@ export function Treemap() {
         const tree = await getTreemap(path)
         setRoot(tree)
         setHistory([tree])
+        setUsingSample(false)
       } catch (err) {
         console.error('[Treemap] scan failed:', err)
-        setRoot(null)
+        setRoot(SAMPLE_TREEMAP)
+        setHistory([SAMPLE_TREEMAP])
+        setUsingSample(true)
       } finally {
         setLoading(false)
       }
@@ -140,9 +147,9 @@ export function Treemap() {
           <p className="mt-1 text-sm text-muted">
             Visualize disk usage by folder size and drill into what's eating space.
           </p>
-          {preview && (
+          {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">
-              Sample data — browser preview
+              Sample data — {preview ? 'browser preview' : 'backend not connected'}
             </span>
           )}
         </div>

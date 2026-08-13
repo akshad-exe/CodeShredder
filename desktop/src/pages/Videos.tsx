@@ -37,19 +37,24 @@ export function Videos() {
   const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const preview = !isTauri()
+  const [usingSample, setUsingSample] = useState(false)
+  const sample = usingSample || preview
 
   const refresh = useCallback(async () => {
     if (preview) {
       setVideos(SAMPLE_VIDEOS)
+      setUsingSample(true)
       setLoading(false)
       return
     }
     setLoading(true)
     try {
       setVideos(await scanVideos({ roots: [] }))
+      setUsingSample(false)
     } catch (err) {
       console.error('[Videos] scan failed:', err)
-      setVideos([])
+      setVideos(SAMPLE_VIDEOS)
+      setUsingSample(true)
     } finally {
       setLoading(false)
     }
@@ -86,7 +91,7 @@ export function Videos() {
     })
 
   const handleTrash = async () => {
-    if (preview) {
+    if (sample) {
       toast.success(`Freed ${formatBytes(selectedSize)} (sample data)`)
       setVideos((prev) => prev.filter((v) => !selected.has(v.id)))
       setSelected(new Set())
@@ -103,9 +108,9 @@ export function Videos() {
           <p className="mt-1 text-sm text-muted">
             Spot large video files eating your disk, sorted by size.
           </p>
-          {preview && (
+          {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">
-              Sample data — browser preview
+              Sample data — {preview ? 'browser preview' : 'backend not connected'}
             </span>
           )}
         </div>
@@ -236,7 +241,7 @@ export function Videos() {
                   title="Move to Trash"
                   className="btn-ghost !p-2 text-muted hover:text-danger"
                   onClick={() => {
-                    if (preview) void handleTrash()
+                    if (sample) void handleTrash()
                     else toast.error('Video cleanup ships in v1.0')
                   }}
                 >
