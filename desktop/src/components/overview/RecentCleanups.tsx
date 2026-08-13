@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Clock } from 'lucide-react'
 import type { CleanupHistoryEntry } from '@/types/cleanup'
-import { getCleanupHistory, isTauri } from '@/lib/tauri'
+import { getCleanupHistory, isTauri } from '@/lib/ipc'
 import { formatCount } from '@/lib/format'
 
 const MODE_LABEL: Record<CleanupHistoryEntry['mode'], string> = {

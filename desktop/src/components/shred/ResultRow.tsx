@@ -5,7 +5,7 @@ import { categoryLabel } from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
-import { cleanupTargets, isTauri, revealFolder } from '@/lib/tauri'
+import { cleanupTargets, isTauri, revealFolder } from '@/lib/ipc'
 import { toast } from '@/components/ui/sonner'
 
 const SAFETY_BADGE: Record<SafetyLevel, string> = {

@@ -1,23 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
-import type { UnlistenFn } from '@tauri-apps/api/event'
 import type {
   ScanInput,
   ScanResult,
   CleanSummary,
   CleanMode,
   CleanupHistoryEntry,
-  CleanupTarget,
   TrashItem,
   TrashResult,
 } from '@/types/cleanup'
-
-declare global {
-  interface Window {
-    __TAURI_INTERNALS__?: unknown
-  }
-}
 
 /** True when the frontend is running inside the Tauri webview. */
 export function isTauri(): boolean {
@@ -29,18 +20,9 @@ export async function scanDevFolders(input: ScanInput): Promise<ScanResult> {
   return invoke<ScanResult>('scan_dev_folders', { input })
 }
 
-/** Subscribes to live per-target events emitted during a scan. */
-export async function onScanTarget(
-  handler: (target: CleanupTarget) => void,
-): Promise<UnlistenFn> {
-  return listen<CleanupTarget>('scan-target', (event) => handler(event.payload))
-}
-
-/** Subscribes to the final, size-sorted scan result. */
-export async function onScanComplete(
-  handler: (result: ScanResult) => void,
-): Promise<UnlistenFn> {
-  return listen<ScanResult>('scan-complete', (event) => handler(event.payload))
+/** Asks the in-progress scan to stop early. */
+export async function cancelScan(): Promise<void> {
+  return invoke('cancel_scan')
 }
 
 /** Runs a cleanup over the given paths in the given mode (v0.3 backend command). */

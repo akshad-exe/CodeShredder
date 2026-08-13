@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { ArchiveRestore, Loader2, Recycle, RotateCcw, Trash2 } from 'lucide-react'
-import { emptyTrash, isTauri, listTrash, purgeTrash, restoreTrash } from '@/lib/tauri'
+import { emptyTrash, isTauri, listTrash, purgeTrash, restoreTrash } from '@/lib/ipc'
 import type { TrashItem } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
 
-export function RecycleBinPage() {
+export function RecycleBin() {
   const [items, setItems] = useState<TrashItem[]>([])
   const [loading, setLoading] = useState(true)
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
@@ -21,7 +21,7 @@ export function RecycleBinPage() {
     try {
       setItems(await listTrash())
     } catch (err) {
-      console.error('[RecycleBinPage] list failed:', err)
+      console.error('[RecycleBin] list failed:', err)
       toast.error('Could not read the Recycle Bin', {
         description: err instanceof Error ? err.message : String(err),
       })
