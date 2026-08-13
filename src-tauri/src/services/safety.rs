@@ -64,15 +64,28 @@ pub fn classify(folder_name: &str, path: &Path) -> SafetyLevel {
 }
 
 /// Blocks paths that must never be moved to the trash: filesystem roots,
-/// system directories and the user's own home / profile folders.
+/// system directories and per-user OS folders (the user's home itself is
+/// allowed, since that is where developer junk usually lives).
 pub fn is_protected(path: &Path) -> bool {
     let abs = absolute(path);
     let norm = normalize(&abs);
-    PROTECTED_ROOTS.iter().any(|root| {
-        let norm_root = normalize(Path::new(root));
-        norm == norm_root || norm.starts_with(norm_root.as_str())
-    })
+    if PROTECTED_ROOTS
+        .iter()
+        .any(|root| norm.starts_with(&normalize(Path::new(root))))
+    {
+        return true;
+    }
+    // Per-user OS folders that must survive even though their parent (the home
+    // directory) is no longer wholesale protected. Checked on the normalized
+    // path so Windows-style backslash paths split into segments correctly.
+    norm.split('/')
+        .any(|seg| PROTECTED_COMPONENTS.iter().any(|n| n.eq_ignore_ascii_case(seg)))
 }
+
+/// Path components that are always protected, regardless of where they appear:
+/// e.g. `C:\Users\<you>\AppData` must not be trashed even though `C:\Users` is
+/// cleanable.
+const PROTECTED_COMPONENTS: &[&str] = &["AppData"];
 
 /// Absolute protected roots that should never be trashed, regardless of which
 /// platform the app runs on. Kept deliberately coarse; platform specifics are
@@ -83,7 +96,6 @@ const PROTECTED_ROOTS: &[&str] = &[
     "C:\\Program Files",
     "C:\\Program Files (x86)",
     "C:\\ProgramData",
-    "C:\\Users",
     "C:\\System Volume Information",
     "C:\\$Recycle.Bin",
     "C:\\Recovery",
@@ -194,5 +206,17 @@ mod tests {
     fn does_not_block_normal_targets() {
         assert!(!is_protected(Path::new("C:\\Code\\proj\\node_modules")));
         assert!(!is_protected(Path::new("/home/me/dev/proj/target")));
+    }
+
+    #[test]
+    fn allows_home_directory_but_blocks_appdata() {
+        // The user opted to allow cleaning under their home directory...
+        assert!(!is_protected(Path::new("C:\\Users\\me")));
+        assert!(!is_protected(Path::new("C:\\Users\\me\\Code\\proj\\node_modules")));
+        assert!(!is_protected(Path::new("/home/me/dev/proj/target")));
+        // ...while per-user OS folders underneath it stay protected.
+        assert!(is_protected(Path::new("C:\\Users\\me\\AppData")));
+        assert!(is_protected(Path::new("C:\\Users\\me\\AppData\\Local\\Temp")));
+        assert!(is_protected(Path::new("/home/me/AppData/Roaming")));
     }
 }
