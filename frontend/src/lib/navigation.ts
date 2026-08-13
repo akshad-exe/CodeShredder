@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Trash2,
   FolderX,
+  Recycle,
   Copy,
   Film,
   HardDrive,
@@ -14,6 +15,7 @@ import {
 export type PageId =
   | 'overview'
   | 'shred'
+  | 'recycle-bin'
   | 'caches'
   | 'duplicates'
   | 'videos'
@@ -39,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Reclaim',
     items: [
       { id: 'shred', label: 'Shred', icon: Trash2 },
+      { id: 'recycle-bin', label: 'Recycle Bin', icon: Recycle },
       { id: 'caches', label: 'Caches', icon: FolderX },
       { id: 'duplicates', label: 'Duplicates', icon: Copy },
     ],

@@ -3,6 +3,7 @@ import { AppShell } from '@/layouts/AppShell'
 import type { PageId } from '@/lib/navigation'
 import { OverviewPage } from '@/pages/OverviewPage'
 import { ShredPage } from '@/pages/ShredPage'
+import { RecycleBinPage } from '@/pages/RecycleBinPage'
 import { CachesPage } from '@/pages/CachesPage'
 import { WslPage } from '@/pages/WslPage'
 import { LargeFilesPage } from '@/pages/LargeFilesPage'
@@ -16,6 +17,7 @@ function App() {
     <AppShell activePage={page} onNavigate={setPage}>
       {page === 'overview' && <OverviewPage onNavigate={setPage} />}
       {page === 'shred' && <ShredPage />}
+      {page === 'recycle-bin' && <RecycleBinPage />}
       {page === 'caches' && <CachesPage />}
       {page === 'duplicates' && (
         <PlaceholderPage
