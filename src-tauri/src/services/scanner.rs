@@ -1,10 +1,17 @@
 //! Parallel scanner: walks the given roots in parallel with `jwalk`, prunes
-//! matched folders so they are never descended into, measures each target on a
-//! worker thread and streams it to a channel as soon as its size is known.
+//! matched, virtual-environment and protected folders so they are never
+//! descended into, measures each target on a worker thread and streams it to a
+//! channel as soon as its size is known.
 //!
-//! Folder sizes are cached in `scan-cache.json` and reused when the target
-//! directory's own metadata is unchanged, so repeat scans of untouched projects
-//! are near-instant.
+//! Two caches make repeat scans of untouched projects near-instant:
+//!
+//! - A per-root **discovery snapshot** (Option A): the mtime fingerprint of
+//!   every directory walked. If the fingerprint matches the previous scan, the
+//!   previously discovered targets are replayed without re-walking or
+//!   re-measuring anything.
+//! - A per-target **size cache**: replayed when a found folder's own metadata
+//!   is unchanged, so re-scanning a project with a modified sibling skips
+//!   measuring the untouched folders.
 
 use std::collections::HashSet;
 use std::fs;
@@ -19,12 +26,18 @@ use uuid::Uuid;
 
 use crate::domain::pattern::{category_for, is_venv_name, DEFAULT_PATTERNS};
 use crate::domain::scan::{ScanInput, ScanTarget};
-use crate::services::safety::classify;
-use crate::storage::cache::{CacheEntry, ScanCache};
+use crate::services::safety::{classify, is_protected};
+use crate::storage::cache::{CacheEntry, DirStamp, RootSnapshot, ScanCache, StoredTarget};
 
 /// Raised when the user asks to stop a running scan. Read (never written) by
 /// the walker, so it is safe to call from any thread.
 static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
+
+/// Directory names that are never cleanup targets themselves and never contain
+/// one, so walking inside them is pure waste. Mirrors the idea behind
+/// `PROTECTED_ROOTS`: if the app would never touch anything down there, don't
+/// look there.
+const NO_JUNK_DIRS: &[&str] = &[".git", ".hg", ".svn", ".bzr", "AppData"];
 
 /// Finds known developer-junk folders inside the given scan roots.
 pub struct ScannerEngine;
@@ -69,9 +82,14 @@ impl ScannerEngine {
     }
 }
 
-/// Walks `root` with jwalk, pruning matched and virtual-environment folders so
-/// they are never descended into. Every remaining match is measured in parallel
-/// and sent to `tx`.
+/// Walks `root` with jwalk, pruning matched, virtual-environment and
+/// no-junk folders so they are never descended into.
+///
+/// A single walk collects the directory-mtime fingerprint AND the paths of the
+/// matched targets. If the fingerprint matches the previous scan's snapshot,
+/// the stored targets are replayed without re-measuring anything; otherwise the
+/// matched folders are measured in parallel, streamed to `tx` and the snapshot
+/// is refreshed.
 fn walk_root(
     root: &Path,
     patterns: Arc<HashSet<String>>,
@@ -83,41 +101,130 @@ fn walk_root(
         .process_read_dir({
             let patterns = patterns.clone();
             move |_depth, _path, _state, children| {
-                for entry in children.iter_mut().flatten() {
-                    if entry.file_type.is_dir() {
-                        let name = entry.file_name.to_string_lossy();
-                        let is_venv = is_venv_name(&name);
-                        if patterns.contains(name.as_ref()) || is_venv {
-                            entry.read_children_path = None;
-                        }
-                    }
-                }
+                prune_children(&patterns, children);
             }
         });
 
-    rayon::scope(|scope| {
-        for entry in walker {
-            if CANCEL_REQUESTED.load(Ordering::Relaxed) {
-                break;
-            }
-            let Ok(entry) = entry else {
-                continue;
-            };
-            if !entry.file_type.is_dir() {
-                continue;
-            }
-            let name = entry.file_name.to_string_lossy().into_owned();
-            if patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(&patterns)) {
-                let dir = entry.path();
-                let tx = tx.clone();
-                let cache = cache.clone();
-                scope.spawn(move |_| {
-                    let target = measure_target(&dir, &name, &cache);
-                    let _ = tx.send(target);
+    let mut fingerprint = Vec::new();
+    let mut matched = Vec::new();
+
+    for entry in walker {
+        if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+            break;
+        }
+        let Ok(entry) = entry else {
+            continue;
+        };
+        if !entry.file_type.is_dir() {
+            continue;
+        }
+
+        // Record the dir in the fingerprint regardless of whether it is a
+        // target: its mtime is the invalidation signal for this snapshot.
+        if let Ok(meta) = fs::symlink_metadata(entry.path()) {
+            if let Ok(mtime) = meta.modified() {
+                fingerprint.push(DirStamp {
+                    path: entry.path().to_string_lossy().into_owned(),
+                    mtime_nanos: mtime
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .map(|d| d.as_nanos())
+                        .unwrap_or(0),
                 });
             }
         }
+
+        let name = entry.file_name.to_string_lossy().into_owned();
+        if patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(&patterns)) {
+            matched.push((entry.path(), name));
+        }
+    }
+
+    fingerprint.sort_unstable_by(|a, b| a.path.cmp(&b.path));
+
+    let key = root.to_string_lossy().into_owned();
+    let mut effective_patterns: Vec<String> = patterns.iter().cloned().collect();
+    effective_patterns.sort_unstable();
+
+    // Option A: if nothing under the root changed since the last scan, replay
+    // the previously discovered targets and skip the measurement work entirely.
+    if let Some(snapshot) = cache.lock().ok().and_then(|g| g.snapshot(&key).cloned()) {
+        if snapshot.patterns == effective_patterns && snapshot.fingerprint == fingerprint {
+            for stored in &snapshot.targets {
+                if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+                    break;
+                }
+                let _ = tx.send(ScanTarget {
+                    id: Uuid::new_v4().to_string(),
+                    path: stored.path.clone(),
+                    display_path: display_path_for(Path::new(&stored.path), &stored.folder_name),
+                    project_name: project_root_name(Path::new(&stored.path), &stored.folder_name),
+                    folder_name: stored.folder_name.clone(),
+                    category: category_for(&stored.folder_name).to_owned(),
+                    size_bytes: stored.size_bytes,
+                    file_count: stored.file_count,
+                    last_modified: stored.last_modified.clone(),
+                    safety_level: classify(&stored.folder_name, Path::new(&stored.path)),
+                    selected: false,
+                });
+            }
+            return;
+        }
+    }
+
+    // Cache miss: measure every matched folder in parallel, streaming each
+    // target as soon as its size is known, and store the fresh snapshot.
+    let new_targets = Arc::new(Mutex::new(Vec::new()));
+    rayon::scope(|scope| {
+        for (dir, name) in matched {
+            let tx = tx.clone();
+            let cache = cache.clone();
+            let new_targets = new_targets.clone();
+            scope.spawn(move |_| {
+                let target = measure_target(&dir, &name, &cache);
+                new_targets.lock().unwrap().push(target.clone());
+                let _ = tx.send(target);
+            });
+        }
     });
+
+    let targets = new_targets.lock().unwrap().clone();
+    if let Ok(mut guard) = cache.lock() {
+        guard.insert_snapshot(
+            &key,
+            RootSnapshot {
+                fingerprint,
+                patterns: effective_patterns,
+                targets: targets
+                    .into_iter()
+                    .map(|t| StoredTarget {
+                        path: t.path,
+                        folder_name: t.folder_name,
+                        size_bytes: t.size_bytes,
+                        file_count: t.file_count,
+                        last_modified: t.last_modified,
+                    })
+                    .collect(),
+            },
+        );
+    }
+}
+
+/// Prunes child entries that should not be descended into: matched targets,
+/// virtual environments and no-junk directories.
+fn prune_children(patterns: &HashSet<String>, children: &mut [jwalk::Result<jwalk::DirEntry<((), ())>>]) {
+    for entry in children.iter_mut().flatten() {
+        if entry.file_type.is_dir() {
+            let name = entry.file_name.to_string_lossy();
+            let is_venv = is_venv_name(&name);
+            if patterns.contains(name.as_ref())
+                || is_venv
+                || NO_JUNK_DIRS.contains(&name.as_ref())
+                || is_protected(&entry.path())
+            {
+                entry.read_children_path = None;
+            }
+        }
+    }
 }
 
 /// Measures total size, file count and newest modification time under `dir`,
@@ -323,5 +430,8 @@ fn update_latest(latest: &Mutex<Option<SystemTime>>, mtime: SystemTime) {
 
 fn format_time(time: SystemTime) -> String {
     let dt: chrono::DateTime<chrono::Local> = time.into();
-    dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    // Nanos precision: the size cache compares the stored `dir_mtime` against
+    // a freshly formatted one, so both sides must agree exactly or the cache
+    // would never hit.
+    dt.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
 }
