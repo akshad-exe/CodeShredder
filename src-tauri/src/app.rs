@@ -26,7 +26,11 @@ pub fn run() -> Result<()> {
             crate::commands::trash::list_trash,
             crate::commands::trash::restore_trash,
             crate::commands::trash::purge_trash,
-            crate::commands::trash::empty_trash
+            crate::commands::trash::empty_trash,
+            crate::commands::wsl::list_wsl_distros,
+            crate::commands::wsl::wsl_shutdown,
+            crate::commands::wsl::wsl_compact,
+            crate::commands::wsl::wsl_run_cleanup
         ])
         .build(tauri::generate_context!())?;
 

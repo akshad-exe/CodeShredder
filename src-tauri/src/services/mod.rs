@@ -3,3 +3,4 @@
 pub mod history;
 pub mod safety;
 pub mod scanner;
+pub mod wsl;
