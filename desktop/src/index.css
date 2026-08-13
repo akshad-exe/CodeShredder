@@ -13,6 +13,8 @@
     --text-muted: #8B93A7;
     --text-faint: #596070;
     --accent: #168BFF;
+    --primary: #168BFF;
+    --primary-foreground: #FFFFFF;
     --danger: #FF4D4F;
     --safe: #3DDC97;
     --warning: #FFB020;

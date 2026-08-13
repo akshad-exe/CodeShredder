@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Film, FolderOpen, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_VIDEOS } from '@/components/explore/sampleData'
+import { Checkbox } from '@/components/ui/checkbox'
 import { isTauri, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
@@ -101,7 +102,7 @@ export function Videos() {
   }
 
   return (
-    <div className="w-full px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Videos</h1>
@@ -198,11 +199,11 @@ export function Videos() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isSelected}
-                  onChange={() => toggle(video.id)}
-                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  onCheckedChange={() => toggle(video.id)}
+                  className="shrink-0 border-border bg-background"
+                  aria-label={`Select ${video.name}`}
                 />
                 <span className={`grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-panel-2 ${VIDEO_EXT[video.ext] ?? 'text-muted'}`}>
                   <Film className="h-4 w-4" />

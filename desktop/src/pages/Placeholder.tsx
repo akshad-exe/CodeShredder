@@ -7,7 +7,7 @@ interface PlaceholderProps {
 
 export function Placeholder({ title, description }: PlaceholderProps) {
   return (
-    <div className="w-full px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 py-8">
       <h1 className="text-2xl font-bold text-text">{title}</h1>
       <p className="mt-1 text-sm text-muted">{description}</p>
 

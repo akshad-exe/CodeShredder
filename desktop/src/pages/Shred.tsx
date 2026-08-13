@@ -75,7 +75,7 @@ export function Shred() {
   }
 
   return (
-    <div className="w-full px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 py-8">
       <div className="space-y-6">
         <ShredHeader onScan={startScan} onStop={stopScan} />
 
