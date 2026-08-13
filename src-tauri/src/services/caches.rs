@@ -151,6 +151,84 @@ fn cache_specs() -> Vec<CacheSpec> {
         CacheSafety::Safe,
         candidates(&[home(".composer/cache"), home("AppData/Roaming/Composer/cache")]),
     );
+    push(
+        &mut specs,
+        "user-temp",
+        "user temp files",
+        "System",
+        CacheSafety::Safe,
+        candidates(&[Some(std::env::temp_dir()), local("Temp")]),
+    );
+    push(
+        &mut specs,
+        "windows-temp",
+        "Windows temp files",
+        "System",
+        CacheSafety::Medium,
+        candidates(&[
+            winvar("WINDIR", "Temp"),
+            Some(PathBuf::from(r"C:\Windows\Temp")),
+        ]),
+    );
+    push(
+        &mut specs,
+        "windows-update",
+        "Windows Update cache",
+        "System",
+        CacheSafety::Medium,
+        candidates(&[
+            winvar("WINDIR", r"SoftwareDistribution\Download"),
+            Some(PathBuf::from(r"C:\Windows\SoftwareDistribution\Download")),
+        ]),
+    );
+    push(
+        &mut specs,
+        "prefetch",
+        "Windows prefetch",
+        "System",
+        CacheSafety::Medium,
+        candidates(&[winvar("WINDIR", "Prefetch"), Some(PathBuf::from(r"C:\Windows\Prefetch"))]),
+    );
+    push(
+        &mut specs,
+        "inet-cache",
+        "Internet cache",
+        "System",
+        CacheSafety::Safe,
+        candidates(&[local(r"Microsoft\Windows\INetCache")]),
+    );
+    push(
+        &mut specs,
+        "crash-dumps",
+        "crash dumps",
+        "System",
+        CacheSafety::Safe,
+        candidates(&[local("CrashDumps")]),
+    );
+    push(
+        &mut specs,
+        "d3d-shader-cache",
+        "D3D shader cache",
+        "System",
+        CacheSafety::Safe,
+        candidates(&[local("D3DSCache")]),
+    );
+    push(
+        &mut specs,
+        "chrome-cache",
+        "Chrome cache",
+        "Browsers",
+        CacheSafety::Safe,
+        candidates(&[local(r"Google\Chrome\User Data\Default\Cache")]),
+    );
+    push(
+        &mut specs,
+        "edge-cache",
+        "Edge cache",
+        "Browsers",
+        CacheSafety::Safe,
+        candidates(&[local(r"Microsoft\Edge\User Data\Default\Cache")]),
+    );
 
     specs
 }
@@ -176,6 +254,18 @@ fn local(rel: &str) -> Option<PathBuf> {
 
 #[cfg(not(target_os = "windows"))]
 fn local(_rel: &str) -> Option<PathBuf> {
+    None
+}
+
+/// Joins a Windows env-var-relative path (e.g. `%WINDIR%`). Always `None` on
+/// other platforms.
+#[cfg(target_os = "windows")]
+fn winvar(name: &str, rel: &str) -> Option<PathBuf> {
+    std::env::var_os(name).map(|root| PathBuf::from(root).join(rel))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn winvar(_name: &str, _rel: &str) -> Option<PathBuf> {
     None
 }
 
