@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FolderX, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
+import { FolderOpen, FolderX, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_CACHES } from '@/components/explore/sampleData'
-import { isTauri, listCaches } from '@/lib/ipc'
+import { Checkbox } from '@/components/ui/checkbox'
+import { isTauri, listCaches, revealFolder } from '@/lib/ipc'
 import type { CacheEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
-
-const CATEGORIES = ['All categories', 'Node.js', 'Python', 'Rust', 'Java', '.NET', 'Go', 'PHP']
 
 const SAFETY_CLASS: Record<CacheEntry['safety'], string> = {
   safe: 'bg-safe/10 text-safe',
@@ -19,7 +18,6 @@ export function Caches() {
   const [entries, setEntries] = useState<CacheEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('All categories')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [cleaning, setCleaning] = useState(false)
   const preview = !isTauri()
@@ -52,13 +50,15 @@ export function Caches() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return entries.filter((c) => {
-      const matchesCategory = category === 'All categories' || c.category === category
-      const matchesQuery =
-        !q || c.name.toLowerCase().includes(q) || c.path.toLowerCase().includes(q)
-      return matchesCategory && matchesQuery
-    })
-  }, [entries, query, category])
+    return [...entries]
+      .filter(
+        (c) =>
+          !q ||
+          c.name.toLowerCase().includes(q) ||
+          c.path.toLowerCase().includes(q),
+      )
+      .sort((a, b) => b.sizeBytes - a.sizeBytes)
+  }, [entries, query])
 
   const totalSize = entries.reduce((acc, c) => acc + c.sizeBytes, 0)
   const selectedSize = [...selected].reduce((acc, id) => {
@@ -73,6 +73,20 @@ export function Caches() {
       else next.add(id)
       return next
     })
+
+  const handleReveal = async (path: string) => {
+    if (!isTauri()) {
+      toast.info('Reveal in folder works in the desktop app')
+      return
+    }
+    try {
+      await revealFolder(path)
+    } catch (err) {
+      toast.error('Could not open folder', {
+        description: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
 
   const handleClean = async (id: string) => {
     if (sample) {
@@ -105,13 +119,13 @@ export function Caches() {
   }
 
   return (
-    <div className="w-full px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Caches</h1>
           <p className="mt-1 text-sm text-muted">
-            Global Deep Clean — clear system-wide package manager caches that
-            can trap hundreds of gigabytes.
+            Global Deep Clean — clear system-wide package manager, browser and
+            temp caches that can trap hundreds of gigabytes.
           </p>
           {sample && (
             <span className="mt-2 inline-block rounded-full border border-border bg-panel px-2.5 py-0.5 text-[11px] text-faint">
@@ -167,17 +181,6 @@ export function Caches() {
               className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
             />
           </div>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
         </div>
       )}
 
@@ -195,17 +198,13 @@ export function Caches() {
         <div className="mt-4">
           <EmptyState
             icon={FolderX}
-            title="No caches yet"
-            description="This page needs the v1.0 caches backend. Once it ships, known package-manager, browser and system caches will appear here ready to clean."
+            title="No caches found"
+            description="Nothing to clean yet — package-manager, browser and system temp caches on your machine will appear here once found."
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="mt-4">
-          <EmptyState
-            icon={Search}
-            title="Nothing matches"
-            description="Try a different filter or search term."
-          />
+          <EmptyState icon={Search} title="Nothing matches" description="Try a different search term." />
         </div>
       ) : (
         <div className="mt-4 space-y-2.5">
@@ -214,15 +213,15 @@ export function Caches() {
             return (
               <div
                 key={entry.id}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                className={`flex items-center gap-4 rounded-lg border px-4 py-3 transition-colors ${
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isSelected}
-                  onChange={() => toggle(entry.id)}
-                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  onCheckedChange={() => toggle(entry.id)}
+                  className="shrink-0 border-border bg-background"
+                  aria-label={`Select ${entry.name}`}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2.5">
@@ -243,15 +242,25 @@ export function Caches() {
                   </p>
                   <p className="text-[11px] text-faint">{entry.category}</p>
                 </div>
-                <button
-                  type="button"
-                  disabled={cleaning}
-                  className="btn-ghost !p-2 text-muted hover:text-danger"
-                  title={`Clean ${entry.name}`}
-                  onClick={() => void handleClean(entry.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    title={`Reveal ${entry.path}`}
+                    className="btn-ghost !p-2 text-muted hover:text-text"
+                    onClick={() => void handleReveal(entry.path)}
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cleaning}
+                    title={`Clean ${entry.name}`}
+                    className="btn-ghost !p-2 text-muted hover:text-danger"
+                    onClick={() => void handleClean(entry.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             )
           })}
