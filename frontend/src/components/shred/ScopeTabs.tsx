@@ -1,11 +1,26 @@
 import { Plus, X } from 'lucide-react'
 import { useCleanupStore } from '@/store/cleanupStore'
+import { open } from '@tauri-apps/plugin-dialog'
 
 export function ScopeTabs() {
   const scanRoots = useCleanupStore((s) => s.scanRoots)
+  const addScanRoot = useCleanupStore((s) => s.addScanRoot)
   const removeScanRoot = useCleanupStore((s) => s.removeScanRoot)
   const scanStatus = useCleanupStore((s) => s.scanStatus)
   const locked = scanStatus === 'scanning'
+
+  const handleAddFolder = async () => {
+    if (locked) return
+    const selected = await open({
+      directory: true,
+      multiple: true,
+      title: 'Select folders to scan',
+    })
+    if (selected) {
+      const paths = Array.isArray(selected) ? selected : [selected]
+      paths.forEach((p) => addScanRoot(p))
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -29,8 +44,8 @@ export function ScopeTabs() {
       ))}
       <button
         type="button"
-        disabled
-        title="Folder picking arrives with the real scanner (v0.2)"
+        disabled={locked}
+        onClick={handleAddFolder}
         className="btn-secondary !px-3 !py-1 !text-xs"
       >
         <Plus className="h-3 w-3" />

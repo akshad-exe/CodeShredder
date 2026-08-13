@@ -1,8 +1,11 @@
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Trash2 } from 'lucide-react'
 import type { CleanupTarget, SafetyLevel } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cn } from '@/lib/utils'
+import { Checkbox } from '@/components/ui/checkbox'
+import { cleanupTargets, isTauri, revealFolder } from '@/lib/tauri'
+import { toast } from '@/components/ui/sonner'
 
 const SAFETY_BADGE: Record<SafetyLevel, string> = {
   safe: 'badge-safe',
@@ -24,6 +27,45 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
   const selected = selectedTargets.has(target.id)
   const barWidth = Math.min(100, (target.sizeBytes / totalReclaimable) * 100)
 
+  const handleDelete = async () => {
+    const store = useCleanupStore.getState()
+    if (!isTauri()) {
+      store.setCleanupStatus('complete')
+      store.setCleanupSummary({ total: 1, trashed: 1, failed: 0, errors: [] })
+      store.removeTargets([target.id])
+      toast.success(`Moved ${target.folderName} to Trash`)
+      return
+    }
+    store.setCleanupStatus('cleaning')
+    store.setCleanupSummary(null)
+    try {
+      const summary = await cleanupTargets([target.path])
+      store.setCleanupStatus(summary.failed > 0 ? 'error' : 'complete')
+      store.setCleanupSummary(summary)
+      store.removeTargets([target.id])
+      if (summary.failed > 0) {
+        toast.error(`Couldn't move ${target.folderName} to Trash`, {
+          description: summary.errors[0]?.error,
+        })
+      } else {
+        toast.success(`Moved ${target.folderName} to Trash`)
+      }
+    } catch (err) {
+      store.setCleanupStatus('error')
+      store.setCleanupSummary({
+        total: 1,
+        trashed: 0,
+        failed: 1,
+        errors: [
+          { path: target.path, error: err instanceof Error ? err.message : String(err) },
+        ],
+      })
+      toast.error(`Couldn't move ${target.folderName} to Trash`, {
+        description: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -33,17 +75,17 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
           : 'border-border bg-panel hover:border-border/70',
       )}
     >
-      <input
-        type="checkbox"
+      <Checkbox
         checked={selected}
-        onChange={() => toggleTargetSelection(target.id)}
-        className="h-4 w-4 shrink-0 cursor-pointer rounded border-border accent-accent"
+        onCheckedChange={() => toggleTargetSelection(target.id)}
+        className="shrink-0 border-border bg-background"
+        aria-label={`Select ${target.path}`}
       />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2.5">
-          <span className="truncate text-sm font-semibold text-text">
-            {target.projectName}
+          <span className="truncate font-mono text-sm font-semibold text-text" title={target.path}>
+            {target.displayPath}
           </span>
           <span className="shrink-0 font-mono text-xs text-muted">
             {target.folderName}
@@ -76,14 +118,24 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
         <p className="text-[11px] text-faint">{SAFETY_LABEL[target.safetyLevel]}</p>
       </div>
 
-      <button
-        type="button"
-        title={`Open ${target.path}`}
-        className="btn-ghost !p-2 text-muted hover:text-text"
-        onClick={() => window.open(`file://${target.path}`)}
-      >
-        <FolderOpen className="h-4 w-4" />
-      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          title={`Move ${target.folderName} to Trash`}
+          className="btn-ghost !p-2 text-muted hover:text-danger"
+          onClick={() => void handleDelete()}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          title={`Reveal ${target.path}`}
+          className="btn-ghost !p-2 text-muted hover:text-text"
+          onClick={() => void revealFolder(target.path)}
+        >
+          <FolderOpen className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   )
 }

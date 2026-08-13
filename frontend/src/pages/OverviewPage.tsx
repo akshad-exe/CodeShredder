@@ -63,7 +63,7 @@ export function OverviewPage({ onNavigate }: { onNavigate: (p: PageId) => void }
           icon={HardDrive}
           label="Largest target"
           value={biggest ? formatBytes(biggest.sizeBytes) : '—'}
-          sub={biggest ? `${biggest.projectName}/${biggest.folderName}` : 'Scan to discover'}
+          sub={biggest ? biggest.displayPath : 'Scan to discover'}
           tone="bg-warning/10 text-warning"
         />
         <StatCard

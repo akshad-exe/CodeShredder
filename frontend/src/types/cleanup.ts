@@ -3,6 +3,7 @@ export type SafetyLevel = 'safe' | 'medium' | 'dangerous'
 export type CleanupTarget = {
   id: string
   path: string
+  displayPath: string
   projectName: string
   folderName: string
   category: string
@@ -26,15 +27,14 @@ export type ScanResult = {
 }
 
 export type CleanInput = {
-  targetIds: string[]
-  mode: 'dry-run' | 'trash' | 'permanent'
+  paths: string[]
 }
 
 export type CleanSummary = {
-  cleaned: number
+  total: number
+  trashed: number
   failed: number
-  totalReclaimed: number
-  errors: { id: string; error: string }[]
+  errors: { path: string; error: string }[]
 }
 
 export type AppSettings = {
@@ -50,4 +50,21 @@ export type WslDistro = {
   state: 'Running' | 'Stopped'
   vhdxPath?: string
   sizeBytes?: number
+}
+
+export type TrashItem = {
+  id: string
+  name: string
+  originalPath: string
+  originalParent: string
+  timeDeleted: number
+  sizeBytes?: number | null
+  entries?: number | null
+}
+
+export type TrashResult = {
+  total: number
+  succeeded: number
+  failed: number
+  errors: string[]
 }
