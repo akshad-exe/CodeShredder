@@ -30,7 +30,6 @@ pub const EXTENDED_PATTERNS: &[&str] = &[
     "venv",
     // JS/TS frameworks
     ".svelte-kit",
-    ".vercel",
     ".output",
     ".astro",
     ".docusaurus",
@@ -54,8 +53,6 @@ pub const EXTENDED_PATTERNS: &[&str] = &[
     "cmake-build-debug",
     "cmake-build-release",
     ".obj",
-    // Containers
-    ".docker",
     // Gatsby
     ".gatsby",
 ];
@@ -83,7 +80,6 @@ pub const ALL_PATTERNS: &[&str] = &[
     ".venv",
     "venv",
     ".svelte-kit",
-    ".vercel",
     ".output",
     ".astro",
     ".docusaurus",
@@ -102,7 +98,6 @@ pub const ALL_PATTERNS: &[&str] = &[
     "cmake-build-debug",
     "cmake-build-release",
     ".obj",
-    ".docker",
     ".gatsby",
 ];
 
@@ -114,9 +109,9 @@ pub const ALL_PATTERNS: &[&str] = &[
 pub fn category_for(folder_name: &str) -> &str {
     match folder_name {
         // Web & JavaScript ecosystem
-        "node_modules" | ".next" | ".nuxt" | ".turbo" | ".vercel" | ".output" | ".svelte-kit"
-        | ".astro" | ".docusaurus" | ".parcel-cache" | ".gatsby" | "dist" | "build" | "out"
-        | ".cache" | ".eslintcache" => "web",
+        "node_modules" | ".next" | ".nuxt" | ".turbo" | ".output" | ".svelte-kit" | ".astro"
+        | ".docusaurus" | ".parcel-cache" | ".gatsby" | "dist" | "build" | "out" | ".cache"
+        | ".eslintcache" => "web",
         // Python ecosystem
         "__pycache__" | ".pytest_cache" | ".mypy_cache" | ".ruff_cache" | ".tox" => "python",
         // Systems & compiled languages (Rust, Zig, C++, .NET)

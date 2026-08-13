@@ -21,7 +21,6 @@ const SAFE_PATTERNS: &[&str] = &[
     ".parcel-cache",
     ".turbo",
     ".svelte-kit",
-    ".vercel",
     ".output",
     ".astro",
     ".docusaurus",
@@ -40,7 +39,6 @@ const SAFE_PATTERNS: &[&str] = &[
     "cmake-build-debug",
     "cmake-build-release",
     ".obj",
-    ".docker",
     ".gatsby",
 ];
 
