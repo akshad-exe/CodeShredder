@@ -1,5 +1,6 @@
 //! Business-logic services.
 
+pub mod caches;
 pub mod history;
 pub mod safety;
 pub mod scanner;
