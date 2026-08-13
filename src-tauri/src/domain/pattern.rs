@@ -14,7 +14,8 @@ pub const DEFAULT_PATTERNS: &[&str] = &[
     ".turbo",
 ];
 
-/// Extended patterns including package manager caches (can be enabled in settings).
+/// Extended patterns including package manager caches and less-common
+/// framework/build outputs (can be enabled in settings).
 pub const EXTENDED_PATTERNS: &[&str] = &[
     // Package manager caches
     ".npm",
@@ -27,7 +28,36 @@ pub const EXTENDED_PATTERNS: &[&str] = &[
     "vendor",
     ".venv",
     "venv",
-    "env",
+    // JS/TS frameworks
+    ".svelte-kit",
+    ".vercel",
+    ".output",
+    ".astro",
+    ".docusaurus",
+    // Python ecosystem
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    // Mobile & native
+    "DerivedData",
+    ".expo",
+    ".dart_tool",
+    // Generic build outputs, bundlers & linters
+    "out",
+    ".cache",
+    ".eslintcache",
+    // Zig
+    "zig-out",
+    ".zig-cache",
+    // C/C++ & .NET
+    "CMakeFiles",
+    "cmake-build-debug",
+    "cmake-build-release",
+    ".obj",
+    // Containers
+    ".docker",
+    // Gatsby
+    ".gatsby",
 ];
 
 /// All known patterns combined.
@@ -52,32 +82,56 @@ pub const ALL_PATTERNS: &[&str] = &[
     "vendor",
     ".venv",
     "venv",
-    "env",
+    ".svelte-kit",
+    ".vercel",
+    ".output",
+    ".astro",
+    ".docusaurus",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".tox",
+    "DerivedData",
+    ".expo",
+    ".dart_tool",
+    "out",
+    ".cache",
+    ".eslintcache",
+    "zig-out",
+    ".zig-cache",
+    "CMakeFiles",
+    "cmake-build-debug",
+    "cmake-build-release",
+    ".obj",
+    ".docker",
+    ".gatsby",
 ];
 
-/// Maps a matched folder name to a stable category key used for badges,
+/// Maps a matched folder name to an ecosystem group key used for badges,
 /// colours and legends in the frontend.
+///
+/// Groups keep the UI compact: rather than a colour per tool, every target
+/// buckets into one of Web / Python / Systems / Mobile / Package caches.
 pub fn category_for(folder_name: &str) -> &str {
     match folder_name {
-        "node_modules" => "node_modules",
-        ".next" => "next",
-        ".nuxt" => "nuxt",
-        "dist" => "dist",
-        "build" => "build",
-        "target" => "target",
-        "__pycache__" => "python",
-        ".pytest_cache" => "pytest",
-        ".parcel-cache" => "parcel",
-        ".turbo" => "turbo",
-        ".npm" => "npm_cache",
-        ".pnpm-store" => "pnpm_cache",
-        ".yarn" => "yarn_cache",
-        ".bun" => "bun_cache",
-        ".cargo" => "cargo_cache",
-        ".gradle" => "gradle_cache",
-        "Pods" => "pods",
-        "vendor" => "vendor",
-        other if is_venv_name(other) => "venv",
+        // Web & JavaScript ecosystem
+        "node_modules" | ".next" | ".nuxt" | ".turbo" | ".vercel" | ".output" | ".svelte-kit"
+        | ".astro" | ".docusaurus" | ".parcel-cache" | ".gatsby" | "dist" | "build" | "out"
+        | ".cache" | ".eslintcache" => "web",
+        // Python ecosystem
+        "__pycache__" | ".pytest_cache" | ".mypy_cache" | ".ruff_cache" | ".tox" => "python",
+        // Systems & compiled languages (Rust, Zig, C++, .NET)
+        "target"
+        | ".zig-cache"
+        | "zig-out"
+        | "CMakeFiles"
+        | "cmake-build-debug"
+        | "cmake-build-release"
+        | ".obj" => "systems",
+        // Mobile & native (iOS / Android)
+        "DerivedData" | ".gradle" | ".dart_tool" | "Pods" | ".expo" => "mobile",
+        // Package manager caches (npm, yarn, pnpm, bun, cargo, composer)
+        ".npm" | ".pnpm-store" | ".yarn" | ".bun" | ".cargo" | "vendor" => "package_caches",
+        other if is_venv_name(other) => "python",
         other => other,
     }
 }
