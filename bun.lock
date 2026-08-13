@@ -8,7 +8,7 @@
         "@tauri-apps/cli": "^2.0.0",
       },
     },
-    "frontend": {
+    "desktop": {
       "name": "codeshredder-frontend",
       "version": "0.1.0",
       "dependencies": {
@@ -449,7 +449,7 @@
 
     "code-block-writer": ["code-block-writer@13.0.3", "", {}, "sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg=="],
 
-    "codeshredder-frontend": ["codeshredder-frontend@workspace:frontend"],
+    "codeshredder-frontend": ["codeshredder-frontend@workspace:desktop"],
 
     "commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
 
