@@ -21,7 +21,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-process = "2"
-tauri-plugin-os-info = "2"
+tauri-plugin-os = "2"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -38,9 +38,12 @@ futures = "0.3"
 
 # File system
 walkdir = "2"
-jwalk = { version = "0.8", features = ["rayon", "ignore"] }
+jwalk = "0.8"
 ignore = "0.4"
 directories = "5"
+
+# Parallelism
+rayon = "1"
 
 # Trash
 trash = "5"

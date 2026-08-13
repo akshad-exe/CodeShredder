@@ -1,0 +1,47 @@
+//! Scan input and result models shared with the frontend.
+
+use serde::{Deserialize, Serialize};
+
+/// Safety classification for a cleanup target.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SafetyLevel {
+    Safe,
+    Medium,
+    Dangerous,
+}
+
+/// Input to a scan run.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanInput {
+    pub roots: Vec<String>,
+    pub patterns: Vec<String>,
+}
+
+/// A single discovered cleanup target.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanTarget {
+    pub id: String,
+    pub path: String,
+    pub display_path: String,
+    pub project_name: String,
+    pub folder_name: String,
+    pub category: String,
+    pub size_bytes: u64,
+    pub file_count: u64,
+    pub last_modified: Option<String>,
+    pub safety_level: SafetyLevel,
+    pub selected: bool,
+}
+
+/// Full result of a scan run.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanResult {
+    pub targets: Vec<ScanTarget>,
+    pub total_size: u64,
+    pub total_count: u64,
+    pub scan_duration: f64,
+}

@@ -1,5 +1,5 @@
 //! CodeShredder - Fast, safe desktop cleanup for developers
-//! 
+//!
 //! This is the main library crate for the Tauri application.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
