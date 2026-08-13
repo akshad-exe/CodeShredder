@@ -69,6 +69,20 @@ export type WslDistro = {
   sizeBytes?: number
 }
 
+export type WslCompactResult = {
+  distro: string
+  beforeBytes?: number
+  afterBytes?: number
+  freedBytes?: number
+  error?: string
+}
+
+export type WslCleanupResult = {
+  distro: string
+  success: boolean
+  output: string
+}
+
 export type TrashItem = {
   id: string
   name: string

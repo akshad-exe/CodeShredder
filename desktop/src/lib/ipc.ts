@@ -8,6 +8,9 @@ import type {
   CleanupHistoryEntry,
   TrashItem,
   TrashResult,
+  WslDistro,
+  WslCompactResult,
+  WslCleanupResult,
 } from '@/types/cleanup'
 
 /** True when the frontend is running inside the Tauri webview. */
@@ -65,4 +68,27 @@ export async function purgeTrash(ids: string[]): Promise<TrashResult> {
 /** Permanently deletes every item in the trash. */
 export async function emptyTrash(): Promise<TrashResult> {
   return invoke<TrashResult>('empty_trash')
+}
+
+/** Lists WSL distros with their running state and virtual disk details. */
+export async function listWslDistros(): Promise<WslDistro[]> {
+  return invoke<WslDistro[]>('list_wsl_distros')
+}
+
+/** Shuts down every running WSL distro. */
+export async function wslShutdown(): Promise<void> {
+  return invoke('wsl_shutdown')
+}
+
+/** Compacts a distro's virtual disk and reports the reclaimed space. */
+export async function wslCompact(distro: string): Promise<WslCompactResult> {
+  return invoke<WslCompactResult>('wsl_compact', { distro })
+}
+
+/** Runs a cleanup command inside a distro and returns its output. */
+export async function wslRunCleanup(
+  distro: string,
+  commands: string,
+): Promise<WslCleanupResult> {
+  return invoke<WslCleanupResult>('wsl_run_cleanup', { distro, commands })
 }
