@@ -57,6 +57,7 @@ const defaultSettings: AppSettings = {
   deleteMode: 'trash',
   confirmDangerous: true,
   confirmMedium: true,
+  ignoreRules: [],
 }
 
 export const useCleanupStore = create<CleanupState>()(
@@ -203,7 +204,14 @@ export const useCleanupStore = create<CleanupState>()(
         enabledPatterns: state.enabledPatterns,
       }),
       merge: (persisted, current) => {
-        const merged = { ...current, ...(persisted as object) }
+        const p = persisted as Partial<CleanupState>
+        // Always start from the current defaults so a settings object saved by
+        // an older version (missing newer fields) still gets them.
+        const merged = {
+          ...current,
+          ...p,
+          settings: { ...defaultSettings, ...(p.settings ?? {}) },
+        }
         // Drop any patterns that are no longer known (e.g. the old `env`
         // pattern) so stale localStorage values never reach the scanner.
         const known = new Set(ALL_PATTERNS)

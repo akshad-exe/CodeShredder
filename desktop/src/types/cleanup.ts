@@ -17,6 +17,8 @@ export type CleanupTarget = {
 export type ScanInput = {
   roots: string[]
   patterns: string[]
+  /** Folder names or path fragments the scan must skip entirely. */
+  ignore?: string[]
 }
 
 export type ScanResult = {
@@ -56,6 +58,8 @@ export type AppSettings = {
   deleteMode: CleanMode
   confirmDangerous: boolean
   confirmMedium: boolean
+  /** Folder names or path fragments skipped by every scan. */
+  ignoreRules: string[]
 }
 
 export type WslDistro = {

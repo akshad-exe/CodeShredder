@@ -76,6 +76,7 @@ export function useScan() {
       await scanDevFolders({
         roots: store.scanRoots,
         patterns: store.enabledPatterns,
+        ignore: store.settings.ignoreRules,
       })
     } catch (err) {
       store.setScanStatus('error')
