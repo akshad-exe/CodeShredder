@@ -12,6 +12,9 @@ pub enum Error {
     #[error("System time error: {0}")]
     SystemTime(#[from] std::time::SystemTimeError),
 
+    #[error("Serialization error: {0}")]
+    Serde(#[from] serde_json::Error),
+
     #[error("Tauri error: {0}")]
     Tauri(#[from] tauri::Error),
 

@@ -13,7 +13,8 @@ use std::time::{Instant, SystemTime};
 use uuid::Uuid;
 
 use crate::domain::pattern::{category_for, is_venv_name, DEFAULT_PATTERNS};
-use crate::domain::scan::{SafetyLevel, ScanInput, ScanTarget};
+use crate::domain::scan::{ScanInput, ScanTarget};
+use crate::services::safety::classify;
 
 /// Finds known developer-junk folders inside the given scan roots.
 pub struct ScannerEngine;
@@ -107,7 +108,7 @@ fn measure_target(dir: &Path, folder_name: &str) -> ScanTarget {
         size_bytes: size.load(Ordering::Relaxed),
         file_count: count.load(Ordering::Relaxed),
         last_modified: latest.lock().ok().and_then(|guard| *guard).map(format_time),
-        safety_level: SafetyLevel::Safe,
+        safety_level: classify(folder_name, dir),
         selected: false,
     }
 }
@@ -160,9 +161,9 @@ fn measure_under(
 }
 
 /// True when the user has opted into cleaning virtual environments, i.e. one of
-/// the venv family patterns (`.venv`, `venv`, `env`) is enabled.
+/// the venv family patterns (`.venv` or `venv`) is enabled.
 fn venv_enabled(patterns: &HashSet<String>) -> bool {
-    patterns.contains(".venv") || patterns.contains("venv") || patterns.contains("env")
+    patterns.contains(".venv") || patterns.contains("venv")
 }
 
 /// Builds the effective pattern set, defaulting when the input is empty.

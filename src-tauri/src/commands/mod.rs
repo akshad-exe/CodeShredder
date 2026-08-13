@@ -1,5 +1,6 @@
 //! Frontend-facing Tauri commands.
 
-pub mod cleanup;
+pub mod clean;
+pub mod history;
 pub mod scan;
 pub mod trash;
