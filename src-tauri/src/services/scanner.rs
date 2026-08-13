@@ -60,6 +60,7 @@ impl ScannerEngine {
         CANCEL_REQUESTED.store(false, Ordering::Relaxed);
 
         let patterns: Arc<HashSet<String>> = Arc::new(build_patterns(input));
+        let ignore: Arc<Vec<String>> = Arc::new(build_ignore(input));
         let cache = Arc::new(Mutex::new(ScanCache::load()));
 
         rayon::scope(|scope| {
@@ -68,8 +69,9 @@ impl ScannerEngine {
                 if root.is_dir() {
                     let tx = tx.clone();
                     let patterns = patterns.clone();
+                    let ignore = ignore.clone();
                     let cache = cache.clone();
-                    scope.spawn(move |_| walk_root(&root, patterns, cache, tx));
+                    scope.spawn(move |_| walk_root(&root, patterns, ignore, cache, tx));
                 }
             }
         });
@@ -93,6 +95,7 @@ impl ScannerEngine {
 fn walk_root(
     root: &Path,
     patterns: Arc<HashSet<String>>,
+    ignore: Arc<Vec<String>>,
     cache: Arc<Mutex<ScanCache>>,
     tx: Sender<ScanTarget>,
 ) {
@@ -100,8 +103,9 @@ fn walk_root(
         .skip_hidden(false)
         .process_read_dir({
             let patterns = patterns.clone();
+            let ignore = ignore.clone();
             move |_depth, _path, _state, children| {
-                prune_children(&patterns, children);
+                prune_children(&patterns, &ignore, children);
             }
         });
 
@@ -134,7 +138,8 @@ fn walk_root(
         }
 
         let name = entry.file_name.to_string_lossy().into_owned();
-        if patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(&patterns)) {
+        let matches = patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(&patterns));
+        if matches && !is_ignored(&entry.path(), &name, &ignore) {
             matched.push((entry.path(), name));
         }
     }
@@ -144,11 +149,16 @@ fn walk_root(
     let key = root.to_string_lossy().into_owned();
     let mut effective_patterns: Vec<String> = patterns.iter().cloned().collect();
     effective_patterns.sort_unstable();
+    let mut effective_ignore: Vec<String> = ignore.as_ref().clone();
+    effective_ignore.sort_unstable();
 
     // Option A: if nothing under the root changed since the last scan, replay
     // the previously discovered targets and skip the measurement work entirely.
     if let Some(snapshot) = cache.lock().ok().and_then(|g| g.snapshot(&key).cloned()) {
-        if snapshot.patterns == effective_patterns && snapshot.fingerprint == fingerprint {
+        if snapshot.patterns == effective_patterns
+            && snapshot.ignore == effective_ignore
+            && snapshot.fingerprint == fingerprint
+        {
             for stored in &snapshot.targets {
                 if CANCEL_REQUESTED.load(Ordering::Relaxed) {
                     break;
@@ -194,6 +204,7 @@ fn walk_root(
             RootSnapshot {
                 fingerprint,
                 patterns: effective_patterns,
+                ignore: effective_ignore,
                 targets: targets
                     .into_iter()
                     .map(|t| StoredTarget {
@@ -210,8 +221,12 @@ fn walk_root(
 }
 
 /// Prunes child entries that should not be descended into: matched targets,
-/// virtual environments and no-junk directories.
-fn prune_children(patterns: &HashSet<String>, children: &mut [jwalk::Result<jwalk::DirEntry<((), ())>>]) {
+/// virtual environments, ignored folders and no-junk directories.
+fn prune_children(
+    patterns: &HashSet<String>,
+    ignore: &[String],
+    children: &mut [jwalk::Result<jwalk::DirEntry<((), ())>>],
+) {
     for entry in children.iter_mut().flatten() {
         if entry.file_type.is_dir() {
             let name = entry.file_name.to_string_lossy();
@@ -219,12 +234,27 @@ fn prune_children(patterns: &HashSet<String>, children: &mut [jwalk::Result<jwal
             if patterns.contains(name.as_ref())
                 || is_venv
                 || NO_JUNK_DIRS.contains(&name.as_ref())
+                || is_ignored(&entry.path(), &name, ignore)
                 || is_protected(&entry.path())
             {
                 entry.read_children_path = None;
             }
         }
     }
+}
+
+/// True when a directory is covered by an ignore rule: either its name equals
+/// a name rule (case-insensitive), or its path contains a rule that includes a
+/// path separator (compared as a normalized path substring).
+fn is_ignored(dir: &Path, name: &str, ignore: &[String]) -> bool {
+    ignore.iter().any(|rule| {
+        if rule.contains('/') || rule.contains('\\') {
+            let dir_norm = dir.to_string_lossy().replace('\\', "/").to_lowercase();
+            dir_norm.contains(&rule.to_lowercase())
+        } else {
+            name.eq_ignore_ascii_case(rule)
+        }
+    })
 }
 
 /// Measures total size, file count and newest modification time under `dir`,
@@ -368,6 +398,16 @@ fn build_patterns(input: &ScanInput) -> HashSet<String> {
         patterns.extend(DEFAULT_PATTERNS.iter().map(|p| (*p).to_owned()));
     }
     patterns
+}
+
+/// Builds the effective ignore rules, trimming and dropping empty entries.
+fn build_ignore(input: &ScanInput) -> Vec<String> {
+    input
+        .ignore
+        .iter()
+        .map(|r| r.trim().to_owned())
+        .filter(|r| !r.is_empty())
+        .collect()
 }
 
 /// Expands a leading `~/` to the user's home directory.

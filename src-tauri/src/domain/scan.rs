@@ -17,6 +17,11 @@ pub enum SafetyLevel {
 pub struct ScanInput {
     pub roots: Vec<String>,
     pub patterns: Vec<String>,
+    /// Folder names or path fragments the scan must skip entirely. A rule with
+    /// a path separator is matched as a substring of the full path; any other
+    /// rule matches a folder name (case-insensitive).
+    #[serde(default)]
+    pub ignore: Vec<String>,
 }
 
 /// A single discovered cleanup target.

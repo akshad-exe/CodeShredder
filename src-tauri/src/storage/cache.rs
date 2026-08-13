@@ -54,6 +54,12 @@ pub struct RootSnapshot {
     /// the pattern set is unchanged too.
     #[serde(default)]
     pub patterns: Vec<String>,
+    /// Effective ignore rules (sorted) used when the fingerprint was captured.
+    /// Ignoring a folder that is otherwise pruned (e.g. a target name) does not
+    /// change the walked set, so the rules themselves must be part of the
+    /// snapshot identity.
+    #[serde(default)]
+    pub ignore: Vec<String>,
 }
 
 /// A single cached measurement keyed by the target folder's absolute path.
