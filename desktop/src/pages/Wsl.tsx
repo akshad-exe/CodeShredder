@@ -137,14 +137,12 @@ export function Wsl() {
         makeChannel('cleanup'),
       )
       const output = res.output.trim()
+      if (output) appendLog('cleanup', 'info', output)
       if (res.success) {
-        appendLog('cleanup', 'success', `Cleanup finished in ${res.distro}`)
-        if (output) appendLog('cleanup', 'info', output)
         toast.success(`Cleanup ran in ${res.distro}`, {
           description: output.slice(0, 400) || 'No output.',
         })
       } else {
-        appendLog('cleanup', 'error', output || `Cleanup failed in ${res.distro}`)
         toast.error(`Cleanup failed in ${res.distro}`, {
           description: output.slice(0, 400) || 'No output.',
         })
@@ -171,18 +169,16 @@ export function Wsl() {
     setBusy((b) => ({ ...b, [distro.name]: 'compact' }))
     try {
       const res = await wslCompact(distro.name, makeChannel('compact'))
+      const needsAdmin = /diskpart|elevat|(^|\s)740|denied/i.test(res.error ?? '')
       if (res.error) {
-        appendLog('compact', 'error', res.error)
         toast.error(`Could not compact ${res.distro}`, {
-          description: `${res.error}${res.error.toLowerCase().includes('diskpart') ? ' — run the app as administrator and try again.' : ''}`,
+          description: `${res.error}${needsAdmin ? ' — run the app as administrator and try again.' : ''}`,
         })
       } else if (res.freedBytes != null && res.freedBytes > 0) {
-        appendLog('compact', 'success', `Freed ${formatBytes(res.freedBytes)} from ${res.distro}`)
         toast.success(`Freed ${formatBytes(res.freedBytes)} from ${res.distro}`, {
           description: `${formatBytes(res.beforeBytes ?? 0)} → ${formatBytes(res.afterBytes ?? 0)}`,
         })
       } else {
-        appendLog('compact', 'success', `${res.distro} disk is already compact`)
         toast.success(`${res.distro} disk is already compact`)
       }
     } catch (err) {
