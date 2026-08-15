@@ -41,6 +41,9 @@ bun-debug.log*
 # Codegraph index
 .codegraph/
 
+# Cross-platform compile/test harness (mirrors src-tauri logic, WSL build check)
+.harness/
+
 # Docs (kept local, not committed)
 docs/
 
