@@ -28,7 +28,6 @@ export const EXTENDED_PATTERNS: readonly string[] = [
   '.cargo',
   '.gradle',
   'Pods',
-  'vendor',
   '.venv',
   'venv',
   '.svelte-kit',
@@ -105,7 +104,6 @@ export const PATTERN_CATEGORIES: Record<string, string> = {
   '.yarn': 'package_caches',
   '.bun': 'package_caches',
   '.cargo': 'package_caches',
-  vendor: 'package_caches',
 }
 
 /** Ordered ecosystem groups with their display labels. */
@@ -141,7 +139,6 @@ export const PATTERN_LABELS: Record<string, string> = {
   '.cargo': 'Cargo',
   '.gradle': 'Gradle',
   Pods: 'CocoaPods',
-  vendor: 'Composer',
   '.venv': '.venv',
   venv: 'venv (bare)',
   '.svelte-kit': 'SvelteKit',
