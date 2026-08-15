@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { Channel, invoke } from '@tauri-apps/api/core'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import type {
   ScanInput,
@@ -11,6 +11,7 @@ import type {
   WslDistro,
   WslCompactResult,
   WslCleanupResult,
+  WslProgress,
   CacheEntry,
   LargeFileEntry,
   DuplicateGroup,
@@ -79,22 +80,26 @@ export async function listWslDistros(): Promise<WslDistro[]> {
   return invoke<WslDistro[]>('list_wsl_distros')
 }
 
-/** Shuts down every running WSL distro. */
-export async function wslShutdown(): Promise<void> {
-  return invoke('wsl_shutdown')
+/** Shuts down every running WSL distro. Streams progress via `onEvent`. */
+export async function wslShutdown(onEvent: Channel<WslProgress>): Promise<void> {
+  return invoke('wsl_shutdown', { onEvent })
 }
 
 /** Compacts a distro's virtual disk and reports the reclaimed space. */
-export async function wslCompact(distro: string): Promise<WslCompactResult> {
-  return invoke<WslCompactResult>('wsl_compact', { distro })
+export async function wslCompact(
+  distro: string,
+  onEvent: Channel<WslProgress>,
+): Promise<WslCompactResult> {
+  return invoke<WslCompactResult>('wsl_compact', { distro, onEvent })
 }
 
 /** Runs a cleanup command inside a distro and returns its output. */
 export async function wslRunCleanup(
   distro: string,
   commands: string,
+  onEvent: Channel<WslProgress>,
 ): Promise<WslCleanupResult> {
-  return invoke<WslCleanupResult>('wsl_run_cleanup', { distro, commands })
+  return invoke<WslCleanupResult>('wsl_run_cleanup', { distro, commands, onEvent })
 }
 
 /** Lists known cache locations with their sizes and safety levels. */

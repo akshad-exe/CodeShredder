@@ -83,6 +83,13 @@ export type WslCleanupResult = {
   output: string
 }
 
+/** A live progress event streamed from a WSL operation via a Tauri channel. */
+export type WslProgress = {
+  operation: 'cleanup' | 'compact' | 'shutdown'
+  level: 'info' | 'success' | 'error'
+  step: string
+}
+
 export type TrashItem = {
   id: string
   name: string
