@@ -172,7 +172,7 @@ export function Wsl() {
       const needsAdmin = /diskpart|elevat|(^|\s)740|denied/i.test(res.error ?? '')
       if (res.error) {
         toast.error(`Could not compact ${res.distro}`, {
-          description: `${res.error}${needsAdmin ? ' — run the app as administrator and try again.' : ''}`,
+          description: `${res.error}${needsAdmin ? ' — approve the administrator prompt, or run the app as administrator.' : ''}`,
         })
       } else if (res.freedBytes != null && res.freedBytes > 0) {
         toast.success(`Freed ${formatBytes(res.freedBytes)} from ${res.distro}`, {
@@ -442,10 +442,10 @@ export function Wsl() {
             </DialogTitle>
             <DialogDescription className="text-muted">
               This <span className="font-medium text-text">shuts down all WSL distros</span>{' '}
-              and shrinks {compactTarget?.name}'s virtual disk. The disk must be
-              writable, so compacting a distro while Windows holds it locked may
-              require running the app{' '}
-              <span className="font-medium text-text">as administrator</span>.
+              and shrinks {compactTarget?.name}'s virtual disk. If Windows holds the
+              disk locked, an{' '}
+              <span className="font-medium text-text">administrator approval prompt</span>{' '}
+              will appear — approve it to continue.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-2">

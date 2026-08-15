@@ -48,6 +48,9 @@ rayon = "1"
 # Trash
 trash = "5"
 
+# Elevated (UAC) execution for WSL diskpart compaction
+runas = "1"
+
 # System info
 sysinfo = "0.30"
 

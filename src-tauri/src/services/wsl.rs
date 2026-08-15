@@ -142,25 +142,21 @@ pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) ->
         "info",
         format!("Compacting {vhdx} — may take a while…"),
     ));
-    match run_diskpart_compact(Path::new(&vhdx)) {
-        Ok(()) => {
-            let after = disk_size(Path::new(&vhdx));
-            result.after_bytes = after;
-            result.freed_bytes = match (before, after) {
-                (Some(b), Some(a)) => Some(b.saturating_sub(a)),
-                _ => None,
-            };
-            match result.freed_bytes {
-                Some(freed) if freed > 0 => on_progress(progress(
-                    "compact",
-                    "success",
-                    format!("Freed {} from {distro}", format_bytes(freed)),
-                )),
-                _ => on_progress(progress(
-                    "compact",
-                    "success",
-                    format!("Disk for {distro} is already compact"),
-                )),
+    let mut compacted = false;
+    match run_diskpart_compact(Path::new(&vhdx), false) {
+        Ok(()) => compacted = true,
+        Err(err) if is_elevation_error(&err) => {
+            on_progress(progress(
+                "compact",
+                "info",
+                format!("Compaction needs administrator rights — approve the prompt to continue…"),
+            ));
+            match run_diskpart_compact(Path::new(&vhdx), true) {
+                Ok(()) => compacted = true,
+                Err(err2) => {
+                    result.error = Some(err2.clone());
+                    on_progress(progress("compact", "error", format!("Compact failed: {err2}")));
+                }
             }
         }
         Err(err) => {
@@ -168,7 +164,47 @@ pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) ->
             on_progress(progress("compact", "error", format!("Compact failed: {err}")));
         }
     }
+    if compacted {
+        finish_compact_success(distro, Path::new(&vhdx), before, &mut result, on_progress);
+    }
     result
+}
+
+/// Records post-compaction disk size and streams the success event.
+#[cfg(target_os = "windows")]
+fn finish_compact_success(
+    distro: &str,
+    vhdx: &Path,
+    before: Option<u64>,
+    result: &mut WslCompactResult,
+    on_progress: &mut dyn FnMut(WslProgress),
+) {
+    let after = disk_size(vhdx);
+    result.after_bytes = after;
+    result.freed_bytes = match (before, after) {
+        (Some(b), Some(a)) => Some(b.saturating_sub(a)),
+        _ => None,
+    };
+    match result.freed_bytes {
+        Some(freed) if freed > 0 => on_progress(progress(
+            "compact",
+            "success",
+            format!("Freed {} from {distro}", format_bytes(freed)),
+        )),
+        _ => on_progress(progress(
+            "compact",
+            "success",
+            format!("Disk for {distro} is already compact"),
+        )),
+    }
+}
+
+/// True when an error message suggests the operation failed only because it
+/// needs administrator rights (e.g. `os error 740`).
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn is_elevation_error(msg: &str) -> bool {
+    let lower = msg.to_lowercase();
+    lower.contains("elevat") || lower.contains("740") || lower.contains("denied")
 }
 
 /// Non-Windows stub.
@@ -365,7 +401,7 @@ fn run_capture(program: &str, args: &[&str]) -> std::result::Result<String, Stri
 
 /// Runs diskpart on a script that selects and compacts a virtual disk.
 #[cfg(target_os = "windows")]
-fn run_diskpart_compact(vhdx: &Path) -> std::result::Result<(), String> {
+fn run_diskpart_compact(vhdx: &Path, elevated: bool) -> std::result::Result<(), String> {
     use std::process::Command;
 
     let script = format!(
@@ -375,20 +411,36 @@ fn run_diskpart_compact(vhdx: &Path) -> std::result::Result<(), String> {
     let script_path = std::env::temp_dir().join(format!("cs-diskpart-{}.txt", std::process::id()));
     std::fs::write(&script_path, script).map_err(|e| e.to_string())?;
 
-    let result = Command::new("diskpart")
-        .args(["/s", script_path.to_str().unwrap_or_default()])
-        .output();
+    // Elevated runs go through ShellExecute with the `runas` verb, which pops
+    // the UAC prompt; stdout/stderr cannot be captured that way, so success is
+    // judged by the exit code alone (diskpart returns non-zero on failure, and
+    // a dismissed prompt also yields a non-zero code). ShellExecute needs a
+    // full path, so resolve diskpart from SystemRoot.
+    let diskpart = std::env::var("SystemRoot")
+        .map(|root| format!(r"{root}\System32\diskpart.exe"))
+        .unwrap_or_else(|_| "diskpart".to_string());
+    let result = if elevated {
+        runas::Command::new(&diskpart)
+            .args(["/s", script_path.to_str().unwrap_or_default()])
+            .show(false)
+            .status()
+            .map(|status| (status, String::new()))
+    } else {
+        Command::new(&diskpart)
+            .args(["/s", script_path.to_str().unwrap_or_default()])
+            .output()
+            .map(|out| (out.status, decode_output([out.stdout, out.stderr].concat())))
+    };
 
     let _ = std::fs::remove_file(&script_path);
 
     match result {
-        Ok(out) if out.status.success() && !decode_output(out.stdout.clone()).to_lowercase().contains("error") => {
-            Ok(())
-        }
-        Ok(out) => Err(format!(
-            "diskpart compact failed: {}",
-            decode_output([out.stdout, out.stderr].concat())
-        )),
+        Ok((status, text)) if status.success() && !text.to_lowercase().contains("error") => Ok(()),
+        Ok((_, text)) if text.trim().is_empty() => Err(
+            "diskpart compact failed: the elevated compaction was cancelled or did not complete"
+                .to_string(),
+        ),
+        Ok((_, text)) => Err(format!("diskpart compact failed: {text}")),
         Err(err) => Err(err.to_string()),
     }
 }
@@ -581,5 +633,16 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
             .collect();
         assert!(all.contains(&"error".to_string()));
         assert!(events.borrow().iter().any(|e| e.operation == "compact"));
+    }
+
+    #[test]
+    fn detects_elevation_errors() {
+        assert!(is_elevation_error(
+            "The requested operation requires elevation. (os error 740)"
+        ));
+        assert!(is_elevation_error("diskpart compact failed: Access is denied"));
+        assert!(is_elevation_error("permission denied"));
+        assert!(!is_elevation_error("diskpart compact failed: no disk found"));
+        assert!(!is_elevation_error(""));
     }
 }
