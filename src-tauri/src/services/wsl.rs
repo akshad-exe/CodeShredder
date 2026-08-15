@@ -9,7 +9,17 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use crate::domain::wsl::{WslCleanupResult, WslCompactResult, WslDistro, WslState};
+use crate::domain::wsl::{WslCleanupResult, WslCompactResult, WslDistro, WslProgress, WslState};
+
+/// Builds a progress event.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn progress(operation: &str, level: &str, step: impl Into<String>) -> WslProgress {
+    WslProgress {
+        operation: operation.to_string(),
+        level: level.to_string(),
+        step: step.into(),
+    }
+}
 
 /// Enumerates installed WSL distros with their running state.
 ///
@@ -72,9 +82,10 @@ pub fn shutdown_all() -> std::result::Result<(), String> {
 }
 
 /// Compacts a distro's virtual disk: shuts WSL down, runs diskpart's
-/// `compact vdisk` and reports the bytes reclaimed.
+/// `compact vdisk` and reports the bytes reclaimed. Progress events are
+/// streamed through `on_progress` so the frontend can show live feedback.
 #[cfg(target_os = "windows")]
-pub fn compact_distro(distro: &str) -> WslCompactResult {
+pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCompactResult {
     let mut result = WslCompactResult {
         distro: distro.to_string(),
         before_bytes: None,
@@ -83,8 +94,18 @@ pub fn compact_distro(distro: &str) -> WslCompactResult {
         error: None,
     };
 
+    on_progress(progress(
+        "compact",
+        "info",
+        "Shutting down all WSL distros…",
+    ));
     let _ = shutdown_all();
 
+    on_progress(progress(
+        "compact",
+        "info",
+        format!("Locating virtual disk for {distro}…"),
+    ));
     let sections = parse_reg_sections(
         &run_capture(
             "reg.exe",
@@ -96,6 +117,11 @@ pub fn compact_distro(distro: &str) -> WslCompactResult {
         .or_else(|| fallback_scan(distro))
     else {
         result.error = Some(format!("Could not locate the virtual disk for {distro}"));
+        on_progress(progress(
+            "compact",
+            "error",
+            format!("Could not locate the virtual disk for {distro}"),
+        ));
         return result;
     };
 
@@ -103,9 +129,19 @@ pub fn compact_distro(distro: &str) -> WslCompactResult {
     result.before_bytes = before;
     if before.unwrap_or(0) == 0 {
         result.error = Some(format!("Virtual disk not found or empty: {vhdx}"));
+        on_progress(progress(
+            "compact",
+            "error",
+            format!("Virtual disk not found or empty: {vhdx}"),
+        ));
         return result;
     }
 
+    on_progress(progress(
+        "compact",
+        "info",
+        format!("Compacting {vhdx} — may take a while…"),
+    ));
     match run_diskpart_compact(Path::new(&vhdx)) {
         Ok(()) => {
             let after = disk_size(Path::new(&vhdx));
@@ -114,15 +150,35 @@ pub fn compact_distro(distro: &str) -> WslCompactResult {
                 (Some(b), Some(a)) => Some(b.saturating_sub(a)),
                 _ => None,
             };
+            match result.freed_bytes {
+                Some(freed) if freed > 0 => on_progress(progress(
+                    "compact",
+                    "success",
+                    format!("Freed {} from {distro}", format_bytes(freed)),
+                )),
+                _ => on_progress(progress(
+                    "compact",
+                    "success",
+                    format!("Disk for {distro} is already compact"),
+                )),
+            }
         }
-        Err(err) => result.error = Some(err),
+        Err(err) => {
+            result.error = Some(err.clone());
+            on_progress(progress("compact", "error", format!("Compact failed: {err}")));
+        }
     }
     result
 }
 
 /// Non-Windows stub.
 #[cfg(not(target_os = "windows"))]
-pub fn compact_distro(distro: &str) -> WslCompactResult {
+pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCompactResult {
+    on_progress(progress(
+        "compact",
+        "error",
+        "WSL is only available on Windows",
+    ));
     WslCompactResult {
         distro: distro.to_string(),
         before_bytes: None,
@@ -133,33 +189,80 @@ pub fn compact_distro(distro: &str) -> WslCompactResult {
 }
 
 /// Runs a shell command inside a distro (as the distro's default user).
-/// Intended for safe, user-level cache cleanup.
+/// Intended for safe, user-level cache cleanup. Progress events are streamed
+/// through `on_progress`.
 #[cfg(target_os = "windows")]
-pub fn run_cleanup(distro: &str, commands: &str) -> WslCleanupResult {
+pub fn run_cleanup(distro: &str, commands: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCleanupResult {
+    on_progress(progress(
+        "cleanup",
+        "info",
+        format!("Running cleanup in {distro}…"),
+    ));
     let out = Command::new("wsl.exe")
         .args(["-d", distro, "-e", "bash", "-lc", commands])
         .output();
     match out {
-        Ok(out) => WslCleanupResult {
-            distro: distro.to_string(),
-            success: out.status.success(),
-            output: decode_output([out.stdout, out.stderr].concat()).trim().to_string(),
-        },
-        Err(err) => WslCleanupResult {
-            distro: distro.to_string(),
-            success: false,
-            output: err.to_string(),
-        },
+        Ok(out) => {
+            let success = out.status.success();
+            let output = decode_output([out.stdout, out.stderr].concat()).trim().to_string();
+            on_progress(progress(
+                "cleanup",
+                if success { "success" } else { "error" },
+                format!(
+                    "Cleanup {} in {distro}",
+                    if success { "finished" } else { "failed" }
+                ),
+            ));
+            WslCleanupResult {
+                distro: distro.to_string(),
+                success,
+                output,
+            }
+        }
+        Err(err) => {
+            on_progress(progress(
+                "cleanup",
+                "error",
+                format!("Could not start cleanup: {err}"),
+            ));
+            WslCleanupResult {
+                distro: distro.to_string(),
+                success: false,
+                output: err.to_string(),
+            }
+        }
     }
 }
 
 /// Non-Windows stub.
 #[cfg(not(target_os = "windows"))]
-pub fn run_cleanup(distro: &str, _commands: &str) -> WslCleanupResult {
+pub fn run_cleanup(distro: &str, _commands: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCleanupResult {
+    on_progress(progress(
+        "cleanup",
+        "error",
+        "WSL is only available on Windows",
+    ));
     WslCleanupResult {
         distro: distro.to_string(),
         success: false,
         output: "WSL is only available on Windows".to_string(),
+    }
+}
+
+/// Formats a byte count for progress messages.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn format_bytes(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1024.0 && unit < UNITS.len() - 1 {
+        value /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} {}", UNITS[unit])
+    } else {
+        format!("{value:.1} {}", UNITS[unit])
     }
 }
 
@@ -458,5 +561,25 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
         assert!(package_matches_distro("CanonicalGroupLimited.UbuntuonWindows", "Ubuntu"));
         assert!(package_matches_distro("Ubuntu-22.04.", "Ubuntu-22.04"));
         assert!(!package_matches_distro("Debian", "Fedora"));
+    }
+
+    #[test]
+    fn stubs_emit_progress_events() {
+        let events = std::cell::RefCell::new(Vec::new());
+        let mut on_progress = |p: WslProgress| events.borrow_mut().push(p);
+
+        let cleanup = run_cleanup("Ubuntu", "apt-get clean", &mut on_progress);
+        assert!(!cleanup.success);
+        assert!(!events.borrow().is_empty());
+
+        let compact = compact_distro("Ubuntu", &mut on_progress);
+        assert!(compact.error.is_some());
+        let all: Vec<String> = events
+            .borrow()
+            .iter()
+            .map(|e| e.level.clone())
+            .collect();
+        assert!(all.contains(&"error".to_string()));
+        assert!(events.borrow().iter().any(|e| e.operation == "compact"));
     }
 }

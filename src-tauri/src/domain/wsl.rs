@@ -42,3 +42,19 @@ pub struct WslCleanupResult {
     /// Trimmed combined stdout/stderr of the command.
     pub output: String,
 }
+
+/// A progress/step event streamed to the frontend while an operation runs.
+///
+/// The frontend renders these live so the user can see what the backend is
+/// doing instead of staring at a spinner.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WslProgress {
+    /// Which operation this event belongs to: "cleanup", "compact" or
+    /// "shutdown".
+    pub operation: String,
+    /// Severity used for log coloring: "info" | "success" | "error".
+    pub level: String,
+    /// Human-readable description of the current step.
+    pub step: String,
+}
