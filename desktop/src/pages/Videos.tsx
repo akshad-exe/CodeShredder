@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Film, FolderOpen, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_VIDEOS } from '@/components/explore/sampleData'
-import { Checkbox } from '@/components/ui/checkbox'
 import { isTauri, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
@@ -199,10 +198,11 @@ export function Videos() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <Checkbox
+                <input
+                  type="checkbox"
                   checked={isSelected}
-                  onCheckedChange={() => toggle(video.id)}
-                  className="shrink-0 border-border bg-background"
+                  onChange={() => toggle(video.id)}
+                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
                   aria-label={`Select ${video.name}`}
                 />
                 <span className={`grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-panel-2 ${VIDEO_EXT[video.ext] ?? 'text-muted'}`}>

@@ -4,7 +4,6 @@ import { formatBytes, formatCount, formatDate } from '@/lib/format'
 import { categoryLabel } from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cn } from '@/lib/utils'
-import { Checkbox } from '@/components/ui/checkbox'
 import { cleanupTargets, isTauri, revealFolder } from '@/lib/ipc'
 import { toast } from '@/components/ui/sonner'
 
@@ -80,10 +79,11 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
           : 'border-border bg-panel hover:border-border/70',
       )}
     >
-      <Checkbox
+      <input
+        type="checkbox"
         checked={selected}
-        onCheckedChange={() => toggleTargetSelection(target.id)}
-        className="shrink-0 border-border bg-background"
+        onChange={() => toggleTargetSelection(target.id)}
+        className="h-4 w-4 shrink-0 accent-[var(--accent)]"
         aria-label={`Select ${target.path}`}
       />
 

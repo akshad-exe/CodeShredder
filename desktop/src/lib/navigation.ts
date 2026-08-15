@@ -7,7 +7,6 @@ import {
   Copy,
   Film,
   HardDrive,
-  PieChart,
   Terminal,
   Settings,
 } from 'lucide-react'
@@ -20,7 +19,6 @@ export type PageId =
   | 'duplicates'
   | 'videos'
   | 'large-files'
-  | 'treemap'
   | 'wsl'
   | 'settings'
 
@@ -91,12 +89,6 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Large Files',
         icon: HardDrive,
         tone: 'bg-cyan-500/10 text-cyan-400',
-      },
-      {
-        id: 'treemap',
-        label: 'Treemap',
-        icon: PieChart,
-        tone: 'bg-teal-500/10 text-teal-400',
       },
     ],
   },

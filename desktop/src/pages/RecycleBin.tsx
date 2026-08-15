@@ -134,7 +134,9 @@ export function RecycleBin() {
             {formatCount(items.length)} items
           </p>
           <span className="text-xs text-faint">·</span>
-          <span className="text-sm tabular-nums text-muted">{formatBytes(totalSize)}</span>
+          <span className="text-sm tabular-nums text-muted">
+            {formatBytes(totalSize)} claimable
+          </span>
         </div>
       </div>
 

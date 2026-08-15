@@ -9,7 +9,6 @@ import { Wsl } from '@/pages/Wsl'
 import { LargeFiles } from '@/pages/LargeFiles'
 import { Duplicates } from '@/pages/Duplicates'
 import { Videos } from '@/pages/Videos'
-import { Treemap } from '@/pages/Treemap'
 import { Settings } from '@/pages/Settings'
 
 function App() {
@@ -23,7 +22,6 @@ function App() {
       {page === 'caches' && <Caches />}
       {page === 'duplicates' && <Duplicates />}
       {page === 'videos' && <Videos />}
-      {page === 'treemap' && <Treemap />}
       {page === 'large-files' && <LargeFiles />}
       {page === 'wsl' && <Wsl />}
       {page === 'settings' && <Settings />}

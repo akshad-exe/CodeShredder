@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, HardDrive, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_LARGE_FILES } from '@/components/explore/sampleData'
-import { Checkbox } from '@/components/ui/checkbox'
 import { isTauri, scanLargeFiles } from '@/lib/ipc'
 import type { LargeFileEntry } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
@@ -203,10 +202,11 @@ export function LargeFiles() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <Checkbox
+                <input
+                  type="checkbox"
                   checked={isSelected}
-                  onCheckedChange={() => toggle(file.id)}
-                  className="shrink-0 border-border bg-background"
+                  onChange={() => toggle(file.id)}
+                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
                   aria-label={`Select ${file.name}`}
                 />
                 <span className="w-12 shrink-0 rounded bg-panel-2 px-1.5 py-0.5 text-center font-mono text-[11px] uppercase text-muted">

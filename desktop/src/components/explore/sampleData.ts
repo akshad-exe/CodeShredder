@@ -2,7 +2,6 @@ import type {
   CacheEntry,
   DuplicateGroup,
   LargeFileEntry,
-  TreemapNode,
   VideoEntry,
 } from '@/types/cleanup'
 
@@ -328,73 +327,3 @@ export const SAMPLE_VIDEOS: VideoEntry[] = [
     durationSec: 2650,
   },
 ]
-
-export const SAMPLE_TREEMAP: TreemapNode = {
-  path: 'D:\\',
-  name: 'D:',
-  sizeBytes: 412_000_000_000,
-  fileCount: 88_000,
-  children: [
-    {
-      path: 'D:\\media',
-      name: 'media',
-      sizeBytes: 214_000_000_000,
-      fileCount: 41_000,
-      children: [
-        {
-          path: 'D:\\media\\movies',
-          name: 'movies',
-          sizeBytes: 121_000_000_000,
-          fileCount: 240,
-          children: [
-            { path: 'D:\\media\\movies\\int.2023.remux.mkv', name: 'int.2023.remux.mkv', sizeBytes: 41_300_000_000, fileCount: 1 },
-            { path: 'D:\\media\\movies\\other.mkv', name: 'other.mkv', sizeBytes: 12_000_000_000, fileCount: 1 },
-          ],
-        },
-        {
-          path: 'D:\\media\\tv',
-          name: 'tv',
-          sizeBytes: 68_000_000_000,
-          fileCount: 1_900,
-        },
-        {
-          path: 'D:\\media\\music',
-          name: 'music',
-          sizeBytes: 25_000_000_000,
-          fileCount: 38_800,
-        },
-      ],
-    },
-    {
-      path: 'D:\\backups',
-      name: 'backups',
-      sizeBytes: 98_000_000_000,
-      fileCount: 5_400,
-      children: [
-        { path: 'D:\\backups\\photos-2023.zip', name: 'photos-2023.zip', sizeBytes: 18_700_000_000, fileCount: 1 },
-        { path: 'D:\\backups\\photos-2022.zip', name: 'photos-2022.zip', sizeBytes: 15_900_000_000, fileCount: 1 },
-        { path: 'D:\\backups\\system-image', name: 'system-image', sizeBytes: 54_000_000_000, fileCount: 5_300 },
-      ],
-    },
-    {
-      path: 'D:\\projects',
-      name: 'projects',
-      sizeBytes: 76_000_000_000,
-      fileCount: 40_000,
-      children: [
-        { path: 'D:\\projects\\vm-disk.vhdx', name: 'vm-disk.vhdx', sizeBytes: 64_000_000_000, fileCount: 1 },
-        { path: 'D:\\projects\\archived', name: 'archived', sizeBytes: 12_000_000_000, fileCount: 39_900 },
-      ],
-    },
-    {
-      path: 'D:\\downloads',
-      name: 'downloads',
-      sizeBytes: 24_000_000_000,
-      fileCount: 1_600,
-      children: [
-        { path: 'D:\\downloads\\ubuntu-24.04-desktop-amd64.iso', name: 'ubuntu-24.04-desktop-amd64.iso', sizeBytes: 5_700_000_000, fileCount: 1 },
-        { path: 'D:\\downloads\\others', name: 'others', sizeBytes: 18_300_000_000, fileCount: 1_590 },
-      ],
-    },
-  ],
-}

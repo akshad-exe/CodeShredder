@@ -145,11 +145,3 @@ export type VideoEntry = {
   ext: string
   durationSec?: number
 }
-
-export type TreemapNode = {
-  path: string
-  name: string
-  sizeBytes: number
-  fileCount: number
-  children?: TreemapNode[]
-}

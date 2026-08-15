@@ -15,7 +15,6 @@ import type {
   LargeFileEntry,
   DuplicateGroup,
   VideoEntry,
-  TreemapNode,
 } from '@/types/cleanup'
 
 /** True when the frontend is running inside the Tauri webview. */
@@ -126,9 +125,4 @@ export async function scanVideos(input: {
   minSizeBytes?: number
 }): Promise<VideoEntry[]> {
   return invoke<VideoEntry[]>('scan_videos', { input })
-}
-
-/** Builds a folder-size tree for treemap visualization of a root. */
-export async function getTreemap(root: string): Promise<TreemapNode> {
-  return invoke<TreemapNode>('get_treemap', { root })
 }

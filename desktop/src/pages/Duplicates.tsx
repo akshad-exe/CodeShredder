@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Copy, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_DUPLICATES } from '@/components/explore/sampleData'
-import { Checkbox } from '@/components/ui/checkbox'
 import { isTauri, scanDuplicates } from '@/lib/ipc'
 import type { DuplicateFile, DuplicateGroup } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
@@ -236,10 +235,11 @@ export function Duplicates() {
                           isSelected ? 'bg-accent/5' : ''
                         }`}
                       >
-                        <Checkbox
+                        <input
+                          type="checkbox"
                           checked={isSelected}
-                          onCheckedChange={() => toggle(file.id)}
-                          className="shrink-0 border-border bg-background"
+                          onChange={() => toggle(file.id)}
+                          className="h-4 w-4 shrink-0 accent-[var(--accent)]"
                           aria-label={`Select ${file.name}`}
                         />
                         <div className="min-w-0 flex-1">

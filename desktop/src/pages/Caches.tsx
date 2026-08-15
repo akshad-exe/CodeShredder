@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, FolderX, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_CACHES } from '@/components/explore/sampleData'
-import { Checkbox } from '@/components/ui/checkbox'
 import { isTauri, listCaches, revealFolder } from '@/lib/ipc'
 import type { CacheEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
@@ -217,10 +216,11 @@ export function Caches() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <Checkbox
+                <input
+                  type="checkbox"
                   checked={isSelected}
-                  onCheckedChange={() => toggle(entry.id)}
-                  className="shrink-0 border-border bg-background"
+                  onChange={() => toggle(entry.id)}
+                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
                   aria-label={`Select ${entry.name}`}
                 />
                 <div className="min-w-0 flex-1">
