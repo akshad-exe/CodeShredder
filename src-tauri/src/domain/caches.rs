@@ -35,3 +35,14 @@ pub struct CacheEntry {
     pub category: String,
     pub safety: String,
 }
+
+/// Outcome of cleaning a single cache, reported to the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CacheCleanResult {
+    pub id: String,
+    pub path: String,
+    /// Bytes freed by the cleanup, when it succeeded.
+    pub freed_bytes: u64,
+    pub error: Option<String>,
+}

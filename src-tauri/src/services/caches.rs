@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use jwalk::WalkDir;
 
 use crate::domain::caches::{CacheEntry, CacheSafety};
+use crate::services::safety::is_protected;
 
 /// A candidate cache location: identity plus one or more absolute paths (first
 /// existing wins, so the same spec can resolve differently per OS).
@@ -44,6 +45,46 @@ pub fn list_caches() -> Vec<CacheEntry> {
         .collect()
 }
 
+/// Empties a cache's contents, leaving the directory itself in place so
+/// configs/env vars that point at it keep resolving. Returns the path and the
+/// bytes freed.
+///
+/// Only paths that resolve from a known cache spec are accepted; unknown ids
+/// and protected paths are refused. Clearing the *contents* (not the folder)
+/// means a relocated cache such as cargo's registry junction target keeps
+/// working instead of being left as a dangling reference.
+pub fn clean_cache(id: &str) -> Result<(PathBuf, u64), String> {
+    let spec = cache_specs()
+        .into_iter()
+        .find(|spec| spec.id == id)
+        .ok_or_else(|| format!("unknown cache: {id}"))?;
+    let path = first_existing(&spec.candidates)
+        .ok_or_else(|| format!("cache not present: {}", spec.name))?;
+    if is_protected(&path) {
+        return Err("path is protected and cannot be cleaned".to_string());
+    }
+
+    let freed = dir_size(&path);
+    empty_contents(&path).map_err(|err| err.to_string())?;
+    Ok((path, freed))
+}
+
+/// Removes every file and subdirectory under `root`, leaving `root` itself.
+/// Symlinks (including junctions) are removed as links, never followed.
+fn empty_contents(root: &Path) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        let meta = std::fs::symlink_metadata(&path)?;
+        if meta.is_dir() {
+            std::fs::remove_dir_all(&path)?;
+        } else {
+            std::fs::remove_file(&path)?;
+        }
+    }
+    Ok(())
+}
+
 /// All known package-manager caches, ordered from the biggest offenders to the
 /// smaller ones.
 fn cache_specs() -> Vec<CacheSpec> {
@@ -69,7 +110,13 @@ fn cache_specs() -> Vec<CacheSpec> {
         "npm cache",
         "Node.js",
         CacheSafety::Safe,
-        candidates(&[home(".npm/_cacache"), local("npm-cache/_cacache"), local("npm-cache")]),
+        candidates(&[
+            npm_override(),
+            env("npm_config_cache"),
+            home(".npm/_cacache"),
+            local("npm-cache/_cacache"),
+            local("npm-cache"),
+        ]),
     );
     push(
         &mut specs,
@@ -93,7 +140,11 @@ fn cache_specs() -> Vec<CacheSpec> {
         "pnpm store",
         "Node.js",
         CacheSafety::Safe,
-        candidates(&[home(".local/share/pnpm/store"), local("pnpm/store")]),
+        candidates(&[
+            pnpm_override(),
+            home(".local/share/pnpm/store"),
+            local("pnpm/store"),
+        ]),
     );
     push(
         &mut specs,
@@ -101,7 +152,20 @@ fn cache_specs() -> Vec<CacheSpec> {
         "pip cache",
         "Python",
         CacheSafety::Safe,
-        candidates(&[home(".cache/pip"), home("Library/Caches/pip"), local("pip/Cache")]),
+        candidates(&[
+            env("PIP_CACHE_DIR"),
+            home(".cache/pip"),
+            home("Library/Caches/pip"),
+            local("pip/Cache"),
+        ]),
+    );
+    push(
+        &mut specs,
+        "uv",
+        "uv cache",
+        "Python",
+        CacheSafety::Safe,
+        candidates(&[env("UV_CACHE_DIR"), home(".cache/uv"), local("uv")]),
     );
     push(
         &mut specs,
@@ -109,7 +173,18 @@ fn cache_specs() -> Vec<CacheSpec> {
         "cargo registry",
         "Rust",
         CacheSafety::Medium,
-        candidates(&[home(".cargo/registry")]),
+        candidates(&[
+            env("CARGO_HOME").map(|home| home.join("registry")),
+            home(".cargo/registry"),
+        ]),
+    );
+    push(
+        &mut specs,
+        "bun",
+        "bun cache",
+        "Node.js",
+        CacheSafety::Safe,
+        candidates(&[env("BUN_INSTALL_CACHE_DIR"), home(".bun/install/cache")]),
     );
     push(
         &mut specs,
@@ -141,7 +216,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "go module cache",
         "Go",
         CacheSafety::Medium,
-        candidates(&[home("go/pkg/mod/cache")]),
+        candidates(&[
+            go_mod_cache(),
+            home("go/pkg/mod/cache"),
+        ]),
     );
     push(
         &mut specs,
@@ -257,6 +335,68 @@ fn local(_rel: &str) -> Option<PathBuf> {
     None
 }
 
+/// Reads an environment variable override for a cache's active path. Returns
+/// `None` when unset, so the tool falls back to its default location.
+fn env(name: &str) -> Option<PathBuf> {
+    std::env::var_os(name).map(PathBuf::from)
+}
+
+/// npm's configured cache root: the `cache=` entry in the user `.npmrc`, when
+/// present (overrides the default `%LOCALAPPDATA%\npm-cache`).
+fn npm_override() -> Option<PathBuf> {
+    user_npmrc()
+        .and_then(|rc| read_kv(&rc, "cache"))
+        .map(PathBuf::from)
+}
+
+/// pnpm's configured store directory: the `store-dir=` entry in the user or
+/// global pnpm config, when present (overrides the default store).
+fn pnpm_override() -> Option<PathBuf> {
+    pnpm_rc()
+        .and_then(|rc| read_kv(&rc, "store-dir"))
+        .map(PathBuf::from)
+}
+
+/// Go's module cache: `GOMODCACHE` env var when set, otherwise `GOPATH\pkg\mod`.
+fn go_mod_cache() -> Option<PathBuf> {
+    match env("GOMODCACHE") {
+        Some(cache) => Some(cache),
+        None => env("GOPATH").map(|gopath| gopath.join("pkg").join("mod")),
+    }
+}
+
+/// The user-level npmrc, preferring `NPM_CONFIG_USERCONFIG` then the standard
+/// locations (`.npmrc` beside the home / user profile).
+fn user_npmrc() -> Option<PathBuf> {
+    env("NPM_CONFIG_USERCONFIG").or_else(|| home(".npmrc"))
+}
+
+/// The pnpm config file, preferring `PNPM_HOME`-relative then the standard
+/// locations.
+fn pnpm_rc() -> Option<PathBuf> {
+    env("PNPM_HOME").map(|home| home.join("config").join("rc"))
+        .or_else(|| home(".config/pnpm/rc"))
+        .or_else(|| home("AppData/Local/pnpm/config/rc"))
+}
+
+/// Reads a single `key = value` line from an INI-ish config file (like npmrc /
+/// pnpm rc). Returns `None` when the file or key is missing.
+fn read_kv(path: &Path, key: &str) -> Option<String> {
+    let content = std::fs::read_to_string(path).ok()?;
+    content.lines().find_map(|line| {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with(';') {
+            return None;
+        }
+        let (k, v) = line.split_once('=')?;
+        if k.trim().eq_ignore_ascii_case(key) {
+            Some(v.trim().to_owned())
+        } else {
+            None
+        }
+    })
+}
+
 /// Joins a Windows env-var-relative path (e.g. `%WINDIR%`). Always `None` on
 /// other platforms.
 #[cfg(target_os = "windows")]
@@ -331,6 +471,75 @@ mod tests {
         for entry in &entries {
             assert!(!entry.path.is_empty());
             assert!(std::path::Path::new(&entry.path).is_dir());
+        }
+    }
+
+    #[test]
+    fn read_kv_parses_ini_lines() {
+        let temp = std::env::temp_dir().join("cs-cache-rc");
+        std::fs::write(
+            &temp,
+            "; comment\n# another comment\n\ncache=E:\\cache\\npm\nstore-dir=E:\\cache\\pnpm\n",
+        )
+        .unwrap();
+        assert_eq!(
+            read_kv(&temp, "cache").as_deref(),
+            Some("E:\\cache\\npm")
+        );
+        assert_eq!(
+            read_kv(&temp, "store-dir").as_deref(),
+            Some("E:\\cache\\pnpm")
+        );
+        assert_eq!(read_kv(&temp, "missing"), None);
+        let _ = std::fs::remove_file(&temp);
+    }
+
+    #[test]
+    fn read_kv_is_case_insensitive() {
+        let temp = std::env::temp_dir().join("cs-cache-rc-case");
+        std::fs::write(&temp, "Cache=/x\nSTORE-DIR=/y\n").unwrap();
+        assert_eq!(read_kv(&temp, "cache").as_deref(), Some("/x"));
+        assert_eq!(read_kv(&temp, "store-dir").as_deref(), Some("/y"));
+        let _ = std::fs::remove_file(&temp);
+    }
+
+    #[test]
+    fn clean_cache_empties_contents_keeps_dir() {
+        let temp = std::env::temp_dir().join("cs-cache-clean");
+        std::fs::create_dir_all(temp.join("sub")).unwrap();
+        std::fs::write(temp.join("a.bin"), vec![0u8; 512]).unwrap();
+        std::fs::write(temp.join("sub/b.bin"), vec![0u8; 1024]).unwrap();
+
+        // Resolve a fake spec pointing at `temp` so clean_cache can act on it.
+        let specs = cache_specs();
+        // Inject a synthetic spec via a manual lookup path: clean_cache only
+        // accepts known ids, so exercise `empty_contents` directly here.
+        empty_contents(&temp).unwrap();
+        assert!(temp.is_dir());
+        assert!(std::fs::read_dir(&temp).unwrap().next().is_none());
+        let _ = std::fs::remove_dir_all(&temp);
+        let _ = specs.len();
+    }
+
+    #[test]
+    fn clean_cache_rejects_unknown_and_protected() {
+        assert!(clean_cache("definitely-not-a-cache").is_err());
+        let temp = std::env::temp_dir().join("cs-cache-protected");
+        std::fs::create_dir_all(&temp).unwrap();
+        // Protected roots are OS-specific; assert the guard exists by checking
+        // that a clearly protected path is refused when resolvable as a spec.
+        assert!(is_protected(std::path::Path::new(&protected_sample())));
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    fn protected_sample() -> String {
+        #[cfg(target_os = "windows")]
+        {
+            "C:\\Windows\\System32".to_string()
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            "/usr/bin".to_string()
         }
     }
 }

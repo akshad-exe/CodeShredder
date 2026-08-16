@@ -24,6 +24,7 @@ pub fn run() -> Result<()> {
             crate::commands::clean::cleanup_targets,
             crate::commands::history::get_cleanup_history,
             crate::commands::caches::list_caches,
+            crate::commands::caches::clean_caches,
             crate::commands::trash::list_trash,
             crate::commands::trash::restore_trash,
             crate::commands::trash::purge_trash,
