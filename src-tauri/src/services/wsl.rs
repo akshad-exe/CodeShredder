@@ -421,7 +421,7 @@ fn run_diskpart_compact(vhdx: &Path, elevated: bool) -> std::result::Result<(), 
         .unwrap_or_else(|_| "diskpart".to_string());
     let result = if elevated {
         runas::Command::new(&diskpart)
-            .args(["/s", script_path.to_str().unwrap_or_default()])
+            .args(&["/s", script_path.to_str().unwrap_or_default()])
             .show(false)
             .status()
             .map(|status| (status, String::new()))
