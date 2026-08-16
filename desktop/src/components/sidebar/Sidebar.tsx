@@ -21,7 +21,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
+      <nav className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 pb-4">
         {NAV_GROUPS.map((group) => (
           <SidebarGroup key={group.label ?? group.items[0].id} label={group.label}>
             {group.items.map((item) => (
