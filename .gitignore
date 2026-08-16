@@ -39,6 +39,7 @@ bun-debug.log*
 .turbo/
 
 # Codegraph index
+.codegraph
 .codegraph/
 
 # Cross-platform compile/test harness (mirrors src-tauri logic, WSL build check)
