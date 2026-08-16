@@ -13,6 +13,7 @@ import type {
   WslCleanupResult,
   WslProgress,
   CacheEntry,
+  CacheCleanResult,
   LargeFileEntry,
   DuplicateGroup,
   VideoEntry,
@@ -105,6 +106,11 @@ export async function wslRunCleanup(
 /** Lists known cache locations with their sizes and safety levels. */
 export async function listCaches(): Promise<CacheEntry[]> {
   return invoke<CacheEntry[]>('list_caches')
+}
+
+/** Cleans the given caches (by id), emptying each one's contents. */
+export async function cleanCaches(ids: string[]): Promise<CacheCleanResult[]> {
+  return invoke<CacheCleanResult[]>('clean_caches', { ids })
 }
 
 /** Scans roots for the largest files above a size threshold. */

@@ -122,6 +122,14 @@ export type CacheEntry = {
   safety: CacheSafety
 }
 
+/** Outcome of cleaning a single cache, reported to the frontend. */
+export type CacheCleanResult = {
+  id: string
+  path: string
+  freedBytes: number
+  error?: string | null
+}
+
 export type LargeFileEntry = {
   id: string
   path: string

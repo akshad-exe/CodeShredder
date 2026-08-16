@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, FolderX, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_CACHES } from '@/components/explore/sampleData'
-import { isTauri, listCaches, revealFolder } from '@/lib/ipc'
+import { cleanCaches, isTauri, listCaches, revealFolder } from '@/lib/ipc'
 import type { CacheEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
@@ -95,8 +95,7 @@ export function Caches() {
     }
     setCleaning(true)
     try {
-      // Backend command ships in v1.0 — `clean_caches` is not implemented yet.
-      toast.error('Cache cleaning ships in v1.0')
+      await runClean([id])
     } finally {
       setCleaning(false)
     }
@@ -111,10 +110,30 @@ export function Caches() {
     }
     setCleaning(true)
     try {
-      toast.error('Cache cleaning ships in v1.0')
+      await runClean([...selected])
+      setSelected(new Set())
     } finally {
       setCleaning(false)
     }
+  }
+
+  /** Runs the backend clean for the given ids and updates the entry list. */
+  const runClean = async (ids: string[]) => {
+    const results = await cleanCaches(ids)
+    const ok = results.filter((r) => !r.error)
+    const failed = results.filter((r) => r.error)
+    if (ok.length > 0) {
+      toast.success(
+        `Freed ${formatBytes(ok.reduce((acc, r) => acc + r.freedBytes, 0))}`,
+        { description: `${ok.length} cache${ok.length === 1 ? '' : 's'} cleared` },
+      )
+    }
+    if (failed.length > 0) {
+      toast.error(`${failed.length} cache${failed.length === 1 ? '' : 's'} failed`, {
+        description: failed.map((r) => r.error).join(' · '),
+      })
+    }
+    await refresh()
   }
 
   return (
