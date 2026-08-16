@@ -37,7 +37,15 @@ static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
 /// one, so walking inside them is pure waste. Mirrors the idea behind
 /// `PROTECTED_ROOTS`: if the app would never touch anything down there, don't
 /// look there.
-const NO_JUNK_DIRS: &[&str] = &[".git", ".hg", ".svn", ".bzr", "AppData"];
+const NO_JUNK_DIRS: &[&str] = &[
+    ".git",
+    ".hg",
+    ".svn",
+    ".bzr",
+    "AppData",
+    ".global_caches",
+    ".cache",
+];
 
 /// Finds known developer-junk folders inside the given scan roots.
 pub struct ScannerEngine;
