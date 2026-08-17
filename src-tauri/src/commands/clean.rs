@@ -62,7 +62,7 @@ pub async fn cleanup_targets(input: CleanInput) -> CleanResult {
 
     if let Err(err) = record_history(HistoryEntry {
         mode,
-        paths: input.paths.clone(),
+        paths: input.paths,
         affected,
         failed: result.failed,
         total,

@@ -54,7 +54,7 @@ pub async fn scan_dev_folders(
     let scan_duration = scan_task.await.map_err(|e| e.to_string())?;
     let (mut targets, total_size) = emit_task.await.map_err(|e| e.to_string())?;
 
-    targets.sort_by(|a, b| b.size_bytes.cmp(&a.size_bytes));
+    targets.sort_by_key(|b| std::cmp::Reverse(b.size_bytes));
     let total_count = targets.len() as u64;
 
     let result = ScanResult {

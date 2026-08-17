@@ -626,12 +626,10 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
 
         let compact = compact_distro("Ubuntu", &mut on_progress);
         assert!(compact.error.is_some());
-        let all: Vec<String> = events
+        assert!(events
             .borrow()
             .iter()
-            .map(|e| e.level.clone())
-            .collect();
-        assert!(all.contains(&"error".to_string()));
+            .any(|e| e.level == "error"));
         assert!(events.borrow().iter().any(|e| e.operation == "compact"));
     }
 
