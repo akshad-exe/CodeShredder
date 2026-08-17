@@ -5,196 +5,245 @@
 //! claimable space whenever folders sit in the bin. For directory items we walk
 //! the item's in-trash payload on disk and sum the real file bytes instead, so
 //! the "claimable" figure is accurate.
+//!
+//! Listing, restoring and purging are only available on Windows and Linux
+//! (macOS `trash` only supports *deleting* to the trash), so the whole module
+//! is compiled out there and replaced with no-op stubs.
 
-use std::fs;
-use std::path::{Path, PathBuf};
+#[cfg(not(target_os = "macos"))]
+mod imp {
+    use std::fs;
+    use std::path::{Path, PathBuf};
 
-use trash::os_limited::{list, metadata, purge_all, restore_all};
-use trash::{TrashItem, TrashItemSize};
+    use trash::os_limited::{list, metadata, purge_all, restore_all};
+    use trash::{TrashItem, TrashItemSize};
 
-use crate::domain::trash::{TrashActionResult, TrashItem as TrashItemDto};
+    use crate::domain::trash::{TrashActionResult, TrashItem as TrashItemDto};
 
-/// Lists every item in the Recycle Bin with accurate reclaimable byte sizes.
-pub fn list_items() -> Vec<TrashItemDto> {
-    let Ok(items) = list() else {
-        return Vec::new();
-    };
-    items.iter().map(to_dto).collect()
-}
-
-fn to_dto(item: &TrashItem) -> TrashItemDto {
-    let (size_bytes, entries) = match metadata(item).ok().map(|m| m.size) {
-        Some(TrashItemSize::Bytes(bytes)) => (Some(bytes), None),
-        Some(TrashItemSize::Entries(count)) => trash_item_dir_path(item)
-            .filter(|p| p.is_dir())
-            .map_or((None, Some(count)), |dir| {
-                // Directories: the crate only reports an entry count, so walk
-                // the payload to get the real reclaimable bytes and file count.
-                let (bytes, files) = dir_stats(&dir);
-                (Some(bytes), Some(files))
-            }),
-        None => (None, None),
-    };
-    TrashItemDto {
-        id: item.id.to_string_lossy().into_owned(),
-        name: item.name.to_string_lossy().into_owned(),
-        original_path: item.original_path().to_string_lossy().into_owned(),
-        original_parent: item.original_parent.to_string_lossy().into_owned(),
-        time_deleted: item.time_deleted,
-        size_bytes,
-        entries,
-    }
-}
-
-/// On-disk path of an item's trash payload.
-///
-/// On Windows `id` is the absolute parsing name of the in-trash `$R` entry, so
-/// it is the payload path directly.
-#[cfg(target_os = "windows")]
-fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
-    Some(PathBuf::from(&item.id))
-}
-
-/// On-disk path of an item's trash payload (freedesktop / Linux).
-///
-/// `id` points at the `.trashinfo` metadata file; the actual payload lives in
-/// a sibling `files/` directory under the same name.
-#[cfg(all(unix, not(target_os = "macos")))]
-fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
-    let info = PathBuf::from(&item.id);
-    let name = info
-        .file_name()?
-        .to_string_lossy()
-        .strip_suffix(".trashinfo")?
-        .to_owned();
-    Some(info.parent()?.parent()?.join("files").join(name))
-}
-
-/// Total bytes and file count under `root`, without following symlinks.
-fn dir_stats(root: &Path) -> (u64, usize) {
-    let mut bytes = 0u64;
-    let mut files = 0usize;
-    let mut stack = vec![root.to_path_buf()];
-    while let Some(dir) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&dir) else {
-            continue;
+    /// Lists every item in the Recycle Bin with accurate reclaimable byte sizes.
+    #[must_use]
+    pub fn list_items() -> Vec<TrashItemDto> {
+        let Ok(items) = list() else {
+            return Vec::new();
         };
-        for entry in entries.flatten() {
-            let Ok(meta) = fs::symlink_metadata(entry.path()) else {
+        items.iter().map(to_dto).collect()
+    }
+
+    fn to_dto(item: &TrashItem) -> TrashItemDto {
+        let (size_bytes, entries) = match metadata(item).ok().map(|m| m.size) {
+            Some(TrashItemSize::Bytes(bytes)) => (Some(bytes), None),
+            Some(TrashItemSize::Entries(count)) => trash_item_dir_path(item)
+                .filter(|p| p.is_dir())
+                .map_or((None, Some(count)), |dir| {
+                    // Directories: the crate only reports an entry count, so
+                    // walk the payload to get the real reclaimable bytes and
+                    // file count.
+                    let (bytes, files) = dir_stats(&dir);
+                    (Some(bytes), Some(files))
+                }),
+            None => (None, None),
+        };
+        TrashItemDto {
+            id: item.id.to_string_lossy().into_owned(),
+            name: item.name.to_string_lossy().into_owned(),
+            original_path: item.original_path().to_string_lossy().into_owned(),
+            original_parent: item.original_parent.to_string_lossy().into_owned(),
+            time_deleted: item.time_deleted,
+            size_bytes,
+            entries,
+        }
+    }
+
+    /// On-disk path of an item's trash payload.
+    ///
+    /// On Windows `id` is the absolute parsing name of the in-trash `$R` entry,
+    /// so it is the payload path directly.
+    #[cfg(target_os = "windows")]
+    fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
+        Some(PathBuf::from(&item.id))
+    }
+
+    /// On-disk path of an item's trash payload (freedesktop / Linux).
+    ///
+    /// `id` points at the `.trashinfo` metadata file; the actual payload lives
+    /// in a sibling `files/` directory under the same name.
+    #[cfg(all(unix, not(target_os = "macos")))]
+    fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
+        let info = PathBuf::from(&item.id);
+        let name = info
+            .file_name()?
+            .to_string_lossy()
+            .strip_suffix(".trashinfo")?
+            .to_owned();
+        Some(info.parent()?.parent()?.join("files").join(name))
+    }
+
+    /// Total bytes and file count under `root`, without following symlinks.
+    fn dir_stats(root: &Path) -> (u64, usize) {
+        let mut bytes = 0u64;
+        let mut files = 0usize;
+        let mut stack = vec![root.to_path_buf()];
+        while let Some(dir) = stack.pop() {
+            let Ok(entries) = fs::read_dir(&dir) else {
                 continue;
             };
-            if meta.is_dir() {
-                stack.push(entry.path());
-            } else if meta.is_file() {
-                bytes += meta.len();
-                files += 1;
+            for entry in entries.flatten() {
+                let Ok(meta) = fs::symlink_metadata(entry.path()) else {
+                    continue;
+                };
+                if meta.is_dir() {
+                    stack.push(entry.path());
+                } else if meta.is_file() {
+                    bytes += meta.len();
+                    files += 1;
+                }
             }
         }
+        (bytes, files)
     }
-    (bytes, files)
-}
 
-fn select_by_id(ids: &[String]) -> Option<Vec<TrashItem>> {
-    let items = list().ok()?;
-    Some(
-        items
-            .into_iter()
-            .filter(|item| ids.contains(&item.id.to_string_lossy().into_owned()))
-            .collect(),
-    )
-}
-
-fn result_for(total: usize, outcome: Result<(), trash::Error>) -> TrashActionResult {
-    match outcome {
-        Ok(()) => TrashActionResult {
-            total,
-            succeeded: total,
-            failed: 0,
-            errors: Vec::new(),
-        },
-        Err(err) => TrashActionResult {
-            total,
-            succeeded: 0,
-            failed: total,
-            errors: vec![err.to_string()],
-        },
+    fn select_by_id(ids: &[String]) -> Option<Vec<TrashItem>> {
+        let items = list().ok()?;
+        Some(
+            items
+                .into_iter()
+                .filter(|item| ids.contains(&item.id.to_string_lossy().into_owned()))
+                .collect(),
+        )
     }
-}
 
-/// Restores the given trash items (by id) to their original locations.
-#[must_use]
-pub fn restore_items(ids: &[String]) -> TrashActionResult {
-    select_by_id(ids).map_or_else(
-        || TrashActionResult {
-            total: ids.len(),
-            succeeded: 0,
-            failed: ids.len(),
-            errors: vec!["Could not read the trash".to_string()],
-        },
-        |selected| result_for(selected.len(), restore_all(selected)),
-    )
-}
-
-/// Permanently deletes the given trash items (by id).
-#[must_use]
-pub fn purge_items(ids: &[String]) -> TrashActionResult {
-    select_by_id(ids).map_or_else(
-        || TrashActionResult {
-            total: ids.len(),
-            succeeded: 0,
-            failed: ids.len(),
-            errors: vec!["Could not read the trash".to_string()],
-        },
-        |selected| result_for(selected.len(), purge_all(selected)),
-    )
-}
-
-/// Permanently deletes every item in the trash.
-#[must_use]
-pub fn empty_items() -> TrashActionResult {
-    let items = match list() {
-        Ok(items) => items,
-        Err(err) => {
-            return TrashActionResult {
-                total: 0,
-                succeeded: 0,
+    fn result_for(total: usize, outcome: Result<(), trash::Error>) -> TrashActionResult {
+        match outcome {
+            Ok(()) => TrashActionResult {
+                total,
+                succeeded: total,
                 failed: 0,
+                errors: Vec::new(),
+            },
+            Err(err) => TrashActionResult {
+                total,
+                succeeded: 0,
+                failed: total,
                 errors: vec![err.to_string()],
+            },
+        }
+    }
+
+    /// Restores the given trash items (by id) to their original locations.
+    #[must_use]
+    pub fn restore_items(ids: &[String]) -> TrashActionResult {
+        select_by_id(ids).map_or_else(
+            || TrashActionResult {
+                total: ids.len(),
+                succeeded: 0,
+                failed: ids.len(),
+                errors: vec!["Could not read the trash".to_string()],
+            },
+            |selected| result_for(selected.len(), restore_all(selected)),
+        )
+    }
+
+    /// Permanently deletes the given trash items (by id).
+    #[must_use]
+    pub fn purge_items(ids: &[String]) -> TrashActionResult {
+        select_by_id(ids).map_or_else(
+            || TrashActionResult {
+                total: ids.len(),
+                succeeded: 0,
+                failed: ids.len(),
+                errors: vec!["Could not read the trash".to_string()],
+            },
+            |selected| result_for(selected.len(), purge_all(selected)),
+        )
+    }
+
+    /// Permanently deletes every item in the trash.
+    #[must_use]
+    pub fn empty_items() -> TrashActionResult {
+        let items = match list() {
+            Ok(items) => items,
+            Err(err) => {
+                return TrashActionResult {
+                    total: 0,
+                    succeeded: 0,
+                    failed: 0,
+                    errors: vec![err.to_string()],
+                }
+            }
+        };
+        result_for(items.len(), purge_all(items))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn dir_stats_sums_files_recursively() {
+            let temp = std::env::temp_dir().join("cs-trash-size");
+            std::fs::create_dir_all(temp.join("sub")).unwrap();
+            std::fs::write(temp.join("a.bin"), vec![0u8; 512]).unwrap();
+            std::fs::write(temp.join("sub/b.bin"), vec![0u8; 1024]).unwrap();
+            std::fs::write(temp.join("sub/c.bin"), vec![0u8; 128]).unwrap();
+            assert_eq!(dir_stats(&temp), (512 + 1024 + 128, 3));
+            let _ = std::fs::remove_dir_all(&temp);
+        }
+
+        #[test]
+        fn dir_stats_handles_missing_root() {
+            let missing = std::env::temp_dir().join("cs-trash-missing");
+            assert_eq!(dir_stats(&missing), (0, 0));
+        }
+
+        #[test]
+        fn list_items_never_panics() {
+            // The OS trash may be empty (or a sandbox), but the listing must
+            // still return a well-formed vector.
+            let items = list_items();
+            for item in &items {
+                assert!(!item.id.is_empty());
+                assert!(!item.name.is_empty());
             }
         }
-    };
-    result_for(items.len(), purge_all(items))
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[cfg(target_os = "macos")]
+mod imp {
+    use crate::domain::trash::{TrashActionResult, TrashItem};
 
-    #[test]
-    fn dir_stats_sums_files_recursively() {
-        let temp = std::env::temp_dir().join("cs-trash-size");
-        std::fs::create_dir_all(temp.join("sub")).unwrap();
-        std::fs::write(temp.join("a.bin"), vec![0u8; 512]).unwrap();
-        std::fs::write(temp.join("sub/b.bin"), vec![0u8; 1024]).unwrap();
-        std::fs::write(temp.join("sub/c.bin"), vec![0u8; 128]).unwrap();
-        assert_eq!(dir_stats(&temp), (512 + 1024 + 128, 3));
-        let _ = std::fs::remove_dir_all(&temp);
+    /// macOS `trash` only supports deleting to the trash, not listing it.
+    #[must_use]
+    pub fn list_items() -> Vec<TrashItem> {
+        Vec::new()
     }
 
-    #[test]
-    fn dir_stats_handles_missing_root() {
-        let missing = std::env::temp_dir().join("cs-trash-missing");
-        assert_eq!(dir_stats(&missing), (0, 0));
-    }
-
-    #[test]
-    fn list_items_never_panics() {
-        // The OS trash may be empty (or a sandbox), but the listing must still
-        // return a well-formed vector.
-        let items = list_items();
-        for item in &items {
-            assert!(!item.id.is_empty());
-            assert!(!item.name.is_empty());
+    fn not_supported(ids: &[String]) -> TrashActionResult {
+        TrashActionResult {
+            total: ids.len(),
+            succeeded: 0,
+            failed: ids.len(),
+            errors: vec!["Trash management is not supported on macOS".to_string()],
         }
     }
+
+    /// Restores the given trash items (by id) to their original locations.
+    #[must_use]
+    pub fn restore_items(ids: &[String]) -> TrashActionResult {
+        not_supported(ids)
+    }
+
+    /// Permanently deletes the given trash items (by id).
+    #[must_use]
+    pub fn purge_items(ids: &[String]) -> TrashActionResult {
+        not_supported(ids)
+    }
+
+    /// Permanently deletes every item in the trash.
+    #[must_use]
+    pub fn empty_items() -> TrashActionResult {
+        not_supported(&[])
+    }
 }
+
+pub use imp::{empty_items, list_items, purge_items, restore_items};
