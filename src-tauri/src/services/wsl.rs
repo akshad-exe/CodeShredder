@@ -53,8 +53,12 @@ pub fn list_distros() -> std::result::Result<Vec<WslDistro>, String> {
 }
 
 /// Non-Windows stub so the module compiles everywhere.
+///
+/// # Errors
+///
+/// Never fails on non-Windows; always returns an empty list.
 #[cfg(not(target_os = "windows"))]
-pub fn list_distros() -> std::result::Result<Vec<WslDistro>, String> {
+pub const fn list_distros() -> std::result::Result<Vec<WslDistro>, String> {
     Ok(Vec::new())
 }
 
@@ -70,17 +74,20 @@ pub fn shutdown_all() -> std::result::Result<(), String> {
     } else {
         Err(format!(
             "wsl --shutdown failed: {}",
-            decode_output(out.stdout)
+            decode_output(&out.stdout)
         ))
     }
 }
 
 /// Non-Windows stub.
+///
+/// # Errors
+///
+/// Always returns an error, since WSL only exists on Windows.
 #[cfg(not(target_os = "windows"))]
 pub fn shutdown_all() -> std::result::Result<(), String> {
     Err("WSL is only available on Windows".to_string())
 }
-
 /// Compacts a distro's virtual disk: shuts WSL down, runs diskpart's
 /// `compact vdisk` and reports the bytes reclaimed. Progress events are
 /// streamed through `on_progress` so the frontend can show live feedback.
@@ -240,7 +247,7 @@ pub fn run_cleanup(distro: &str, commands: &str, on_progress: &mut dyn FnMut(Wsl
     match out {
         Ok(out) => {
             let success = out.status.success();
-            let output = decode_output([out.stdout, out.stderr].concat()).trim().to_string();
+            let output = decode_output(&[out.stdout, out.stderr].concat()).trim().to_string();
             on_progress(progress(
                 "cleanup",
                 if success { "success" } else { "error" },
@@ -287,6 +294,7 @@ pub fn run_cleanup(distro: &str, _commands: &str, on_progress: &mut dyn FnMut(Ws
 
 /// Formats a byte count for progress messages.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+#[allow(clippy::cast_precision_loss)]
 fn format_bytes(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
     let mut value = bytes as f64;
@@ -349,7 +357,7 @@ fn fallback_scan(distro: &str) -> Option<String> {
 /// Non-Windows stub.
 #[cfg(not(target_os = "windows"))]
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-fn fallback_scan(_distro: &str) -> Option<String> {
+const fn fallback_scan(_distro: &str) -> Option<String> {
     None
 }
 
@@ -396,7 +404,7 @@ fn run_capture(program: &str, args: &[&str]) -> std::result::Result<String, Stri
         .args(args)
         .output()
         .map_err(|e| e.to_string())?;
-    Ok(decode_output(out.stdout))
+    Ok(decode_output(&out.stdout))
 }
 
 /// Runs diskpart on a script that selects and compacts a virtual disk.
@@ -429,7 +437,7 @@ fn run_diskpart_compact(vhdx: &Path, elevated: bool) -> std::result::Result<(), 
         Command::new(&diskpart)
             .args(["/s", script_path.to_str().unwrap_or_default()])
             .output()
-            .map(|out| (out.status, decode_output([out.stdout, out.stderr].concat())))
+            .map(|out| (out.status, decode_output(&[out.stdout, out.stderr].concat())))
     };
 
     let _ = std::fs::remove_file(&script_path);
@@ -535,7 +543,7 @@ fn parse_reg_sections(output: &str) -> Vec<(String, HashMap<String, String>)> {
 /// Decodes command output, handling the UTF-16LE encoding that `wsl.exe` uses
 /// when piped (detected via embedded NUL bytes).
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-fn decode_output(bytes: Vec<u8>) -> String {
+fn decode_output(bytes: &[u8]) -> String {
     if bytes.contains(&0) {
         let units: Vec<u16> = bytes
             .chunks_exact(2)
@@ -543,7 +551,7 @@ fn decode_output(bytes: Vec<u8>) -> String {
             .collect();
         String::from_utf16_lossy(&units)
     } else {
-        String::from_utf8_lossy(&bytes).into_owned()
+        String::from_utf8_lossy(bytes).into_owned()
     }
 }
 
@@ -584,7 +592,7 @@ Windows Subsystem for Linux has no installed distributions.
     fn decodes_utf16le_output() {
         // "Ubuntu  Running" as UTF-16LE with a BOM.
         let bytes = b"\xff\xfeU\x00b\x00u\x00n\x00t\x00u\x00 \x00 \x00R\x00u\x00n\x00n\x00i\x00n\x00g\x00";
-        assert!(decode_output(bytes.to_vec()).contains("Ubuntu"));
+        assert!(decode_output(bytes).contains("Ubuntu"));
     }
 
     #[test]

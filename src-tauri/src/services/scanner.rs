@@ -1,7 +1,9 @@
-//! Parallel scanner: walks the given roots in parallel with `jwalk`, prunes
-//! matched, virtual-environment and protected folders so they are never
-//! descended into, measures each target on a worker thread and streams it to a
-//! channel as soon as its size is known.
+//! Parallel scanner that walks project roots and measures build-output folders.
+//!
+//! Uses `jwalk` to walk roots in parallel, pruning matched, virtual-environment
+//! and protected folders so they are never descended into, and measures each
+//! target on a worker thread, streaming it to a channel as soon as its size is
+//! known.
 //!
 //! Two caches make repeat scans of untouched projects near-instant:
 //!
@@ -79,7 +81,7 @@ impl ScannerEngine {
                     let patterns = patterns.clone();
                     let ignore = ignore.clone();
                     let cache = cache.clone();
-                    scope.spawn(move |_| walk_root(&root, patterns, ignore, cache, tx));
+                    scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &tx));
                 }
             }
         });
@@ -100,12 +102,13 @@ impl ScannerEngine {
 /// the stored targets are replayed without re-measuring anything; otherwise the
 /// matched folders are measured in parallel, streamed to `tx` and the snapshot
 /// is refreshed.
+#[allow(clippy::too_many_lines)]
 fn walk_root(
     root: &Path,
-    patterns: Arc<HashSet<String>>,
-    ignore: Arc<Vec<String>>,
-    cache: Arc<Mutex<ScanCache>>,
-    tx: Sender<ScanTarget>,
+    patterns: &Arc<HashSet<String>>,
+    ignore: &Arc<Vec<String>>,
+    cache: &Arc<Mutex<ScanCache>>,
+    tx: &Sender<ScanTarget>,
 ) {
     let walker = WalkDir::new(root)
         .skip_hidden(false)
@@ -139,15 +142,14 @@ fn walk_root(
                     path: entry.path().to_string_lossy().into_owned(),
                     mtime_nanos: mtime
                         .duration_since(SystemTime::UNIX_EPOCH)
-                        .map(|d| d.as_nanos())
-                        .unwrap_or(0),
+                        .map_or(0, |d| d.as_nanos()),
                 });
             }
         }
 
         let name = entry.file_name.to_string_lossy().into_owned();
-        let matches = patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(&patterns));
-        if matches && !is_ignored(&entry.path(), &name, &ignore) {
+        let is_match = patterns.contains(&name) || (is_venv_name(&name) && venv_enabled(patterns));
+        if is_match && !is_ignored(&entry.path(), &name, ignore) {
             matched.push((entry.path(), name));
         }
     }
@@ -297,7 +299,7 @@ fn measure_target(dir: &Path, folder_name: &str, cache: &Mutex<ScanCache>) -> Sc
     let latest = Arc::new(Mutex::new(None::<SystemTime>));
 
     rayon::in_place_scope(|scope| {
-        measure_under(dir, size.clone(), count.clone(), latest.clone(), scope);
+        measure_under(dir, &size, &count, &latest, scope);
     });
 
     let last_modified = latest
@@ -341,9 +343,9 @@ fn measure_target(dir: &Path, folder_name: &str, cache: &Mutex<ScanCache>) -> Sc
 /// Accumulates size/count/modified-time under `dir` into the shared counters.
 fn measure_under(
     dir: &Path,
-    size: Arc<AtomicU64>,
-    count: Arc<AtomicU64>,
-    latest: Arc<Mutex<Option<SystemTime>>>,
+    size: &Arc<AtomicU64>,
+    count: &Arc<AtomicU64>,
+    latest: &Arc<Mutex<Option<SystemTime>>>,
     scope: &rayon::Scope<'_>,
 ) {
     if CANCEL_REQUESTED.load(Ordering::Relaxed) {
@@ -357,7 +359,7 @@ fn measure_under(
     }
     if meta.is_dir() {
         if let Ok(mtime) = meta.modified() {
-            update_latest(&latest, mtime);
+            update_latest(latest, mtime);
         }
         let Ok(entries) = fs::read_dir(dir) else {
             return;
@@ -368,13 +370,13 @@ fn measure_under(
                 let size = size.clone();
                 let count = count.clone();
                 let latest = latest.clone();
-                scope.spawn(move |s| measure_under(&path, size, count, latest, s));
+                scope.spawn(move |s| measure_under(&path, &size, &count, &latest, s));
             } else if let Ok(m) = fs::symlink_metadata(&path) {
                 if m.is_file() {
                     size.fetch_add(m.len(), Ordering::Relaxed);
                     count.fetch_add(1, Ordering::Relaxed);
                     if let Ok(mtime) = m.modified() {
-                        update_latest(&latest, mtime);
+                        update_latest(latest, mtime);
                     }
                 }
             }
@@ -383,7 +385,7 @@ fn measure_under(
         size.fetch_add(meta.len(), Ordering::Relaxed);
         count.fetch_add(1, Ordering::Relaxed);
         if let Ok(mtime) = meta.modified() {
-            update_latest(&latest, mtime);
+            update_latest(latest, mtime);
         }
     }
 }
@@ -469,7 +471,7 @@ fn display_path_for(dir: &Path, folder_name: &str) -> String {
 
 /// Records the newer of two modification times.
 fn update_latest(latest: &Mutex<Option<SystemTime>>, mtime: SystemTime) {
-    let mut guard = latest.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = latest.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     match *guard {
         Some(existing) if existing > mtime => {}
         _ => *guard = Some(mtime),

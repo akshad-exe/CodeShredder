@@ -1,4 +1,4 @@
-//! CodeShredder - Fast, safe desktop cleanup for developers
+//! `CodeShredder` - Fast, safe desktop cleanup for developers
 //!
 //! This is the main library crate for the Tauri application.
 
@@ -16,6 +16,12 @@ pub mod utils;
 
 use crate::error::Result;
 
+/// Runs the Tauri application.
+///
+/// # Errors
+///
+/// Returns an error when the application fails to start, such as an invalid
+/// Tauri configuration or a failed system-initialization step.
 pub fn run() -> Result<()> {
     app::run()
 }

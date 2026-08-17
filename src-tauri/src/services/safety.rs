@@ -48,6 +48,7 @@ const MEDIUM_PATTERNS: &[&str] = &[".venv", "venv", ".gradle", "Pods", "vendor"]
 
 /// Classifies a target folder by name. Protected paths always win: if the path
 /// resolves into a protected root it is graded Dangerous regardless of name.
+#[must_use]
 pub fn classify(folder_name: &str, path: &Path) -> SafetyLevel {
     if is_protected(path) {
         return SafetyLevel::Dangerous;
@@ -66,6 +67,7 @@ pub fn classify(folder_name: &str, path: &Path) -> SafetyLevel {
 /// Blocks paths that must never be moved to the trash: filesystem roots,
 /// system directories and per-user OS folders (the user's home itself is
 /// allowed, since that is where developer junk usually lives).
+#[must_use]
 pub fn is_protected(path: &Path) -> bool {
     let abs = absolute(path);
     let norm = normalize(&abs);

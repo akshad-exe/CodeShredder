@@ -2,9 +2,11 @@
 
 use serde::{Deserialize, Serialize};
 
-/// How risky it is to delete a cache. Lockfile-rebuildable caches (npm, pip,
-/// composer, ...) are safe; heavier toolchains (cargo, maven, go, ...) are
-/// medium because rebuilding them is slow and offline builds break.
+/// How risky it is to delete a cache.
+///
+/// Lockfile-rebuildable caches (npm, pip, composer, ...) are safe; heavier
+/// toolchains (cargo, maven, go, ...) are medium because rebuilding them is
+/// slow and offline builds break.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CacheSafety {
@@ -14,11 +16,12 @@ pub enum CacheSafety {
 }
 
 impl CacheSafety {
-    pub fn as_str(self) -> &'static str {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
         match self {
-            CacheSafety::Safe => "safe",
-            CacheSafety::Medium => "medium",
-            CacheSafety::Dangerous => "dangerous",
+            Self::Safe => "safe",
+            Self::Medium => "medium",
+            Self::Dangerous => "dangerous",
         }
     }
 }

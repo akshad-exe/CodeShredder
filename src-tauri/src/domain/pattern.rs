@@ -104,6 +104,7 @@ pub const ALL_PATTERNS: &[&str] = &[
 ///
 /// Groups keep the UI compact: rather than a colour per tool, every target
 /// buckets into one of Web / Python / Systems / Mobile / Package caches.
+#[must_use]
 pub fn category_for(folder_name: &str) -> &str {
     match folder_name {
         // Web & JavaScript ecosystem
@@ -132,6 +133,7 @@ pub fn category_for(folder_name: &str) -> &str {
 /// Detects virtual-environment style folder names regardless of the tool or
 /// Python version that created them: `.venv`, `venv`, `env`, `.venv-wsl`,
 /// `.py39`, `.py310`, `virtualenv`, etc.
+#[must_use]
 pub fn is_venv_name(name: &str) -> bool {
     matches!(
         name,

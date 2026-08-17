@@ -1,7 +1,7 @@
 //! Cleanup history: persists a record of every cleanup run to a JSON file in
 //! the user's app-data directory so the UI can show what was cleaned and when.
 //!
-//! This is a lightweight, append-style journal. A full database (SQLite) is
+//! This is a lightweight, append-style journal. A full database (`SQLite`) is
 //! planned for later milestones — the file format is kept trivially compatible
 //! so it can be migrated.
 
@@ -47,6 +47,11 @@ pub struct HistoryRecord {
 }
 
 /// Appends an entry to the history journal.
+///
+/// # Errors
+///
+/// Returns an error when the app-data directory cannot be resolved, the
+/// journal cannot be serialized, or the file cannot be written.
 pub fn record_history(entry: HistoryEntry) -> crate::error::Result<()> {
     let mut history = load_history();
     history.entries.push(HistoryRecord {
@@ -74,6 +79,7 @@ pub fn record_history(entry: HistoryEntry) -> crate::error::Result<()> {
 }
 
 /// Loads the history journal, tolerating a missing or corrupt file.
+#[must_use]
 pub fn load_history() -> CleanupHistory {
     let Ok(file) = history_file() else {
         return CleanupHistory::default();
@@ -85,6 +91,7 @@ pub fn load_history() -> CleanupHistory {
 }
 
 /// Returns the newest N history records (most recent first).
+#[must_use]
 pub fn recent_history(limit: usize) -> Vec<HistoryRecord> {
     let mut history = load_history();
     history.entries.reverse();

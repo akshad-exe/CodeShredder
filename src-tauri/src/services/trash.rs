@@ -25,16 +25,14 @@ pub fn list_items() -> Vec<TrashItemDto> {
 fn to_dto(item: &TrashItem) -> TrashItemDto {
     let (size_bytes, entries) = match metadata(item).ok().map(|m| m.size) {
         Some(TrashItemSize::Bytes(bytes)) => (Some(bytes), None),
-        Some(TrashItemSize::Entries(count)) => match trash_item_dir_path(item).filter(|p| p.is_dir())
-        {
-            // Directories: the crate only reports an entry count, so walk the
-            // payload to get the real reclaimable bytes and file count.
-            Some(dir) => {
+        Some(TrashItemSize::Entries(count)) => trash_item_dir_path(item)
+            .filter(|p| p.is_dir())
+            .map_or((None, Some(count)), |dir| {
+                // Directories: the crate only reports an entry count, so walk
+                // the payload to get the real reclaimable bytes and file count.
                 let (bytes, files) = dir_stats(&dir);
                 (Some(bytes), Some(files))
-            }
-            None => (None, Some(count)),
-        },
+            }),
         None => (None, None),
     };
     TrashItemDto {
@@ -82,9 +80,8 @@ fn dir_stats(root: &Path) -> (u64, usize) {
             continue;
         };
         for entry in entries.flatten() {
-            let meta = match fs::symlink_metadata(entry.path()) {
-                Ok(m) => m,
-                Err(_) => continue,
+            let Ok(meta) = fs::symlink_metadata(entry.path()) else {
+                continue;
             };
             if meta.is_dir() {
                 stack.push(entry.path());
@@ -125,32 +122,35 @@ fn result_for(total: usize, outcome: Result<(), trash::Error>) -> TrashActionRes
 }
 
 /// Restores the given trash items (by id) to their original locations.
+#[must_use]
 pub fn restore_items(ids: &[String]) -> TrashActionResult {
-    match select_by_id(ids) {
-        Some(selected) => result_for(selected.len(), restore_all(selected)),
-        None => TrashActionResult {
+    select_by_id(ids).map_or_else(
+        || TrashActionResult {
             total: ids.len(),
             succeeded: 0,
             failed: ids.len(),
             errors: vec!["Could not read the trash".to_string()],
         },
-    }
+        |selected| result_for(selected.len(), restore_all(selected)),
+    )
 }
 
 /// Permanently deletes the given trash items (by id).
+#[must_use]
 pub fn purge_items(ids: &[String]) -> TrashActionResult {
-    match select_by_id(ids) {
-        Some(selected) => result_for(selected.len(), purge_all(selected)),
-        None => TrashActionResult {
+    select_by_id(ids).map_or_else(
+        || TrashActionResult {
             total: ids.len(),
             succeeded: 0,
             failed: ids.len(),
             errors: vec!["Could not read the trash".to_string()],
         },
-    }
+        |selected| result_for(selected.len(), purge_all(selected)),
+    )
 }
 
 /// Permanently deletes every item in the trash.
+#[must_use]
 pub fn empty_items() -> TrashActionResult {
     let items = match list() {
         Ok(items) => items,

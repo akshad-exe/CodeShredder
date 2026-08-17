@@ -92,6 +92,7 @@ pub struct ScanCache {
 impl ScanCache {
     /// Path of the cache file inside the per-user app data directory. Overridable
     /// via `CODE_SHREDDER_CACHE` (used by tests to isolate their cache).
+    #[must_use]
     pub fn cache_path() -> Option<PathBuf> {
         if let Ok(override_path) = std::env::var("CODE_SHREDDER_CACHE") {
             return Some(PathBuf::from(override_path));
@@ -102,14 +103,15 @@ impl ScanCache {
 
     /// Loads the cache from disk, returning an empty cache if it is missing or
     /// unreadable. A corrupt file is discarded rather than failing the scan.
+    #[must_use]
     pub fn load() -> Self {
         let Some(path) = Self::cache_path() else {
             return Self::default();
         };
-        match fs::read(&path) {
-            Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
-            Err(_) => Self::default(),
-        }
+        fs::read(&path).map_or_else(
+            |_| Self::default(),
+            |bytes| serde_json::from_slice(&bytes).unwrap_or_default(),
+        )
     }
 
     /// Writes the cache back to disk, creating the data directory as needed.
@@ -127,6 +129,7 @@ impl ScanCache {
 
     /// Returns the cached entry for `path` if it exists and the target
     /// directory's mtime is still unchanged since it was measured.
+    #[must_use]
     pub fn hit(&self, path: &Path, dir_mtime: SystemTime) -> Option<&CacheEntry> {
         let key = path.to_string_lossy();
         let entry = self.entries.get(key.as_ref())?;
@@ -145,6 +148,7 @@ impl ScanCache {
     }
 
     /// Returns the discovery snapshot for `root`, if one exists.
+    #[must_use]
     pub fn snapshot(&self, root: &str) -> Option<&RootSnapshot> {
         self.snapshots.get(root)
     }

@@ -2,7 +2,7 @@
 //!
 //! These are the system-wide "heavy hitters" that live outside any single
 //! project: npm/yarn/pnpm store, pip wheels, cargo registry, maven/gradle
-//! repositories, NuGet packages, Go module cache and Composer archives. Each
+//! repositories, `NuGet` packages, Go module cache and Composer archives. Each
 //! one is resolvable from the user's home (or LOCALAPPDATA on Windows) and is
 //! rebuildable, so clearing them frees tens of gigabytes safely.
 //!
@@ -28,6 +28,7 @@ struct CacheSpec {
 
 /// Lists every present global package-manager cache with its size in bytes.
 /// Only caches that actually exist on disk are returned.
+#[must_use]
 pub fn list_caches() -> Vec<CacheEntry> {
     cache_specs()
         .into_iter()
@@ -53,6 +54,11 @@ pub fn list_caches() -> Vec<CacheEntry> {
 /// and protected paths are refused. Clearing the *contents* (not the folder)
 /// means a relocated cache such as cargo's registry junction target keeps
 /// working instead of being left as a dangling reference.
+///
+/// # Errors
+///
+/// Returns an error when the id is unknown, the cache is missing on disk, the
+/// path is protected, or the contents cannot be emptied.
 pub fn clean_cache(id: &str) -> Result<(PathBuf, u64), String> {
     let spec = cache_specs()
         .into_iter()
@@ -87,6 +93,7 @@ fn empty_contents(root: &Path) -> std::io::Result<()> {
 
 /// All known package-manager caches, ordered from the biggest offenders to the
 /// smaller ones.
+#[allow(clippy::too_many_lines)]
 fn cache_specs() -> Vec<CacheSpec> {
     let mut specs = Vec::new();
     let push = |specs: &mut Vec<CacheSpec>,
@@ -331,7 +338,7 @@ fn local(rel: &str) -> Option<PathBuf> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn local(_rel: &str) -> Option<PathBuf> {
+const fn local(_rel: &str) -> Option<PathBuf> {
     None
 }
 
@@ -359,10 +366,7 @@ fn pnpm_override() -> Option<PathBuf> {
 
 /// Go's module cache: `GOMODCACHE` env var when set, otherwise `GOPATH\pkg\mod`.
 fn go_mod_cache() -> Option<PathBuf> {
-    match env("GOMODCACHE") {
-        Some(cache) => Some(cache),
-        None => env("GOPATH").map(|gopath| gopath.join("pkg").join("mod")),
-    }
+    env("GOMODCACHE").or_else(|| env("GOPATH").map(|gopath| gopath.join("pkg").join("mod")))
 }
 
 /// The user-level npmrc, preferring `NPM_CONFIG_USERCONFIG` then the standard
@@ -405,7 +409,7 @@ fn winvar(name: &str, rel: &str) -> Option<PathBuf> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn winvar(_name: &str, _rel: &str) -> Option<PathBuf> {
+const fn winvar(_name: &str, _rel: &str) -> Option<PathBuf> {
     None
 }
 
@@ -426,12 +430,10 @@ fn dir_size(root: &Path) -> u64 {
     WalkDir::new(root)
         .skip_hidden(false)
         .into_iter()
-        .filter_map(|entry| entry.ok())
+        .filter_map(std::result::Result::ok)
         .filter(|entry| entry.file_type.is_file())
         .map(|entry| {
-            std::fs::symlink_metadata(entry.path())
-                .map(|meta| meta.len())
-                .unwrap_or(0)
+            std::fs::symlink_metadata(entry.path()).map_or(0, |meta| meta.len())
         })
         .sum()
 }

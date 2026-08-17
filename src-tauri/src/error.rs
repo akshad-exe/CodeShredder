@@ -1,4 +1,4 @@
-//! Shared error type for the CodeShredder backend.
+//! Shared error type for the `CodeShredder` backend.
 
 use thiserror::Error;
 
