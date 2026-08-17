@@ -4,7 +4,7 @@
 //! paths are always rejected, and the requested mode decides between moving to
 //! the trash (default, recoverable) and permanent deletion (last resort).
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::domain::clean::{CleanError, CleanInput, CleanMode, CleanResult};
 use crate::services::history::{record_history, HistoryEntry};
