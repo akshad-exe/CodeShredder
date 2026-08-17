@@ -83,7 +83,7 @@ pub async fn cleanup_targets(input: CleanInput) -> CleanResult {
 
 /// Permanently removes `path` from disk. Only used when the user explicitly
 /// opts into permanent deletion; everything else goes through the Trash.
-fn remove_permanently(path: &PathBuf) -> std::io::Result<()> {
+fn remove_permanently(path: &Path) -> std::io::Result<()> {
     if path.is_dir() {
         std::fs::remove_dir_all(path)
     } else {

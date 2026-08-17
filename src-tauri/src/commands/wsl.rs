@@ -22,6 +22,11 @@ pub async fn list_wsl_distros() -> Vec<WslDistro> {
 }
 
 /// Shuts down every running WSL distro (required before compacting disks).
+///
+/// # Errors
+///
+/// Returns an error if the shutdown process fails to launch or exits
+/// unsuccessfully.
 #[tauri::command]
 pub async fn wsl_shutdown(on_event: Channel<WslProgress>) -> Result<(), String> {
     tracing::info!("wsl_shutdown called");

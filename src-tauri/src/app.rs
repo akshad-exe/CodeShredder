@@ -4,6 +4,12 @@ use crate::error::Result;
 use crate::state::AppState;
 
 /// Builds and runs the desktop application.
+///
+/// # Errors
+///
+/// Returns an error if the Tauri builder cannot initialize the window or
+/// plugins.
+#[allow(clippy::large_stack_frames)]
 pub fn run() -> Result<()> {
     // Initialize tracing for debug logs
     tracing_subscriber::fmt()
