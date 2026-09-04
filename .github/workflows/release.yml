@@ -107,8 +107,12 @@ jobs:
       - name: Generate release checksums
         shell: bash
         run: |
-          cd src-tauri/target/release/bundle
-          find . -type f -exec sha256sum {} \; > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
+          if [ -d "src-tauri/target/release/bundle" ]; then
+            cd src-tauri/target/release/bundle
+            find . -type f -exec sha256sum {} \; > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
+          else
+            echo "Bundle directory not found, skipping checksums"
+          fi
 
       - name: Upload checksum file
         shell: bash
