@@ -3,6 +3,10 @@
 use crate::domain::trash::{TrashActionResult, TrashItem};
 
 /// Lists every item currently in the OS Trash / Recycle Bin.
+///
+/// # Errors
+///
+/// Returns `Err(String)` if the trash directory cannot be read.
 #[tauri::command]
 pub fn list_trash() -> Result<Vec<TrashItem>, String> {
     Ok(crate::services::trash::list_items())

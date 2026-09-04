@@ -21,6 +21,10 @@ pub fn cancel_scan() {
 /// UI thread never freezes. Every matched target is emitted as a `scan-target`
 /// event the moment it is measured, and a final `scan-complete` event carries
 /// the full, size-sorted result.
+///
+/// # Errors
+///
+/// Returns `Err(String)` if the scan fails to start or encounters a system error.
 #[tauri::command]
 pub async fn scan_dev_folders(
     app: tauri::AppHandle,
