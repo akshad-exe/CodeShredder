@@ -107,8 +107,13 @@ jobs:
       - name: Generate release checksums
         shell: bash
         run: |
-          if [ -d "src-tauri/target/release/bundle" ]; then
-            cd src-tauri/target/release/bundle
+          BUNDLE_DIR="src-tauri/target/release/bundle"
+          if [ ! -d "$BUNDLE_DIR" ]; then
+            # macOS universal builds use a different target path
+            BUNDLE_DIR="src-tauri/target/universal-apple-darwin/release/bundle"
+          fi
+          if [ -d "$BUNDLE_DIR" ]; then
+            cd "$BUNDLE_DIR"
             find . -type f -exec sha256sum {} \; > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
           else
             echo "Bundle directory not found, skipping checksums"
@@ -119,5 +124,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.event.release.tag_name }}" \
-            "checksums-${{ matrix.os }}.sha256"
+          if [ -f "checksums-${{ matrix.os }}.sha256" ]; then
+            gh release upload "${{ github.event.release.tag_name }}" \
+              "checksums-${{ matrix.os }}.sha256"
+          else
+            echo "Checksum file not found, skipping upload"
+          fi
