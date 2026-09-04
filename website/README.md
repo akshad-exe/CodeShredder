@@ -6,7 +6,7 @@ The official promotional website for CodeShredder, deployed to GitHub Pages.
 
 - **React 19** + TypeScript + Vite
 - **Tailwind CSS** + shadcn/ui
-- **React Router** (BrowserRouter for clean URLs)
+- **React Router** (HashRouter for GitHub Pages project-site compatibility)
 - **lucide-react** icons
 
 ## Structure
@@ -43,8 +43,7 @@ bun run preview    # preview build
 Pushed automatically to GitHub Pages via `.github/workflows/deploy-website.yml`
 whenever files under `website/` change on `main`.
 
-Live URL: `https://akshad-exe.github.io/` (or your custom domain)
-(deployed at the repo site / custom domain root)
+Live URL: `https://akshad-exe.github.io/CodeShredder/`
 
 ## Download Page
 
@@ -59,10 +58,11 @@ The `/download` page:
 
 ## Notes
 
-- Served at the **root path** (no `/CodeShredder/` prefix) so it works on a
-  custom domain or GitHub Pages user site. Vite `base` is unset.
-- Uses **BrowserRouter** for clean URLs (e.g. `/download`).
-  For a GitHub Pages *project* site you'd need a `404.html` fallback so deep
-  links don't 404 — but serving at root doesn't need it.
+- Deployed as a GitHub Pages **project site**, so the URL is automatically
+  `https://akshad-exe.github.io/CodeShredder/` and Vite `base` is set to
+  `/CodeShredder/`. The repo-name prefix is GitHub's intended project-site
+  pattern (e.g. `facebook.github.io/react/`) and cannot be removed for this repo.
+- Uses **HashRouter** so deep links like `#/download` never 404 on refresh
+  (GitHub Pages can't rewrite URLs for client-side routing).
 - The download links point to the `v0.1.0-beta.1` release. Update the
   `RELEASE_BASE` constant in `DownloadPage.tsx` when publishing new releases.
