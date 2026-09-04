@@ -33,14 +33,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Ensure tag matches package.json version
+      # Ensure tag matches package.json version (allows beta/alpha/rc suffixes)
       - name: Ensure tag matches package version
         shell: bash
         run: |
           TAG=${GITHUB_REF#refs/tags/v}
           VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG" != "$VERSION" ]; then
-            echo "Tag ($TAG) does not match package.json version ($VERSION)"
+          # Strip pre-release suffix for comparison (e.g., 0.1.0-beta.1 → 0.1.0)
+          TAG_BASE=$(echo "$TAG" | sed -E 's/-[a-z]+\.[0-9]+$//')
+          if [ "$TAG_BASE" != "$VERSION" ]; then
+            echo "Tag ($TAG) base ($TAG_BASE) does not match package.json version ($VERSION)"
             exit 1
           fi
 
