@@ -93,7 +93,7 @@ fn empty_contents(root: &Path) -> std::io::Result<()> {
 
 /// All known package-manager caches, ordered from the biggest offenders to the
 /// smaller ones.
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 fn cache_specs() -> Vec<CacheSpec> {
     let mut specs = Vec::new();
     let push = |specs: &mut Vec<CacheSpec>,

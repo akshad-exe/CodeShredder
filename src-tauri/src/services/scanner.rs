@@ -102,7 +102,7 @@ impl ScannerEngine {
 /// the stored targets are replayed without re-measuring anything; otherwise the
 /// matched folders are measured in parallel, streamed to `tx` and the snapshot
 /// is refreshed.
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 fn walk_root(
     root: &Path,
     patterns: &Arc<HashSet<String>>,

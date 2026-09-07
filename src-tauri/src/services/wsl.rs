@@ -294,7 +294,7 @@ pub fn run_cleanup(distro: &str, _commands: &str, on_progress: &mut dyn FnMut(Ws
 
 /// Formats a byte count for progress messages.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-#[allow(clippy::cast_precision_loss)]
+#[expect(clippy::cast_precision_loss)]
 fn format_bytes(bytes: u64) -> String {
     const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
     let mut value = bytes as f64;

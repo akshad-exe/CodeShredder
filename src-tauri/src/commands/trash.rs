@@ -15,7 +15,7 @@ pub fn list_trash() -> Result<Vec<TrashItem>, String> {
 /// Restores the given trash items (by id) to their original locations.
 #[tauri::command]
 #[must_use]
-#[allow(clippy::needless_pass_by_value)]
+#[expect(clippy::needless_pass_by_value)]
 pub fn restore_trash(ids: Vec<String>) -> TrashActionResult {
     crate::services::trash::restore_items(&ids)
 }
@@ -23,7 +23,7 @@ pub fn restore_trash(ids: Vec<String>) -> TrashActionResult {
 /// Permanently deletes the given trash items (by id).
 #[tauri::command]
 #[must_use]
-#[allow(clippy::needless_pass_by_value)]
+#[expect(clippy::needless_pass_by_value)]
 pub fn purge_trash(ids: Vec<String>) -> TrashActionResult {
     crate::services::trash::purge_items(&ids)
 }
