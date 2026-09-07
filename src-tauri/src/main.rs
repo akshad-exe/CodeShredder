@@ -2,5 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    codeshredder_lib::run().expect("failed to run codeshredder")
+    if let Err(e) = codeshredder_lib::run() {
+        eprintln!("failed to run codeshredder: {e}");
+        std::process::exit(1);
+    }
 }

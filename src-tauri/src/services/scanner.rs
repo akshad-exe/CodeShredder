@@ -201,13 +201,22 @@ fn walk_root(
             let new_targets = new_targets.clone();
             scope.spawn(move |_| {
                 let target = measure_target(&dir, &name, &cache);
-                new_targets.lock().unwrap().push(target.clone());
+                // The rayon scope below joins every spawned task before it
+                // returns, so no task can panic-and-drop while these other
+                // tasks still hold the lock.
+                new_targets
+                    .lock()
+                    .expect("scan task panicked while holding lock")
+                    .push(target.clone());
                 let _ = tx.send(target);
             });
         }
     });
 
-    let targets = new_targets.lock().unwrap().clone();
+    let targets = new_targets
+        .lock()
+        .expect("scan task panicked while holding lock")
+        .clone();
     if let Ok(mut guard) = cache.lock() {
         guard.insert_snapshot(
             &key,
