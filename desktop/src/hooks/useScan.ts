@@ -81,7 +81,7 @@ export function useScan() {
       if (s.scanStatus !== 'scanning') return
       const idleMs = Date.now() - lastActivityRef.current
       if (idleMs > 120_000) {
-        window.clearInterval(timerRef.current)
+        window.clearInterval(timerRef.current ?? undefined)
         timerRef.current = null
         s.setScanStatus('error')
         s.setScanProgress(0)
