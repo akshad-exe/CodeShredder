@@ -119,18 +119,16 @@ impl ScannerEngine {
         let ignore: Arc<Vec<String>> = Arc::new(build_ignore(input));
         let cache = Arc::new(Mutex::new(ScanCache::load()));
         let stats = Arc::new(ScanStats::default());
+        let roots = normalize_roots(&input.roots);
 
         rayon::scope(|scope| {
-            for raw in &input.roots {
-                let root = expand_root(raw);
-                if root.is_dir() {
-                    let tx = tx.clone();
-                    let patterns = patterns.clone();
-                    let ignore = ignore.clone();
-                    let cache = cache.clone();
-                    let stats = stats.clone();
-                    scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &stats, &tx));
-                }
+            for root in roots {
+                let tx = tx.clone();
+                let patterns = patterns.clone();
+                let ignore = ignore.clone();
+                let cache = cache.clone();
+                let stats = stats.clone();
+                scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &stats, &tx));
             }
         });
 
@@ -540,6 +538,40 @@ fn expand_root(raw: &str) -> PathBuf {
     PathBuf::from(trimmed)
 }
 
+/// Normalizes the scan roots into one effective, deduplicated set:
+///
+/// - canonicalizes each root (falling back to the expanded path when
+///   canonicalization fails, e.g. on some network/removable drives),
+/// - keeps only existing directories,
+/// - drops duplicate roots,
+/// - drops any root that is a descendant of another root in the set, so
+///   nested roots never scan the same files twice (e.g. `~/Code` and
+///   `~/Code/ProjectX` would otherwise double-walk `ProjectX`).
+fn normalize_roots(raw: &[String]) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = Vec::new();
+    for raw_root in raw {
+        let expanded = expand_root(raw_root);
+        let canonical = fs::canonicalize(&expanded).unwrap_or(expanded);
+        if canonical.is_dir() && !roots.contains(&canonical) {
+            roots.push(canonical);
+        }
+    }
+
+    // Shortest-first so an ancestor always precedes its descendants.
+    roots.sort_by_key(|p| p.components().count());
+
+    let mut top: Vec<PathBuf> = Vec::new();
+    for root in roots {
+        if top.iter().any(|t| root.starts_with(t)) {
+            continue;
+        }
+        top.push(root);
+    }
+
+    tracing::debug!(roots = ?top, "normalized scan roots");
+    top
+}
+
 /// The project root folder name, e.g. `CodeShredder` for
 /// `.../CodeShredder/src-tauri/target` or `Kiko` for `.../Kiko/node_modules`.
 /// `target` folders sit two levels down (project root -> crate -> target), so
@@ -593,4 +625,69 @@ fn format_time(time: SystemTime) -> String {
     // a freshly formatted one, so both sides must agree exactly or the cache
     // would never hit.
     dt.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Creates a throwaway directory tree under the OS temp dir:
+    /// `{unique}/A/B` and `{unique}/A/C`. Returns it without auto-cleanup so
+    /// the caller controls lifetime.
+    fn temp_tree() -> PathBuf {
+        let base = std::env::temp_dir().join(format!(
+            "cs-scan-root-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(base.join("A/B")).expect("create A/B");
+        fs::create_dir_all(base.join("A/C")).expect("create A/C");
+        base
+    }
+
+    #[test]
+    fn normalize_roots_dedupes_identical_paths() {
+        let base = temp_tree();
+        let root = base.join("A/B");
+        let normalized = normalize_roots(&[
+            root.to_string_lossy().into_owned(),
+            root.to_string_lossy().into_owned(),
+        ]);
+        assert_eq!(normalized, vec![root]);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn normalize_roots_drops_nested_roots() {
+        let base = temp_tree();
+        let nested = base.join("A/B").to_string_lossy().into_owned();
+        let parent = base.join("A").to_string_lossy().into_owned();
+        let normalized = normalize_roots(&[nested, parent]);
+        // The ancestor must win; the descendant root is skipped.
+        assert_eq!(normalized, vec![base.join("A")]);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn normalize_roots_skips_missing_dirs() {
+        let base = temp_tree();
+        let missing = base.join("does-not-exist").to_string_lossy().into_owned();
+        let real = base.join("A").to_string_lossy().into_owned();
+        let normalized = normalize_roots(&[missing, real]);
+        assert_eq!(normalized, vec![base.join("A")]);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn normalize_roots_keeps_siblings() {
+        let base = temp_tree();
+        let a = base.join("A").to_string_lossy().into_owned();
+        let member = base.join("A/B").to_string_lossy().into_owned();
+        let sibling = base.join("sibling");
+        fs::create_dir_all(&sibling).expect("create sibling");
+        let sibling_s = sibling.to_string_lossy().into_owned();
+        let normalized = normalize_roots(&[a, member, sibling_s]);
+        assert_eq!(normalized, vec![base.join("A"), sibling]);
+        let _ = fs::remove_dir_all(&base);
+    }
 }
