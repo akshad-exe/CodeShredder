@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use tauri::Emitter;
 
-use crate::domain::scan::{ScanInput, ScanResult, ScanTarget};
+use crate::domain::scan::{ScanInput, ScanResult, ScanSummary, ScanTarget};
 use crate::services::scanner::ScannerEngine;
 
 /// Targets are streamed to the frontend in batches to keep IPC churn flat as
@@ -28,8 +28,8 @@ pub fn cancel_scan() {
 /// The heavy walk runs on rayon's thread pool inside a blocking task, so the
 /// UI thread never freezes. Matched targets are emitted as `scan-targets`
 /// events in batches (see `TARGET_BATCH`/`TARGET_FLUSH`) the moment they are
-/// measured, and a final `scan-complete` event carries the full, size-sorted
-/// result.
+/// measured, and a final `scan-complete` event carries the summary so the
+/// frontend can finalize its accumulated list.
 ///
 /// # Errors
 ///
@@ -98,12 +98,21 @@ pub async fn scan_dev_folders(
         scan_duration,
     };
 
+    let summary = ScanSummary {
+        total_size,
+        total_count,
+        scan_duration,
+    };
+
     tracing::info!(
         total_count,
         total_size,
         scan_duration,
         "scan_dev_folders completed"
     );
-    let _ = scan_app.emit("scan-complete", &result);
+    // Targets were already streamed in `scan-targets` batches; the completion
+    // event only carries the summary so the frontend finalizes its accumulated
+    // list instead of receiving every target a second time.
+    let _ = scan_app.emit("scan-complete", &summary);
     Ok(result)
 }

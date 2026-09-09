@@ -35,7 +35,10 @@ export function useScan() {
       store.setScanStatus('complete')
       store.setScanProgress(100)
       store.setCurrentScanPath('')
-      store.setTargets(result.targets)
+      // Targets arrived via `scan-targets` batches in arrival order; finalize
+      // by size-sorting the accumulated list in place (no second transfer).
+      const targets = [...store.targets].sort((a, b) => b.sizeBytes - a.sizeBytes)
+      store.setTargets(targets)
       store.setTotalReclaimable(result.totalSize)
       if (timerRef.current) {
         window.clearInterval(timerRef.current)
