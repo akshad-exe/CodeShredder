@@ -1,4 +1,5 @@
 import { ScanSearch } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { ResultRow } from './ResultRow'
 import { formatCount } from '@/lib/format'
@@ -13,6 +14,17 @@ export function ResultsList() {
   const selectAllTargets = useCleanupStore((s) => s.selectAllTargets)
   const deselectAllTargets = useCleanupStore((s) => s.deselectAllTargets)
   const hasProgress = scanStatus !== 'idle'
+
+  // Windowed rendering against the page's own scroll container (`main`), so a
+  // home-wide scan with thousands of rows stays a handful of mounted ResultRows
+  // instead of mounting every target into the DOM.
+  const rowVirtualizer = useVirtualizer({
+    count: targets.length,
+    getScrollElement: () => document.querySelector('main'),
+    estimateSize: () => 100,
+    overscan: 10,
+    getItemKey: (index) => targets[index].id,
+  })
 
   const allSelected = targets.length > 0 && selectedTargets.size === targets.length
   const liveScanning = scanStatus === 'scanning' && targets.length > 0
@@ -99,9 +111,19 @@ export function ResultsList() {
           Select all
         </label>
       </div>
-      {targets.map((target) => (
-        <ResultRow key={target.id} target={target} />
-      ))}
+      <div className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+          <div
+            key={virtualItem.key}
+            data-index={virtualItem.index}
+            ref={rowVirtualizer.measureElement}
+            className="absolute left-0 top-0 w-full pb-2.5"
+            style={{ transform: `translateY(${virtualItem.start}px)` }}
+          >
+            <ResultRow target={targets[virtualItem.index]} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
