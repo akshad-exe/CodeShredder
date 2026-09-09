@@ -8,17 +8,33 @@
 //!   fingerprint matches on a later scan the target list is replayed without
 //!   re-walking or re-measuring anything.
 //! - A per-target **size cache**: measured size/file-count of a target folder,
-//!   reused when that folder's own metadata is unchanged.
+//!   reused when that folder's own metadata is unchanged *and* the measurement
+//!   is still within `MEASURE_TTL`.
+//!
+//! Per-directory target stamps (for structure-level revalidation without file
+//! stats) were drafted for this layer but measured as unaffordable in JSON:
+//! they grow the cache to multi-MB (regressing warm scans ~2.3x). They return
+//! once the cache moves to a compact binary format (see the storage plan).
 
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-/// A single directory visited during a scan, stamped with its mtime.
+/// A cached measurement is trusted for this long after it was taken.
+///
+/// Directory mtimes miss same-size content edits (and nanosecond evidence is
+/// sometimes lost on NTFS), so the TTL bounds how stale a replayed size can
+/// be: after it lapses the target is re-measured even if its metadata looks
+/// unchanged.
+pub const MEASURE_TTL: Duration = Duration::from_hours(7 * 24);
+
+/// A single directory visited during a scan, stamped with its mtime. The path
+/// is absolute in root fingerprints and relative (to the target) in a
+/// `CacheEntry`'s stamp set.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DirStamp {
     pub path: String,
@@ -127,14 +143,15 @@ impl ScanCache {
         }
     }
 
-    /// Returns the cached entry for `path` if it exists and the target
-    /// directory's mtime is still unchanged since it was measured.
+    /// Returns the cached entry for `path` if it exists, the target
+    /// directory's mtime is still unchanged since it was measured, and the
+    /// measurement is still within `MEASURE_TTL`. An expired measurement is
+    /// not replayed even when the mtime matches.
     #[must_use]
-    pub fn hit(&self, path: &Path, dir_mtime: SystemTime) -> Option<&CacheEntry> {
+    pub fn hit(&self, path: &Path, dir_mtime: SystemTime, now: SystemTime) -> Option<&CacheEntry> {
         let key = path.to_string_lossy();
         let entry = self.entries.get(key.as_ref())?;
-        let cached = format_time(dir_mtime);
-        if entry.dir_mtime == cached {
+        if entry.dir_mtime == format_time(dir_mtime) && is_fresh(entry, now) {
             Some(entry)
         } else {
             None
@@ -162,4 +179,72 @@ impl ScanCache {
 fn format_time(time: SystemTime) -> String {
     let dt: chrono::DateTime<chrono::Local> = time.into();
     dt.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
+}
+
+/// True when `now` is within `MEASURE_TTL` of when the entry was measured. An
+/// unparsable timestamp counts as expired so a corrupt clock never pins a
+/// measurement forever.
+fn is_fresh(entry: &CacheEntry, now: SystemTime) -> bool {
+    parse_time(&entry.measured_at).is_some_and(|at| {
+        now.duration_since(at)
+            .map_or(true, |age| age <= MEASURE_TTL)
+    })
+}
+
+fn parse_time(value: &str) -> Option<SystemTime> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .ok()
+        .map(|dt| dt.to_utc().into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(measured_at: SystemTime) -> CacheEntry {
+        CacheEntry {
+            size_bytes: 100,
+            file_count: 3,
+            last_modified: "last".into(),
+            dir_mtime: "dir".into(),
+            measured_at: format_time(measured_at),
+        }
+    }
+
+    fn old_cache(dir_mtime: SystemTime, measured_at: SystemTime) -> ScanCache {
+        let mut cache = ScanCache::default();
+        let mut e = entry(measured_at);
+        e.dir_mtime = format_time(dir_mtime);
+        cache.insert(Path::new("/tmp/target"), e);
+        cache
+    }
+
+    const DAY: Duration = Duration::from_hours(24);
+    const WEEK: Duration = Duration::from_hours(7 * 24);
+
+    fn now() -> SystemTime {
+        SystemTime::now()
+    }
+
+    #[test]
+    fn hit_replays_fresh_unchanged_entry() {
+        let mtime = now();
+        let cache = old_cache(mtime, now());
+        assert!(cache.hit(Path::new("/tmp/target"), mtime, now()).is_some());
+    }
+
+    #[test]
+    fn hit_ignores_stale_measurement() {
+        let mtime = now();
+        let cache = old_cache(mtime, now() - WEEK - DAY);
+        assert!(cache.hit(Path::new("/tmp/target"), mtime, now()).is_none());
+    }
+
+    #[test]
+    fn hit_ignores_changed_dir_mtime() {
+        let cache = old_cache(now(), now());
+        assert!(cache
+            .hit(Path::new("/tmp/target"), now() + DAY, now())
+            .is_none());
+    }
 }
