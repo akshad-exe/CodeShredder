@@ -26,6 +26,8 @@ use std::time::{Duration, SystemTime};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
+use crate::domain::mtime::{format_time, parse_time};
+
 /// A cached measurement is trusted for this long after it was taken.
 ///
 /// Directory mtimes miss same-size content edits (and nanosecond evidence is
@@ -155,9 +157,10 @@ impl ScanCache {
                 if entry_path.extension().and_then(|e| e.to_str()) != Some("json") {
                     continue;
                 }
-                if let Some(file) = fs::read(&entry_path).ok().and_then(|bytes| {
-                    serde_json::from_slice::<RootSnapshotFile>(&bytes).ok()
-                }) {
+                if let Some(file) = fs::read(&entry_path)
+                    .ok()
+                    .and_then(|bytes| serde_json::from_slice::<RootSnapshotFile>(&bytes).ok())
+                {
                     from_files.insert(file.root.clone());
                     cache.snapshots.insert(file.root, file.snapshot);
                 }
@@ -290,11 +293,6 @@ fn write_atomic(path: &Path, bytes: &[u8]) {
     }
 }
 
-fn format_time(time: SystemTime) -> String {
-    let dt: chrono::DateTime<chrono::Local> = time.into();
-    dt.to_rfc3339_opts(chrono::SecondsFormat::Nanos, true)
-}
-
 /// True when `now` is within `MEASURE_TTL` of when the entry was measured. An
 /// unparsable timestamp counts as expired so a corrupt clock never pins a
 /// measurement forever.
@@ -303,12 +301,6 @@ fn is_fresh(entry: &CacheEntry, now: SystemTime) -> bool {
         now.duration_since(at)
             .map_or(true, |age| age <= MEASURE_TTL)
     })
-}
-
-fn parse_time(value: &str) -> Option<SystemTime> {
-    chrono::DateTime::parse_from_rfc3339(value)
-        .ok()
-        .map(|dt| dt.to_utc().into())
 }
 
 #[cfg(test)]
@@ -395,7 +387,10 @@ mod tests {
         let mut e = entry(t);
         e.dir_mtime = format_time(t);
         cache.insert(Path::new("/tmp/t"), e);
-        cache.insert_snapshot("/home/user/proj", snapshot_for("/home/user/proj/node_modules"));
+        cache.insert_snapshot(
+            "/home/user/proj",
+            snapshot_for("/home/user/proj/node_modules"),
+        );
 
         cache.save_to(&main);
 
@@ -421,9 +416,14 @@ mod tests {
     fn legacy_inline_snapshots_migrate_to_root_files() {
         let main = tmp_main("legacy");
         let mut legacy = ScanCache::default();
-        legacy.snapshots.insert("/old/root".into(), snapshot_for("/old/root/build"));
-        fs::write(&main, serde_json::to_vec(&legacy).expect("serialize legacy"))
-            .expect("write legacy doc");
+        legacy
+            .snapshots
+            .insert("/old/root".into(), snapshot_for("/old/root/build"));
+        fs::write(
+            &main,
+            serde_json::to_vec(&legacy).expect("serialize legacy"),
+        )
+        .expect("write legacy doc");
 
         let mut cache = ScanCache::load_from(&main);
         assert!(cache.snapshot("/old/root").is_some());
