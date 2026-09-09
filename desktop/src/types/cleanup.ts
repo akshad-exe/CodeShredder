@@ -21,8 +21,7 @@ export type ScanInput = {
   ignore?: string[]
 }
 
-export type ScanResult = {
-  targets: CleanupTarget[]
+export type ScanSummary = {
   totalSize: number
   totalCount: number
   scanDuration: number

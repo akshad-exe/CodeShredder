@@ -13,12 +13,13 @@
 #[cfg(not(target_os = "macos"))]
 mod imp {
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     use trash::os_limited::{list, metadata, purge_all, restore_all};
     use trash::{TrashItem, TrashItemSize};
 
     use crate::domain::trash::{TrashActionResult, TrashItem as TrashItemDto};
+    use crate::platform::trash::item_dir_path;
 
     /// Lists every item in the Recycle Bin with accurate reclaimable byte sizes.
     #[must_use]
@@ -32,7 +33,7 @@ mod imp {
     fn to_dto(item: &TrashItem) -> TrashItemDto {
         let (size_bytes, entries) = match metadata(item).ok().map(|m| m.size) {
             Some(TrashItemSize::Bytes(bytes)) => (Some(bytes), None),
-            Some(TrashItemSize::Entries(count)) => trash_item_dir_path(item)
+            Some(TrashItemSize::Entries(count)) => item_dir_path(item)
                 .filter(|p| p.is_dir())
                 .map_or((None, Some(count)), |dir| {
                     // Directories: the crate only reports an entry count, so
@@ -52,30 +53,6 @@ mod imp {
             size_bytes,
             entries,
         }
-    }
-
-    /// On-disk path of an item's trash payload.
-    ///
-    /// On Windows `id` is the absolute parsing name of the in-trash `$R` entry,
-    /// so it is the payload path directly.
-    #[cfg(target_os = "windows")]
-    fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
-        Some(PathBuf::from(&item.id))
-    }
-
-    /// On-disk path of an item's trash payload (freedesktop / Linux).
-    ///
-    /// `id` points at the `.trashinfo` metadata file; the actual payload lives
-    /// in a sibling `files/` directory under the same name.
-    #[cfg(all(unix, not(target_os = "macos")))]
-    fn trash_item_dir_path(item: &TrashItem) -> Option<PathBuf> {
-        let info = PathBuf::from(&item.id);
-        let name = info
-            .file_name()?
-            .to_string_lossy()
-            .strip_suffix(".trashinfo")?
-            .to_owned();
-        Some(info.parent()?.parent()?.join("files").join(name))
     }
 
     /// Total bytes and file count under `root`, without following symlinks.

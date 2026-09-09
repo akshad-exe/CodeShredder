@@ -50,3 +50,14 @@ pub struct ScanResult {
     pub total_count: u64,
     pub scan_duration: f64,
 }
+
+/// Lean summary sent with the final `scan-complete` event. The targets
+/// themselves were already streamed in `scan-targets` batches, so they are not
+/// repeated here.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanSummary {
+    pub total_size: u64,
+    pub total_count: u64,
+    pub scan_duration: f64,
+}

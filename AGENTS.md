@@ -15,7 +15,6 @@ CodeShredder is a fast, safe desktop cleanup app for developers and power users:
 - `src-tauri/src/commands/` — Tauri command layer (`#[tauri::command]`).
 - `src-tauri/src/services/` — business logic (`wsl.rs`, `caches.rs`, `scanner.rs`, `trash.rs`, `safety.rs`, `history.rs`).
 - `src-tauri/src/domain/`, `storage/`, `platform/`, `error.rs`, `state.rs`, `app.rs`.
-- `.harness/` (gitignored) — cross-platform verification for backend code (see below).
 
 ## CodeGraph (IMPORTANT — WSL /mnt workaround)
 
@@ -43,14 +42,23 @@ bun dev                # vite dev server
 npm run tauri:dev      # full Tauri dev (Windows needed for WSL features)
 ```
 
-Backend can't fully compile on WSL (Tauri sys needs `gio-2.0.pc`). Verification:
+Backend verification (Ubuntu): Tauri needs its system build deps installed first —
+`sudo apt install libgirepository1.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev` (plus
+`libsoup-3.0-dev` if webkit needs it). Then verify directly in `src-tauri/`:
 
-- `.harness/cs-check` — mirrors domain/services/storage/error; run `cargo test --manifest-path .harness/cs-check/Cargo.toml` and `cargo clippy --manifest-path .harness/cs-check/Cargo.toml --all-targets`. Keep `services/wsl.rs` copies in sync with `src-tauri` (`cp src-tauri/src/services/wsl.rs .harness/cs-check/src/services/wsl.rs`).
-- `.harness/wsl-cmd-check` + `.harness/tauri-shim` — typecheck/smoke-run the real `commands/wsl.rs` against a Tauri shim.
+```sh
+cargo check          # fast typecheck
+cargo clippy --all-targets -- -D warnings
+cargo test           # unit tests
+```
+
+`target_os = "windows"`-gated code (e.g. `runas`/diskpart in WSL commands) still
+only compiles when building on Windows, so Windows-only changes need a Windows
+build to validate. `runas` 1.2 has no `.output()`, only `.status()`; success = exit code 0.
 
 ## Gotchas
 
-- **Windows-only code is NOT compiled by the harness** (cfg'd `target_os = "windows"`), so compile errors there (e.g. `runas::Command::args` vs `.args(&[...])`) only surface when building on Windows. `runas` 1.2 has no `.output()`, only `.status()`; success = exit code 0.
+- **Windows-only code is NOT compiled on Ubuntu** (cfg'd `target_os = "windows"`), so compile errors there (e.g. `runas::Command::args` vs `.args(&[...])`) only surface when building on Windows. `runas` 1.2 has no `.output()`, only `.status()`; success = exit code 0.
 - WSL compact auto-elevates the diskpart step via `runas` (UAC prompt). Freed bytes are verified by before/after vhdx size.
 - Frontend checkbox preference: raw accent checkboxes (`<input type="checkbox" ... accent-[var(--accent)] />`) — do NOT reintroduce shadcn `Checkbox`. Treemap was removed — do not re-add.
 - Scrollbars are hidden app-wide via the `.no-scrollbar` utility (`index.css`); scrolling still works.

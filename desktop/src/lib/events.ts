@@ -1,17 +1,20 @@
 import { listen } from '@tauri-apps/api/event'
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import type { ScanResult, CleanupTarget } from '@/types/cleanup'
+import type { ScanSummary, CleanupTarget } from '@/types/cleanup'
 
-/** Subscribes to live per-target events emitted during a scan. */
-export async function onScanTarget(
-  handler: (target: CleanupTarget) => void,
+/** Subscribes to live, batched scan progress: arrays of targets streamed as
+ * they're measured, flushed every ~25 targets or ~100 ms. */
+export async function onScanTargets(
+  handler: (targets: CleanupTarget[]) => void,
 ): Promise<UnlistenFn> {
-  return listen<CleanupTarget>('scan-target', (event) => handler(event.payload))
+  return listen<CleanupTarget[]>('scan-targets', (event) => handler(event.payload))
 }
 
-/** Subscribes to the final, size-sorted scan result. */
+/** Subscribes to the final scan summary. The accumulated targets are already
+ * streamed in batches; this carries only totals and lets the frontend finalize
+ * (sort) its list. */
 export async function onScanComplete(
-  handler: (result: ScanResult) => void,
+  handler: (summary: ScanSummary) => void,
 ): Promise<UnlistenFn> {
-  return listen<ScanResult>('scan-complete', (event) => handler(event.payload))
+  return listen<ScanSummary>('scan-complete', (event) => handler(event.payload))
 }
