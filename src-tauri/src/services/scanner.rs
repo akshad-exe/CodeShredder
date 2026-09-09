@@ -157,7 +157,7 @@ impl ScannerEngine {
         });
 
         let save_started = Instant::now();
-        if let Ok(guard) = cache.lock() {
+        if let Ok(mut guard) = cache.lock() {
             guard.save();
         }
         stats.time_saving_ms.fetch_add(
