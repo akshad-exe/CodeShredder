@@ -2,7 +2,7 @@ import { Channel, invoke } from '@tauri-apps/api/core'
 import { revealItemInDir } from '@tauri-apps/plugin-opener'
 import type {
   ScanInput,
-  ScanResult,
+  ScanSummary,
   CleanSummary,
   CleanMode,
   CleanupHistoryEntry,
@@ -25,8 +25,8 @@ export function isTauri(): boolean {
 }
 
 /** Scans roots for known developer-junk folders (MVP v0.2 backend command). */
-export async function scanDevFolders(input: ScanInput): Promise<ScanResult> {
-  return invoke<ScanResult>('scan_dev_folders', { input })
+export async function scanDevFolders(input: ScanInput): Promise<ScanSummary> {
+  return invoke<ScanSummary>('scan_dev_folders', { input })
 }
 
 /** Asks the in-progress scan to stop early. */

@@ -11,6 +11,7 @@ use std::time::{Instant, SystemTime};
 use jwalk::WalkDir;
 use uuid::Uuid;
 
+use crate::domain::mtime::format_time;
 use crate::domain::pattern::{category_for, is_venv_name};
 use crate::domain::scan::ScanTarget;
 use crate::services::safety::classify;
@@ -18,6 +19,7 @@ use crate::services::scanner::display::{display_path_for, project_root_name};
 use crate::services::scanner::measure::measure_target;
 use crate::services::scanner::prune::prune_children;
 use crate::services::scanner::{venv_enabled, ScanStats, CANCEL_REQUESTED};
+use crate::storage::cache::is_snapshot_fresh;
 use crate::storage::cache::{DirStamp, RootSnapshot, ScanCache, StoredTarget};
 
 /// Walks `root` with `jwalk`, replaying the previous snapshot when the tree is
@@ -90,10 +92,13 @@ pub(super) fn walk_root(
     let mut effective_ignore: Vec<String> = ignore.as_ref().clone();
     effective_ignore.sort_unstable();
 
-    // Option A: if nothing under the root changed since the last scan, replay
-    // the previously discovered targets and skip the measurement work entirely.
+    // Option A: if nothing under the root changed since the last scan and the
+    // snapshot is still within `MEASURE_TTL`, replay the previously discovered
+    // targets and skip the measurement work entirely. An expired snapshot is
+    // not trusted even when its fingerprint still matches.
     if let Some(snapshot) = cache.lock().ok().and_then(|g| g.snapshot(&key).cloned()) {
-        if snapshot.patterns == effective_patterns
+        if is_snapshot_fresh(&snapshot, SystemTime::now())
+            && snapshot.patterns == effective_patterns
             && snapshot.ignore == effective_ignore
             && snapshot.fingerprint == fingerprint
         {
@@ -157,6 +162,7 @@ pub(super) fn walk_root(
                 fingerprint,
                 patterns: effective_patterns,
                 ignore: effective_ignore,
+                created_at: format_time(SystemTime::now()),
                 targets: targets
                     .into_iter()
                     .map(|t| StoredTarget {

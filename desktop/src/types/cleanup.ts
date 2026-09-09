@@ -21,15 +21,6 @@ export type ScanInput = {
   ignore?: string[]
 }
 
-export type ScanResult = {
-  targets: CleanupTarget[]
-  totalSize: number
-  totalCount: number
-  scanDuration: number
-}
-
-/** Lean summary carried by the final `scan-complete` event; targets were
- * already streamed in `scan-targets` batches. */
 export type ScanSummary = {
   totalSize: number
   totalCount: number

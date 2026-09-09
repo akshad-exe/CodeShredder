@@ -80,6 +80,12 @@ pub struct RootSnapshot {
     /// snapshot identity.
     #[serde(default)]
     pub ignore: Vec<String>,
+    /// When this snapshot was created. Used to enforce `MEASURE_TTL` on replay:
+    /// an expired snapshot is not trusted even when its fingerprint still matches.
+    /// Missing or unparseable values count as expired so old cache files are
+    /// transparently re-measured on first access.
+    #[serde(default)]
+    pub created_at: String,
 }
 
 /// A single cached measurement keyed by the target folder's absolute path.
@@ -303,6 +309,17 @@ fn is_fresh(entry: &CacheEntry, now: SystemTime) -> bool {
     })
 }
 
+/// True when the snapshot was created within `MEASURE_TTL` of `now`. An
+/// unparseable or missing `created_at` counts as expired so old cache files are
+/// transparently re-measured on first access.
+#[must_use]
+pub fn is_snapshot_fresh(snapshot: &RootSnapshot, now: SystemTime) -> bool {
+    parse_time(&snapshot.created_at).is_some_and(|at| {
+        now.duration_since(at)
+            .map_or(true, |age| age <= MEASURE_TTL)
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -352,6 +369,30 @@ mod tests {
         assert!(cache
             .hit(Path::new("/tmp/target"), now() + DAY, now())
             .is_none());
+    }
+
+    #[test]
+    fn snapshot_is_fresh_within_ttl() {
+        let fresh = RootSnapshot {
+            created_at: format_time(now() - DAY),
+            ..RootSnapshot::default()
+        };
+        assert!(is_snapshot_fresh(&fresh, now()));
+    }
+
+    #[test]
+    fn snapshot_expires_after_ttl() {
+        let stale = RootSnapshot {
+            created_at: format_time(now() - WEEK - DAY),
+            ..RootSnapshot::default()
+        };
+        assert!(!is_snapshot_fresh(&stale, now()));
+    }
+
+    #[test]
+    fn snapshot_without_timestamp_is_expired() {
+        // Pre-TTL cache files have no `created_at`; they must be re-measured.
+        assert!(!is_snapshot_fresh(&RootSnapshot::default(), now()));
     }
 
     fn tmp_main(tag: &str) -> PathBuf {

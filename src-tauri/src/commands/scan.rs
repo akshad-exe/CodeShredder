@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use tauri::Emitter;
 
-use crate::domain::scan::{ScanInput, ScanResult, ScanSummary, ScanTarget};
+use crate::domain::scan::{ScanInput, ScanSummary, ScanTarget};
 use crate::services::scanner::ScannerEngine;
 
 /// Targets are streamed to the frontend in batches to keep IPC churn flat as
@@ -38,7 +38,7 @@ pub fn cancel_scan() {
 pub async fn scan_dev_folders(
     app: tauri::AppHandle,
     input: ScanInput,
-) -> Result<ScanResult, String> {
+) -> Result<ScanSummary, String> {
     tracing::info!(roots = ?input.roots, patterns = ?input.patterns, "scan_dev_folders called");
 
     let (tx, rx) = mpsc::channel::<ScanTarget>();
@@ -54,15 +54,15 @@ pub async fn scan_dev_folders(
     });
 
     let emit_task = tauri::async_runtime::spawn_blocking(move || {
-        let mut targets = Vec::new();
         let mut total_size = 0u64;
+        let mut total_count = 0u64;
         let mut batch = Vec::new();
         loop {
             match rx.recv_timeout(TARGET_FLUSH) {
                 Ok(target) => {
                     total_size += target.size_bytes;
-                    batch.push(target.clone());
-                    targets.push(target);
+                    total_count += 1;
+                    batch.push(target);
                     if batch.len() >= TARGET_BATCH {
                         let _ = app_for_events.emit("scan-targets", &batch);
                         batch.clear();
@@ -82,21 +82,11 @@ pub async fn scan_dev_folders(
                 }
             }
         }
-        (targets, total_size)
+        (total_count, total_size)
     });
 
     let scan_duration = scan_task.await.map_err(|e| e.to_string())?;
-    let (mut targets, total_size) = emit_task.await.map_err(|e| e.to_string())?;
-
-    targets.sort_by_key(|b| std::cmp::Reverse(b.size_bytes));
-    let total_count = targets.len() as u64;
-
-    let result = ScanResult {
-        targets,
-        total_size,
-        total_count,
-        scan_duration,
-    };
+    let (total_count, total_size) = emit_task.await.map_err(|e| e.to_string())?;
 
     let summary = ScanSummary {
         total_size,
@@ -114,5 +104,5 @@ pub async fn scan_dev_folders(
     // event only carries the summary so the frontend finalizes its accumulated
     // list instead of receiving every target a second time.
     let _ = scan_app.emit("scan-complete", &summary);
-    Ok(result)
+    Ok(summary)
 }
