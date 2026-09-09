@@ -35,6 +35,52 @@ use crate::storage::cache::{CacheEntry, DirStamp, RootSnapshot, ScanCache, Store
 /// the walker, so it is safe to call from any thread.
 static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
 
+/// Live scan counters, shared across every root's walker and measurer. All
+/// atomics so the parallel walk needs no lock. Read once at the end of a scan
+/// for the performance baseline.
+#[derive(Debug, Default)]
+struct ScanStats {
+    /// `symlink_metadata` calls paid while walking and measuring.
+    metadata_calls: AtomicU64,
+    /// Directories whose children were enumerated (walked into).
+    dirs_enumerated: AtomicU64,
+    /// Files whose size/count contributed to a measurement.
+    files_measured: AtomicU64,
+    /// Targets streamed to the channel (measured or replayed from cache).
+    targets_emitted: AtomicU64,
+    /// Milliseconds spent discovering (walking roots, building fingerprints).
+    time_discovering_ms: AtomicU64,
+    /// Milliseconds spent measuring matched folders.
+    time_measuring_ms: AtomicU64,
+    /// Milliseconds spent persisting the cache back to disk.
+    time_saving_ms: AtomicU64,
+}
+
+impl ScanStats {
+    fn log(&self) {
+        tracing::info!(
+            metadata_calls = self.metadata_calls.load(Ordering::Relaxed),
+            dirs_enumerated = self.dirs_enumerated.load(Ordering::Relaxed),
+            files_measured = self.files_measured.load(Ordering::Relaxed),
+            targets_emitted = self.targets_emitted.load(Ordering::Relaxed),
+            time_discovering_ms = self.time_discovering_ms.load(Ordering::Relaxed),
+            time_measuring_ms = self.time_measuring_ms.load(Ordering::Relaxed),
+            time_saving_ms = self.time_saving_ms.load(Ordering::Relaxed),
+            "scan stats"
+        );
+    }
+
+/// Adds an elapsed `Instant` delta to one of the ms counters. Elapsed is a
+    /// `u128` and the counters are `u64`; a count above `u64::MAX` ms (~292 M
+    /// years) is not reachable, so a saturating cast is exact in practice.
+    fn add_elapsed_ms(target: &AtomicU64, since: Instant) {
+        target.fetch_add(
+            u64::try_from(since.elapsed().as_millis()).unwrap_or(u64::MAX),
+            Ordering::Relaxed,
+        );
+    }
+}
+
 /// Directory names that are never cleanup targets themselves and never contain
 /// one, so walking inside them is pure waste. Mirrors the idea behind
 /// `PROTECTED_ROOTS`: if the app would never touch anything down there, don't
@@ -72,6 +118,7 @@ impl ScannerEngine {
         let patterns: Arc<HashSet<String>> = Arc::new(build_patterns(input));
         let ignore: Arc<Vec<String>> = Arc::new(build_ignore(input));
         let cache = Arc::new(Mutex::new(ScanCache::load()));
+        let stats = Arc::new(ScanStats::default());
 
         rayon::scope(|scope| {
             for raw in &input.roots {
@@ -81,14 +128,24 @@ impl ScannerEngine {
                     let patterns = patterns.clone();
                     let ignore = ignore.clone();
                     let cache = cache.clone();
-                    scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &tx));
+                    let stats = stats.clone();
+                    scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &stats, &tx));
                 }
             }
         });
 
+        let save_started = Instant::now();
         if let Ok(guard) = cache.lock() {
             guard.save();
         }
+        stats
+            .time_saving_ms
+            .fetch_add(
+                u64::try_from(save_started.elapsed().as_millis()).unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+
+        stats.log();
 
         started.elapsed().as_secs_f64()
     }
@@ -108,6 +165,7 @@ fn walk_root(
     patterns: &Arc<HashSet<String>>,
     ignore: &Arc<Vec<String>>,
     cache: &Arc<Mutex<ScanCache>>,
+    stats: &Arc<ScanStats>,
     tx: &Sender<ScanTarget>,
 ) {
     let walker = WalkDir::new(root)
@@ -123,6 +181,7 @@ fn walk_root(
     let mut fingerprint = Vec::new();
     let mut matched = Vec::new();
 
+    let discovering_started = Instant::now();
     for entry in walker {
         if CANCEL_REQUESTED.load(Ordering::Relaxed) {
             break;
@@ -137,6 +196,12 @@ fn walk_root(
         // Record the dir in the fingerprint regardless of whether it is a
         // target: its mtime is the invalidation signal for this snapshot.
         if let Ok(meta) = fs::symlink_metadata(entry.path()) {
+            stats
+                .metadata_calls
+                .fetch_add(1, Ordering::Relaxed);
+            stats
+                .dirs_enumerated
+                .fetch_add(1, Ordering::Relaxed);
             if let Ok(mtime) = meta.modified() {
                 fingerprint.push(DirStamp {
                     path: entry.path().to_string_lossy().into_owned(),
@@ -155,6 +220,7 @@ fn walk_root(
     }
 
     fingerprint.sort_unstable_by(|a, b| a.path.cmp(&b.path));
+    ScanStats::add_elapsed_ms(&stats.time_discovering_ms, discovering_started);
 
     let key = root.to_string_lossy().into_owned();
     let mut effective_patterns: Vec<String> = patterns.iter().cloned().collect();
@@ -173,6 +239,9 @@ fn walk_root(
                 if CANCEL_REQUESTED.load(Ordering::Relaxed) {
                     break;
                 }
+                stats
+                    .targets_emitted
+                    .fetch_add(1, Ordering::Relaxed);
                 let _ = tx.send(ScanTarget {
                     id: Uuid::new_v4().to_string(),
                     path: stored.path.clone(),
@@ -193,14 +262,16 @@ fn walk_root(
 
     // Cache miss: measure every matched folder in parallel, streaming each
     // target as soon as its size is known, and store the fresh snapshot.
+    let measuring_started = Instant::now();
     let new_targets = Arc::new(Mutex::new(Vec::new()));
     rayon::scope(|scope| {
         for (dir, name) in matched {
             let tx = tx.clone();
             let cache = cache.clone();
+            let stats = stats.clone();
             let new_targets = new_targets.clone();
             scope.spawn(move |_| {
-                let target = measure_target(&dir, &name, &cache);
+                let target = measure_target(&dir, &name, &cache, &stats);
                 // The rayon scope below joins every spawned task before it
                 // returns, so no task can panic-and-drop while these other
                 // tasks still hold the lock.
@@ -208,10 +279,14 @@ fn walk_root(
                     .lock()
                     .expect("scan task panicked while holding lock")
                     .push(target.clone());
+                stats
+                    .targets_emitted
+                    .fetch_add(1, Ordering::Relaxed);
                 let _ = tx.send(target);
             });
         }
     });
+    ScanStats::add_elapsed_ms(&stats.time_measuring_ms, measuring_started);
 
     let targets = new_targets
         .lock()
@@ -278,10 +353,18 @@ fn is_ignored(dir: &Path, name: &str, ignore: &[String]) -> bool {
 
 /// Measures total size, file count and newest modification time under `dir`,
 /// reusing the cached values when the directory metadata is unchanged.
-fn measure_target(dir: &Path, folder_name: &str, cache: &Mutex<ScanCache>) -> ScanTarget {
+fn measure_target(
+    dir: &Path,
+    folder_name: &str,
+    cache: &Mutex<ScanCache>,
+    stats: &Arc<ScanStats>,
+) -> ScanTarget {
     let dir_mtime = fs::symlink_metadata(dir)
         .ok()
         .and_then(|meta| meta.modified().ok());
+    stats
+        .metadata_calls
+        .fetch_add(1, Ordering::Relaxed);
 
     // Fast path: replay the cached measurement when the target directory's own
     // mtime is unchanged. This avoids walking large folders on repeat scans.
@@ -308,7 +391,7 @@ fn measure_target(dir: &Path, folder_name: &str, cache: &Mutex<ScanCache>) -> Sc
     let latest = Arc::new(Mutex::new(None::<SystemTime>));
 
     rayon::in_place_scope(|scope| {
-        measure_under(dir, &size, &count, &latest, scope);
+        measure_under(dir, &size, &count, &latest, scope, stats);
     });
 
     let last_modified = latest
@@ -356,6 +439,7 @@ fn measure_under(
     count: &Arc<AtomicU64>,
     latest: &Arc<Mutex<Option<SystemTime>>>,
     scope: &rayon::Scope<'_>,
+    stats: &Arc<ScanStats>,
 ) {
     if CANCEL_REQUESTED.load(Ordering::Relaxed) {
         return;
@@ -363,6 +447,9 @@ fn measure_under(
     let Ok(meta) = fs::symlink_metadata(dir) else {
         return;
     };
+    stats
+        .metadata_calls
+        .fetch_add(1, Ordering::Relaxed);
     if meta.file_type().is_symlink() {
         return;
     }
@@ -373,17 +460,27 @@ fn measure_under(
         let Ok(entries) = fs::read_dir(dir) else {
             return;
         };
+        stats
+            .dirs_enumerated
+            .fetch_add(1, Ordering::Relaxed);
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
                 let size = size.clone();
                 let count = count.clone();
                 let latest = latest.clone();
-                scope.spawn(move |s| measure_under(&path, &size, &count, &latest, s));
+                let stats = stats.clone();
+                scope.spawn(move |s| measure_under(&path, &size, &count, &latest, s, &stats));
             } else if let Ok(m) = fs::symlink_metadata(&path) {
+                stats
+                    .metadata_calls
+                    .fetch_add(1, Ordering::Relaxed);
                 if m.is_file() {
                     size.fetch_add(m.len(), Ordering::Relaxed);
                     count.fetch_add(1, Ordering::Relaxed);
+                    stats
+                        .files_measured
+                        .fetch_add(1, Ordering::Relaxed);
                     if let Ok(mtime) = m.modified() {
                         update_latest(latest, mtime);
                     }
@@ -393,6 +490,9 @@ fn measure_under(
     } else if meta.is_file() {
         size.fetch_add(meta.len(), Ordering::Relaxed);
         count.fetch_add(1, Ordering::Relaxed);
+        stats
+            .files_measured
+            .fetch_add(1, Ordering::Relaxed);
         if let Ok(mtime) = meta.modified() {
             update_latest(latest, mtime);
         }
