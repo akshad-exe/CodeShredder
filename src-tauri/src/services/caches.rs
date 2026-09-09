@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use jwalk::WalkDir;
 
 use crate::domain::caches::{CacheEntry, CacheSafety};
+use crate::platform::dirs::{home, local_app_data, windows_var};
 use crate::services::safety::is_protected;
 
 /// A candidate cache location: identity plus one or more absolute paths (first
@@ -121,8 +122,8 @@ fn cache_specs() -> Vec<CacheSpec> {
             npm_override(),
             env("npm_config_cache"),
             home(".npm/_cacache"),
-            local("npm-cache/_cacache"),
-            local("npm-cache"),
+            local_app_data("npm-cache/_cacache"),
+            local_app_data("npm-cache"),
         ]),
     );
     push(
@@ -131,7 +132,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "yarn cache",
         "Node.js",
         CacheSafety::Safe,
-        candidates(&[home(".cache/yarn"), local("Yarn/Cache")]),
+        candidates(&[home(".cache/yarn"), local_app_data("Yarn/Cache")]),
     );
     push(
         &mut specs,
@@ -139,7 +140,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "yarn berry cache",
         "Node.js",
         CacheSafety::Safe,
-        candidates(&[home(".yarn/berry/cache"), local("Yarn/berry/cache")]),
+        candidates(&[
+            home(".yarn/berry/cache"),
+            local_app_data("Yarn/berry/cache"),
+        ]),
     );
     push(
         &mut specs,
@@ -150,7 +154,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         candidates(&[
             pnpm_override(),
             home(".local/share/pnpm/store"),
-            local("pnpm/store"),
+            local_app_data("pnpm/store"),
         ]),
     );
     push(
@@ -163,7 +167,7 @@ fn cache_specs() -> Vec<CacheSpec> {
             env("PIP_CACHE_DIR"),
             home(".cache/pip"),
             home("Library/Caches/pip"),
-            local("pip/Cache"),
+            local_app_data("pip/Cache"),
         ]),
     );
     push(
@@ -172,7 +176,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "uv cache",
         "Python",
         CacheSafety::Safe,
-        candidates(&[env("UV_CACHE_DIR"), home(".cache/uv"), local("uv")]),
+        candidates(&[env("UV_CACHE_DIR"), home(".cache/uv"), local_app_data("uv")]),
     );
     push(
         &mut specs,
@@ -223,10 +227,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "go module cache",
         "Go",
         CacheSafety::Medium,
-        candidates(&[
-            go_mod_cache(),
-            home("go/pkg/mod/cache"),
-        ]),
+        candidates(&[go_mod_cache(), home("go/pkg/mod/cache")]),
     );
     push(
         &mut specs,
@@ -234,7 +235,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "composer cache",
         "PHP",
         CacheSafety::Safe,
-        candidates(&[home(".composer/cache"), home("AppData/Roaming/Composer/cache")]),
+        candidates(&[
+            home(".composer/cache"),
+            home("AppData/Roaming/Composer/cache"),
+        ]),
     );
     push(
         &mut specs,
@@ -242,7 +246,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "user temp files",
         "System",
         CacheSafety::Safe,
-        candidates(&[Some(std::env::temp_dir()), local("Temp")]),
+        candidates(&[Some(std::env::temp_dir()), local_app_data("Temp")]),
     );
     push(
         &mut specs,
@@ -251,7 +255,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "System",
         CacheSafety::Medium,
         candidates(&[
-            winvar("WINDIR", "Temp"),
+            windows_var("WINDIR", "Temp"),
             Some(PathBuf::from(r"C:\Windows\Temp")),
         ]),
     );
@@ -262,7 +266,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "System",
         CacheSafety::Medium,
         candidates(&[
-            winvar("WINDIR", r"SoftwareDistribution\Download"),
+            windows_var("WINDIR", r"SoftwareDistribution\Download"),
             Some(PathBuf::from(r"C:\Windows\SoftwareDistribution\Download")),
         ]),
     );
@@ -272,7 +276,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "Windows prefetch",
         "System",
         CacheSafety::Medium,
-        candidates(&[winvar("WINDIR", "Prefetch"), Some(PathBuf::from(r"C:\Windows\Prefetch"))]),
+        candidates(&[
+            windows_var("WINDIR", "Prefetch"),
+            Some(PathBuf::from(r"C:\Windows\Prefetch")),
+        ]),
     );
     push(
         &mut specs,
@@ -280,7 +287,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "Internet cache",
         "System",
         CacheSafety::Safe,
-        candidates(&[local(r"Microsoft\Windows\INetCache")]),
+        candidates(&[local_app_data(r"Microsoft\Windows\INetCache")]),
     );
     push(
         &mut specs,
@@ -288,7 +295,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "crash dumps",
         "System",
         CacheSafety::Safe,
-        candidates(&[local("CrashDumps")]),
+        candidates(&[local_app_data("CrashDumps")]),
     );
     push(
         &mut specs,
@@ -296,7 +303,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "D3D shader cache",
         "System",
         CacheSafety::Safe,
-        candidates(&[local("D3DSCache")]),
+        candidates(&[local_app_data("D3DSCache")]),
     );
     push(
         &mut specs,
@@ -304,7 +311,7 @@ fn cache_specs() -> Vec<CacheSpec> {
         "Chrome cache",
         "Browsers",
         CacheSafety::Safe,
-        candidates(&[local(r"Google\Chrome\User Data\Default\Cache")]),
+        candidates(&[local_app_data(r"Google\Chrome\User Data\Default\Cache")]),
     );
     push(
         &mut specs,
@@ -312,34 +319,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "Edge cache",
         "Browsers",
         CacheSafety::Safe,
-        candidates(&[local(r"Microsoft\Edge\User Data\Default\Cache")]),
+        candidates(&[local_app_data(r"Microsoft\Edge\User Data\Default\Cache")]),
     );
 
     specs
-}
-
-/// Joins a home-relative path on the current platform. Returns `None` when the
-/// home directory cannot be resolved or on the wrong OS.
-#[cfg(not(target_os = "windows"))]
-fn home(rel: &str) -> Option<PathBuf> {
-    std::env::var_os("HOME").map(|home| PathBuf::from(home).join(rel))
-}
-
-#[cfg(target_os = "windows")]
-fn home(rel: &str) -> Option<PathBuf> {
-    std::env::var_os("USERPROFILE").map(|home| PathBuf::from(home).join(rel))
-}
-
-/// Joins a LOCALAPPDATA-relative path (Windows cache locations). Always `None`
-/// on other platforms.
-#[cfg(target_os = "windows")]
-fn local(rel: &str) -> Option<PathBuf> {
-    std::env::var_os("LOCALAPPDATA").map(|root| PathBuf::from(root).join(rel))
-}
-
-#[cfg(not(target_os = "windows"))]
-const fn local(_rel: &str) -> Option<PathBuf> {
-    None
 }
 
 /// Reads an environment variable override for a cache's active path. Returns
@@ -378,7 +361,8 @@ fn user_npmrc() -> Option<PathBuf> {
 /// The pnpm config file, preferring `PNPM_HOME`-relative then the standard
 /// locations.
 fn pnpm_rc() -> Option<PathBuf> {
-    env("PNPM_HOME").map(|home| home.join("config").join("rc"))
+    env("PNPM_HOME")
+        .map(|home| home.join("config").join("rc"))
         .or_else(|| home(".config/pnpm/rc"))
         .or_else(|| home("AppData/Local/pnpm/config/rc"))
 }
@@ -401,18 +385,6 @@ fn read_kv(path: &Path, key: &str) -> Option<String> {
     })
 }
 
-/// Joins a Windows env-var-relative path (e.g. `%WINDIR%`). Always `None` on
-/// other platforms.
-#[cfg(target_os = "windows")]
-fn winvar(name: &str, rel: &str) -> Option<PathBuf> {
-    std::env::var_os(name).map(|root| PathBuf::from(root).join(rel))
-}
-
-#[cfg(not(target_os = "windows"))]
-const fn winvar(_name: &str, _rel: &str) -> Option<PathBuf> {
-    None
-}
-
 /// Returns the platform-resolvable candidates, dropping the ones that can't
 /// exist on this OS (e.g. LOCALAPPDATA paths on Linux).
 fn candidates(items: &[Option<PathBuf>]) -> Vec<PathBuf> {
@@ -432,15 +404,14 @@ fn dir_size(root: &Path) -> u64 {
         .into_iter()
         .filter_map(std::result::Result::ok)
         .filter(|entry| entry.file_type.is_file())
-        .map(|entry| {
-            std::fs::symlink_metadata(entry.path()).map_or(0, |meta| meta.len())
-        })
+        .map(|entry| std::fs::symlink_metadata(entry.path()).map_or(0, |meta| meta.len()))
         .sum()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::platform::protected::protected_sample;
 
     #[test]
     fn first_existing_picks_first_dir() {
@@ -484,10 +455,7 @@ mod tests {
             "; comment\n# another comment\n\ncache=E:\\cache\\npm\nstore-dir=E:\\cache\\pnpm\n",
         )
         .unwrap();
-        assert_eq!(
-            read_kv(&temp, "cache").as_deref(),
-            Some("E:\\cache\\npm")
-        );
+        assert_eq!(read_kv(&temp, "cache").as_deref(), Some("E:\\cache\\npm"));
         assert_eq!(
             read_kv(&temp, "store-dir").as_deref(),
             Some("E:\\cache\\pnpm")
@@ -532,16 +500,5 @@ mod tests {
         // that a clearly protected path is refused when resolvable as a spec.
         assert!(is_protected(std::path::Path::new(&protected_sample())));
         let _ = std::fs::remove_dir_all(&temp);
-    }
-
-    fn protected_sample() -> String {
-        #[cfg(target_os = "windows")]
-        {
-            "C:\\Windows\\System32".to_string()
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            "/usr/bin".to_string()
-        }
     }
 }

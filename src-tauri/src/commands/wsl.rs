@@ -8,7 +8,7 @@
 use tauri::ipc::Channel;
 
 use crate::domain::wsl::{WslCleanupResult, WslCompactResult, WslDistro, WslProgress};
-use crate::services::wsl;
+use crate::platform::wsl;
 
 /// Lists installed WSL distros with their running state and virtual disk
 /// details. Empty on platforms without WSL.
@@ -43,10 +43,7 @@ pub async fn wsl_shutdown(on_event: Channel<WslProgress>) -> Result<(), String> 
 /// Compacts a distro's virtual disk and reports the reclaimed space, streaming
 /// each phase (shutdown → locate disk → diskpart) as it happens.
 #[tauri::command]
-pub async fn wsl_compact(
-    distro: String,
-    on_event: Channel<WslProgress>,
-) -> WslCompactResult {
+pub async fn wsl_compact(distro: String, on_event: Channel<WslProgress>) -> WslCompactResult {
     tracing::info!(distro, "wsl_compact called");
     let distro_for_closure = distro.clone();
     tauri::async_runtime::spawn_blocking(move || {

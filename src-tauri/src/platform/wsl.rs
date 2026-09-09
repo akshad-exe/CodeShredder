@@ -32,15 +32,18 @@ pub fn list_distros() -> std::result::Result<Vec<WslDistro>, String> {
 
     let reg_output = run_capture(
         "reg.exe",
-        &["query", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss", "/s"],
+        &[
+            "query",
+            r"HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss",
+            "/s",
+        ],
     )
     .unwrap_or_default();
     let sections = parse_reg_sections(&reg_output);
 
     let mut result = Vec::new();
     for (name, state) in distros {
-        let vhdx_path = vhdx_path_for_distro(&name, &sections)
-            .or_else(|| fallback_scan(&name));
+        let vhdx_path = vhdx_path_for_distro(&name, &sections).or_else(|| fallback_scan(&name));
         let size_bytes = vhdx_path.as_ref().and_then(|p| disk_size(Path::new(p)));
         result.push(WslDistro {
             name,
@@ -116,12 +119,15 @@ pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) ->
     let sections = parse_reg_sections(
         &run_capture(
             "reg.exe",
-            &["query", r"HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss", "/s"],
+            &[
+                "query",
+                r"HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss",
+                "/s",
+            ],
         )
         .unwrap_or_default(),
     );
-    let Some(vhdx) = vhdx_path_for_distro(distro, &sections)
-        .or_else(|| fallback_scan(distro))
+    let Some(vhdx) = vhdx_path_for_distro(distro, &sections).or_else(|| fallback_scan(distro))
     else {
         result.error = Some(format!("Could not locate the virtual disk for {distro}"));
         on_progress(progress(
@@ -162,13 +168,21 @@ pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) ->
                 Ok(()) => compacted = true,
                 Err(err2) => {
                     result.error = Some(err2.clone());
-                    on_progress(progress("compact", "error", format!("Compact failed: {err2}")));
+                    on_progress(progress(
+                        "compact",
+                        "error",
+                        format!("Compact failed: {err2}"),
+                    ));
                 }
             }
         }
         Err(err) => {
             result.error = Some(err.clone());
-            on_progress(progress("compact", "error", format!("Compact failed: {err}")));
+            on_progress(progress(
+                "compact",
+                "error",
+                format!("Compact failed: {err}"),
+            ));
         }
     }
     if compacted {
@@ -235,7 +249,11 @@ pub fn compact_distro(distro: &str, on_progress: &mut dyn FnMut(WslProgress)) ->
 /// Intended for safe, user-level cache cleanup. Progress events are streamed
 /// through `on_progress`.
 #[cfg(target_os = "windows")]
-pub fn run_cleanup(distro: &str, commands: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCleanupResult {
+pub fn run_cleanup(
+    distro: &str,
+    commands: &str,
+    on_progress: &mut dyn FnMut(WslProgress),
+) -> WslCleanupResult {
     on_progress(progress(
         "cleanup",
         "info",
@@ -247,7 +265,9 @@ pub fn run_cleanup(distro: &str, commands: &str, on_progress: &mut dyn FnMut(Wsl
     match out {
         Ok(out) => {
             let success = out.status.success();
-            let output = decode_output(&[out.stdout, out.stderr].concat()).trim().to_string();
+            let output = decode_output(&[out.stdout, out.stderr].concat())
+                .trim()
+                .to_string();
             on_progress(progress(
                 "cleanup",
                 if success { "success" } else { "error" },
@@ -279,7 +299,11 @@ pub fn run_cleanup(distro: &str, commands: &str, on_progress: &mut dyn FnMut(Wsl
 
 /// Non-Windows stub.
 #[cfg(not(target_os = "windows"))]
-pub fn run_cleanup(distro: &str, _commands: &str, on_progress: &mut dyn FnMut(WslProgress)) -> WslCleanupResult {
+pub fn run_cleanup(
+    distro: &str,
+    _commands: &str,
+    on_progress: &mut dyn FnMut(WslProgress),
+) -> WslCleanupResult {
     on_progress(progress(
         "cleanup",
         "error",
@@ -313,10 +337,12 @@ fn format_bytes(bytes: u64) -> String {
 /// Resolves the virtual disk path for a distro from parsed `Lxss` registry
 /// entries, falling back to the `Packages` layout when the registry is missing.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-fn vhdx_path_for_distro(distro: &str, sections: &[(String, HashMap<String, String>)]) -> Option<String> {
-    base_path_for(distro, sections).and_then(|base| {
-        disk_path_from_base(&base).map(|p| p.to_string_lossy().into_owned())
-    })
+fn vhdx_path_for_distro(
+    distro: &str,
+    sections: &[(String, HashMap<String, String>)],
+) -> Option<String> {
+    base_path_for(distro, sections)
+        .and_then(|base| disk_path_from_base(&base).map(|p| p.to_string_lossy().into_owned()))
 }
 
 /// Looks up `BasePath` for a distro in the `Lxss` registry sections.
@@ -437,7 +463,12 @@ fn run_diskpart_compact(vhdx: &Path, elevated: bool) -> std::result::Result<(), 
         Command::new(&diskpart)
             .args(["/s", script_path.to_str().unwrap_or_default()])
             .output()
-            .map(|out| (out.status, decode_output(&[out.stdout, out.stderr].concat())))
+            .map(|out| {
+                (
+                    out.status,
+                    decode_output(&[out.stdout, out.stderr].concat()),
+                )
+            })
     };
 
     let _ = std::fs::remove_file(&script_path);
@@ -593,7 +624,8 @@ Windows Subsystem for Linux has no installed distributions.
     #[test]
     fn decodes_utf16le_output() {
         // "Ubuntu  Running" as UTF-16LE with a BOM.
-        let bytes = b"\xff\xfeU\x00b\x00u\x00n\x00t\x00u\x00 \x00 \x00R\x00u\x00n\x00n\x00i\x00n\x00g\x00";
+        let bytes =
+            b"\xff\xfeU\x00b\x00u\x00n\x00t\x00u\x00 \x00 \x00R\x00u\x00n\x00n\x00i\x00n\x00g\x00";
         assert!(decode_output(bytes).contains("Ubuntu"));
     }
 
@@ -620,7 +652,10 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
 
     #[test]
     fn matches_package_to_distro() {
-        assert!(package_matches_distro("CanonicalGroupLimited.UbuntuonWindows", "Ubuntu"));
+        assert!(package_matches_distro(
+            "CanonicalGroupLimited.UbuntuonWindows",
+            "Ubuntu"
+        ));
         assert!(package_matches_distro("Ubuntu-22.04.", "Ubuntu-22.04"));
         assert!(!package_matches_distro("Debian", "Fedora"));
     }
@@ -636,10 +671,7 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
 
         let compact = compact_distro("Ubuntu", &mut on_progress);
         assert!(compact.error.is_some());
-        assert!(events
-            .borrow()
-            .iter()
-            .any(|e| e.level == "error"));
+        assert!(events.borrow().iter().any(|e| e.level == "error"));
         assert!(events.borrow().iter().any(|e| e.operation == "compact"));
     }
 
@@ -648,9 +680,13 @@ HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss\\{aaaa}
         assert!(is_elevation_error(
             "The requested operation requires elevation. (os error 740)"
         ));
-        assert!(is_elevation_error("diskpart compact failed: Access is denied"));
+        assert!(is_elevation_error(
+            "diskpart compact failed: Access is denied"
+        ));
         assert!(is_elevation_error("permission denied"));
-        assert!(!is_elevation_error("diskpart compact failed: no disk found"));
+        assert!(!is_elevation_error(
+            "diskpart compact failed: no disk found"
+        ));
         assert!(!is_elevation_error(""));
     }
 }
