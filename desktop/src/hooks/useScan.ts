@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { toast } from '@/components/ui/sonner'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cancelScan, isTauri, scanDevFolders } from '@/lib/ipc'
-import { onScanComplete, onScanTarget } from '@/lib/events'
+import { onScanComplete, onScanTargets } from '@/lib/events'
 
 /** Wraps the scan lifecycle: kickoff, live target streaming, completion and
  * cancellation. Reads roots/patterns from the store and streams results back
@@ -18,12 +18,12 @@ export function useScan() {
   // the scan-complete event arrives with the sorted result.
   useEffect(() => {
     if (!isTauri()) return
-    const targetSub = onScanTarget((target) => {
+    const targetSub = onScanTargets((batch) => {
       const store = useCleanupStore.getState()
       lastActivityRef.current = Date.now()
-      store.addLiveTarget(target)
-      store.setCurrentScanPath(target.path)
-      store.setScanProgress(Math.min(95, store.scanProgress + 0.05))
+      store.addLiveTargets(batch)
+      store.setCurrentScanPath(batch[batch.length - 1]?.path ?? '')
+      store.setScanProgress(Math.min(95, store.scanProgress + 0.05 * batch.length))
     })
     const completeSub = onScanComplete((result) => {
       const store = useCleanupStore.getState()

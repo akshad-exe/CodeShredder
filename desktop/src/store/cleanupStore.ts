@@ -33,8 +33,7 @@ interface CleanupState {
   setScanProgress: (progress: number) => void
   setCurrentScanPath: (path: string) => void
   setTargets: (targets: CleanupTarget[]) => void
-  addLiveTarget: (target: CleanupTarget) => void
-  addTarget: (target: CleanupTarget) => void
+  addLiveTargets: (targets: CleanupTarget[]) => void
   updateTargetSize: (id: string, sizeBytes: number, fileCount: number) => void
   setSelectedTargets: (ids: Set<string>) => void
   toggleTargetSelection: (id: string) => void
@@ -106,12 +105,11 @@ export const useCleanupStore = create<CleanupState>()(
       setScanProgress: (scanProgress) => set({ scanProgress }),
       setCurrentScanPath: (currentScanPath) => set({ currentScanPath }),
       setTargets: (targets) => set({ targets }),
-      addLiveTarget: (target) => set((state) => ({
-        targets: [...state.targets, target],
-        totalReclaimable: state.totalReclaimable + target.sizeBytes,
-      })),
-      addTarget: (target) => set((state) => ({ 
-        targets: [...state.targets, target] 
+      addLiveTargets: (targets) => set((state) => ({
+        targets: [...state.targets, ...targets],
+        totalReclaimable:
+          state.totalReclaimable +
+          targets.reduce((sum, target) => sum + target.sizeBytes, 0),
       })),
       updateTargetSize: (id, sizeBytes, fileCount) => set((state) => ({
         targets: state.targets.map((t) => 
