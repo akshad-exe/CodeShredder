@@ -2,8 +2,8 @@
 //!
 //! Uses `jwalk` to walk roots in parallel, pruning matched, virtual-environment
 //! and protected folders so they are never descended into, and measures each
-//! target on a worker thread, streaming it to a channel as soon as its size is
-//! known.
+//! target on a thread from a dedicated, bounded measurement pool, streaming it
+//! to a channel as soon as its size is known.
 //!
 //! Two caches make repeat scans of untouched projects near-instant:
 //!
@@ -108,9 +108,15 @@ impl ScannerEngine {
     /// Runs a scan and streams every matched target to `tx` as soon as it is
     /// measured. Returns the elapsed time once the walk finishes.
     ///
-    /// The directory walk and the per-target measurement both run on rayon's
-    /// global thread pool (jwalk uses it internally), so a large scan uses
-    /// every available core.
+    /// The directory discovery walk runs on rayon's global thread pool (jwalk
+    /// uses it internally). Measurement runs on a dedicated pool of
+    /// `measure_threads()` workers; the pool also receives the per-subdirectory
+    /// fan-out, so the number of threads touching the disk during measurement
+    /// is bounded regardless of how many targets and directories match.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the bounded measurement pool cannot be started.
     pub fn scan_stream(input: &ScanInput, tx: &Sender<ScanTarget>) -> f64 {
         let started = Instant::now();
         CANCEL_REQUESTED.store(false, Ordering::Relaxed);
@@ -120,6 +126,13 @@ impl ScannerEngine {
         let cache = Arc::new(Mutex::new(ScanCache::load()));
         let stats = Arc::new(ScanStats::default());
         let roots = normalize_roots(&input.roots);
+        let measure_pool = Arc::new(
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(measure_threads())
+                .thread_name(|index| format!("cs-measure-{index}"))
+                .build()
+                .expect("failed to start the measurement thread pool"),
+        );
 
         rayon::scope(|scope| {
             for root in roots {
@@ -128,7 +141,10 @@ impl ScannerEngine {
                 let ignore = ignore.clone();
                 let cache = cache.clone();
                 let stats = stats.clone();
-                scope.spawn(move |_| walk_root(&root, &patterns, &ignore, &cache, &stats, &tx));
+                let measure_pool = measure_pool.clone();
+                scope.spawn(move |_| {
+                    walk_root(&root, &patterns, &ignore, &cache, &stats, &measure_pool, &tx);
+                });
             }
         });
 
@@ -155,8 +171,8 @@ impl ScannerEngine {
 /// A single walk collects the directory-mtime fingerprint AND the paths of the
 /// matched targets. If the fingerprint matches the previous scan's snapshot,
 /// the stored targets are replayed without re-measuring anything; otherwise the
-/// matched folders are measured in parallel, streamed to `tx` and the snapshot
-/// is refreshed.
+/// matched folders are measured on the bounded measurement pool, streamed to
+/// `tx` and the snapshot is refreshed.
 #[expect(clippy::too_many_lines)]
 fn walk_root(
     root: &Path,
@@ -164,6 +180,7 @@ fn walk_root(
     ignore: &Arc<Vec<String>>,
     cache: &Arc<Mutex<ScanCache>>,
     stats: &Arc<ScanStats>,
+    measure_pool: &Arc<rayon::ThreadPool>,
     tx: &Sender<ScanTarget>,
 ) {
     let walker = WalkDir::new(root)
@@ -258,21 +275,21 @@ fn walk_root(
         }
     }
 
-    // Cache miss: measure every matched folder in parallel, streaming each
-    // target as soon as its size is known, and store the fresh snapshot.
+    // Cache miss: measure every matched folder on the bounded measurement pool,
+    // streaming each target as soon as its size is known, and store the fresh
+    // snapshot. Sub-tree fan-out also lands on this pool, so the pool size caps
+    // how many threads touch the disk at once no matter how many targets match.
     let measuring_started = Instant::now();
     let new_targets = Arc::new(Mutex::new(Vec::new()));
-    rayon::scope(|scope| {
-        for (dir, name) in matched {
+    measure_pool.scope(|scope| {
+        for (dir, name) in &matched {
             let tx = tx.clone();
             let cache = cache.clone();
             let stats = stats.clone();
             let new_targets = new_targets.clone();
+            let measure_pool = measure_pool.clone();
             scope.spawn(move |_| {
-                let target = measure_target(&dir, &name, &cache, &stats);
-                // The rayon scope below joins every spawned task before it
-                // returns, so no task can panic-and-drop while these other
-                // tasks still hold the lock.
+                let target = measure_target(dir, name, &cache, &stats, &measure_pool);
                 new_targets
                     .lock()
                     .expect("scan task panicked while holding lock")
@@ -356,6 +373,7 @@ fn measure_target(
     folder_name: &str,
     cache: &Mutex<ScanCache>,
     stats: &Arc<ScanStats>,
+    measure_pool: &Arc<rayon::ThreadPool>,
 ) -> ScanTarget {
     let dir_mtime = fs::symlink_metadata(dir)
         .ok()
@@ -384,21 +402,24 @@ fn measure_target(
         }
     }
 
-    let size = Arc::new(AtomicU64::new(0));
-    let count = Arc::new(AtomicU64::new(0));
-    let latest = Arc::new(Mutex::new(None::<SystemTime>));
-
-    rayon::in_place_scope(|scope| {
-        measure_under(dir, &size, &count, &latest, scope, stats);
-    });
-
-    let last_modified = latest
-        .lock()
-        .ok()
-        .and_then(|guard| *guard)
-        .map(format_time);
-    let size_bytes = size.load(Ordering::Relaxed);
-    let file_count = count.load(Ordering::Relaxed);
+    let (size_bytes, file_count, last_modified) = {
+        let size = Arc::new(AtomicU64::new(0));
+        let count = Arc::new(AtomicU64::new(0));
+        let latest = Arc::new(Mutex::new(None::<SystemTime>));
+        measure_pool.in_place_scope(|scope| {
+            measure_dir(dir, &size, &count, &latest, scope, stats);
+        });
+        let last_modified = latest
+            .lock()
+            .ok()
+            .and_then(|guard| *guard)
+            .map(format_time);
+        (
+            size.load(Ordering::Relaxed),
+            count.load(Ordering::Relaxed),
+            last_modified,
+        )
+    };
 
     if let (Some(mtime), Ok(mut guard)) = (dir_mtime, cache.lock()) {
         guard.insert(
@@ -430,8 +451,16 @@ fn measure_target(
     }
 }
 
-/// Accumulates size/count/modified-time under `dir` into the shared counters.
-fn measure_under(
+/// Measures the tree under `dir`, accumulating size, file count and newest
+/// modification time into the shared counters.
+///
+/// Subdirectories are spawned onto the same bounded measurement pool instead of
+/// rayon's global pool. Fan-out per directory is what made cache-hot scans fast
+/// (a single huge target spreads across many cores), while routing it through
+/// the bounded pool caps how many threads actually touch the disk at once.
+/// `dir` itself is skipped when missing, unreadable or a symlink; symlinked
+/// children are never descended into.
+fn measure_dir(
     dir: &Path,
     size: &Arc<AtomicU64>,
     count: &Arc<AtomicU64>,
@@ -453,7 +482,7 @@ fn measure_under(
     }
     if meta.is_dir() {
         if let Ok(mtime) = meta.modified() {
-            update_latest(latest, mtime);
+            note_mtime(latest, mtime);
         }
         let Ok(entries) = fs::read_dir(dir) else {
             return;
@@ -468,33 +497,52 @@ fn measure_under(
                 let count = count.clone();
                 let latest = latest.clone();
                 let stats = stats.clone();
-                scope.spawn(move |s| measure_under(&path, &size, &count, &latest, s, &stats));
-            } else if let Ok(m) = fs::symlink_metadata(&path) {
+                scope.spawn(move |s| measure_dir(&path, &size, &count, &latest, s, &stats));
+            } else if let Ok(child) = fs::symlink_metadata(&path) {
                 stats
                     .metadata_calls
                     .fetch_add(1, Ordering::Relaxed);
-                if m.is_file() {
-                    size.fetch_add(m.len(), Ordering::Relaxed);
+                if child.is_file() {
+                    size.fetch_add(child.len(), Ordering::Relaxed);
                     count.fetch_add(1, Ordering::Relaxed);
                     stats
                         .files_measured
                         .fetch_add(1, Ordering::Relaxed);
-                    if let Ok(mtime) = m.modified() {
-                        update_latest(latest, mtime);
+                    if let Ok(mtime) = child.modified() {
+                        note_mtime(latest, mtime);
                     }
                 }
             }
         }
-    } else if meta.is_file() {
-        size.fetch_add(meta.len(), Ordering::Relaxed);
-        count.fetch_add(1, Ordering::Relaxed);
-        stats
-            .files_measured
-            .fetch_add(1, Ordering::Relaxed);
-        if let Ok(mtime) = meta.modified() {
-            update_latest(latest, mtime);
+    }
+}
+
+/// Records the newer of two modification times.
+fn note_mtime(latest: &Mutex<Option<SystemTime>>, mtime: SystemTime) {
+    let mut guard = latest.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    match *guard {
+        Some(known) if known > mtime => {}
+        _ => *guard = Some(mtime),
+    }
+}
+
+/// Number of measurement workers, i.e. the cap on concurrent disk reads during
+/// measurement. Overridable with `CODE_SHREDDER_MEASURE_THREADS` (handy for
+/// benchmarking); defaults to `min(available parallelism, 12)`.
+///
+/// 12 measured as the sweet spot on cold scans: a cache-hot measurement is
+/// CPU-bound (metadata served from the page cache), so too few workers
+/// regress it, while too many thrash a slow disk. The pool still caps total
+/// concurrency regardless of how many directories fan out.
+fn measure_threads() -> usize {
+    if let Ok(value) = std::env::var("CODE_SHREDDER_MEASURE_THREADS") {
+        if let Ok(threads) = value.trim().parse::<usize>() {
+            return threads.max(1);
         }
     }
+    std::thread::available_parallelism()
+        .map_or(12, std::num::NonZeroUsize::get)
+        .clamp(1, 12)
 }
 
 /// True when the user has opted into cleaning virtual environments, i.e. one of
@@ -610,15 +658,6 @@ fn display_path_for(dir: &Path, folder_name: &str) -> String {
     dir.to_string_lossy().into_owned()
 }
 
-/// Records the newer of two modification times.
-fn update_latest(latest: &Mutex<Option<SystemTime>>, mtime: SystemTime) {
-    let mut guard = latest.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-    match *guard {
-        Some(existing) if existing > mtime => {}
-        _ => *guard = Some(mtime),
-    }
-}
-
 fn format_time(time: SystemTime) -> String {
     let dt: chrono::DateTime<chrono::Local> = time.into();
     // Nanos precision: the size cache compares the stored `dir_mtime` against
@@ -632,11 +671,12 @@ mod tests {
     use super::*;
 
     /// Creates a throwaway directory tree under the OS temp dir:
-    /// `{unique}/A/B` and `{unique}/A/C`. Returns it without auto-cleanup so
-    /// the caller controls lifetime.
-    fn temp_tree() -> PathBuf {
+    /// `{unique}/A/B` and `{unique}/A/C`. `tag` keeps concurrent tests from
+    /// sharing (and deleting) each other's tree. Returns it without
+    /// auto-cleanup so the caller controls lifetime.
+    fn temp_tree(tag: &str) -> PathBuf {
         let base = std::env::temp_dir().join(format!(
-            "cs-scan-root-test-{}",
+            "cs-scan-root-test-{}-{tag}",
             std::process::id()
         ));
         let _ = fs::remove_dir_all(&base);
@@ -647,7 +687,7 @@ mod tests {
 
     #[test]
     fn normalize_roots_dedupes_identical_paths() {
-        let base = temp_tree();
+        let base = temp_tree("dedup");
         let root = base.join("A/B");
         let normalized = normalize_roots(&[
             root.to_string_lossy().into_owned(),
@@ -659,7 +699,7 @@ mod tests {
 
     #[test]
     fn normalize_roots_drops_nested_roots() {
-        let base = temp_tree();
+        let base = temp_tree("nested");
         let nested = base.join("A/B").to_string_lossy().into_owned();
         let parent = base.join("A").to_string_lossy().into_owned();
         let normalized = normalize_roots(&[nested, parent]);
@@ -670,7 +710,7 @@ mod tests {
 
     #[test]
     fn normalize_roots_skips_missing_dirs() {
-        let base = temp_tree();
+        let base = temp_tree("missing");
         let missing = base.join("does-not-exist").to_string_lossy().into_owned();
         let real = base.join("A").to_string_lossy().into_owned();
         let normalized = normalize_roots(&[missing, real]);
@@ -680,7 +720,7 @@ mod tests {
 
     #[test]
     fn normalize_roots_keeps_siblings() {
-        let base = temp_tree();
+        let base = temp_tree("siblings");
         let a = base.join("A").to_string_lossy().into_owned();
         let member = base.join("A/B").to_string_lossy().into_owned();
         let sibling = base.join("sibling");
@@ -688,6 +728,48 @@ mod tests {
         let sibling_s = sibling.to_string_lossy().into_owned();
         let normalized = normalize_roots(&[a, member, sibling_s]);
         assert_eq!(normalized, vec![base.join("A"), sibling]);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn measure_dir_sums_tree_sizes_and_counts() {
+        let base = temp_tree("measured");
+        let target = base.join("Measured");
+        fs::create_dir_all(target.join("nested/deeper")).expect("create target tree");
+        fs::write(target.join("a.txt"), vec![0u8; 100]).expect("write a.txt");
+        fs::write(target.join("nested/deeper/b.bin"), vec![0u8; 250]).expect("write b.bin");
+
+        let size = Arc::new(AtomicU64::new(0));
+        let count = Arc::new(AtomicU64::new(0));
+        let latest = Arc::new(Mutex::new(None::<SystemTime>));
+        let stats = Arc::new(ScanStats::default());
+        rayon::scope(|scope| measure_dir(&target, &size, &count, &latest, scope, &stats));
+
+        assert_eq!(size.load(Ordering::Relaxed), 350);
+        assert_eq!(count.load(Ordering::Relaxed), 2);
+        assert_eq!(stats.files_measured.load(Ordering::Relaxed), 2);
+        assert!(stats.dirs_enumerated.load(Ordering::Relaxed) >= 2);
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn measure_dir_skips_symlinks() {
+        let base = temp_tree("symlink");
+        let target = base.join("SymTarget");
+        let real = base.join("A/B");
+        fs::create_dir_all(&target).expect("create target");
+        fs::write(target.join("file.txt"), "x").expect("write file");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&real, target.join("linked-dir")).expect("symlink dir");
+
+        let size = Arc::new(AtomicU64::new(0));
+        let count = Arc::new(AtomicU64::new(0));
+        let latest = Arc::new(Mutex::new(None::<SystemTime>));
+        let stats = Arc::new(ScanStats::default());
+        rayon::scope(|scope| measure_dir(&target, &size, &count, &latest, scope, &stats));
+
+        assert_eq!(size.load(Ordering::Relaxed), 1);
+        assert_eq!(count.load(Ordering::Relaxed), 1);
         let _ = fs::remove_dir_all(&base);
     }
 }
