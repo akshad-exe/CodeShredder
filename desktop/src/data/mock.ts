@@ -13,6 +13,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't1',
     projectName: 'taskmanager',
+    projectPath: '/Users/apple/Developer/taskmanager',
     folderName: 'node_modules',
     category: 'web',
     path: '/Users/apple/Developer/taskmanager/node_modules',
@@ -26,6 +27,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't2',
     projectName: 'portfolio-next',
+    projectPath: '/Users/apple/Developer/portfolio-next',
     folderName: '.next',
     category: 'web',
     path: '/Users/apple/Developer/portfolio-next/.next',
@@ -39,6 +41,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't3',
     projectName: 'api-server',
+    projectPath: '/Users/apple/Developer/api-server',
     folderName: 'target',
     category: 'systems',
     path: '/Users/apple/Developer/api-server/target',
@@ -52,6 +55,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't4',
     projectName: 'web-app',
+    projectPath: '/Users/apple/code/web-app',
     folderName: 'node_modules',
     category: 'web',
     path: '/Users/apple/code/web-app/node_modules',
@@ -65,6 +69,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't5',
     projectName: 'helix-content',
+    projectPath: '/Users/apple/code/helix-content',
     folderName: '.nuxt',
     category: 'web',
     path: '/Users/apple/code/helix-content/.nuxt',
@@ -78,6 +83,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't6',
     projectName: 'ml-labs',
+    projectPath: 'E:/Repos/ml-labs',
     folderName: '.venv',
     category: 'python',
     path: 'E:/Repos/ml-labs/.venv',
@@ -91,6 +97,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't7',
     projectName: 'scraper-ai',
+    projectPath: 'E:/Repos/scraper-ai',
     folderName: '__pycache__',
     category: 'python',
     path: 'E:/Repos/scraper-ai/__pycache__',
@@ -104,6 +111,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't8',
     projectName: 'next-remix',
+    projectPath: '/Users/apple/code/next-remix',
     folderName: 'build',
     category: 'web',
     path: '/Users/apple/code/next-remix/build',
@@ -117,6 +125,7 @@ export const MOCK_TARGETS: CleanupTarget[] = [
   {
     id: 't9',
     projectName: 'monorepo',
+    projectPath: '/Users/apple/Developer/monorepo',
     folderName: '.turbo',
     category: 'web',
     path: '/Users/apple/Developer/monorepo/.turbo',

@@ -19,7 +19,16 @@ const SAFETY_LABEL: Record<SafetyLevel, string> = {
   dangerous: 'Review',
 }
 
-export function ResultRow({ target }: { target: CleanupTarget }) {
+export function ResultRow({
+  target,
+  displayPath,
+  className,
+}: {
+  target: CleanupTarget
+  /** Path shown as the row's primary label. Defaults to `target.displayPath`. */
+  displayPath?: string
+  className?: string
+}) {
   const selectedTargets = useCleanupStore((s) => s.selectedTargets)
   const toggleTargetSelection = useCleanupStore((s) => s.toggleTargetSelection)
   const totalReclaimable = useCleanupStore((s) => s.totalReclaimable)
@@ -77,6 +86,7 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
         selected
           ? 'border-accent/40 bg-accent/[0.04]'
           : 'border-border bg-panel hover:border-border/70',
+        className,
       )}
     >
       <input
@@ -90,7 +100,7 @@ export function ResultRow({ target }: { target: CleanupTarget }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2.5">
           <span className="truncate font-mono text-sm font-semibold text-text" title={target.path}>
-            {target.displayPath}
+            {displayPath ?? target.displayPath}
           </span>
           <span className="shrink-0 font-mono text-xs text-muted">
             {target.folderName}

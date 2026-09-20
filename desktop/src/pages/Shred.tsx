@@ -12,6 +12,8 @@ import { ConfirmCleanupDialog } from '@/components/shred/ConfirmCleanupDialog'
 import { useScan } from '@/hooks/useScan'
 import { useClean } from '@/hooks/useClean'
 import { formatBytes, formatCount } from '@/lib/format'
+import { isTauri } from '@/lib/ipc'
+import { MOCK_SCAN_ROOTS, MOCK_TARGETS, MOCK_TOTAL_RECLAIMABLE } from '@/data/mock'
 
 export function Shred() {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -46,6 +48,21 @@ export function Shred() {
   useEffect(() => {
     populateDefaultRoots()
   }, [populateDefaultRoots])
+
+  // Browser preview: outside Tauri there's no real scan, so seed the store with
+  // mock results to exercise the grouped project view without needing to scan.
+  useEffect(() => {
+    if (isTauri()) return
+    const store = useCleanupStore.getState()
+    store.setScanStatus('complete')
+    store.setScanProgress(100)
+    store.setScanRoots(MOCK_SCAN_ROOTS)
+    store.setTargets(MOCK_TARGETS)
+    store.setTotalReclaimable(MOCK_TOTAL_RECLAIMABLE)
+    store.setSelectedTargets(
+      new Set(MOCK_TARGETS.filter((t) => t.selected).map((t) => t.id)),
+    )
+  }, [])
 
   const selected = targets.filter((t) => selectedTargets.has(t.id))
   const selectedSize = selected.reduce((acc, t) => acc + t.sizeBytes, 0)

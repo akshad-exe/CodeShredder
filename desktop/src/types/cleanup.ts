@@ -5,6 +5,7 @@ export type CleanupTarget = {
   path: string
   displayPath: string
   projectName: string
+  projectPath: string
   folderName: string
   category: string
   sizeBytes: number

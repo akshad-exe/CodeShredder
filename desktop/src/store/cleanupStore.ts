@@ -38,6 +38,7 @@ interface CleanupState {
   setSelectedTargets: (ids: Set<string>) => void
   toggleTargetSelection: (id: string) => void
   selectAllTargets: (safetyLevel?: SafetyLevel) => void
+  setTargetsSelected: (ids: string[], selected: boolean) => void
   deselectAllTargets: () => void
   setTotalReclaimable: (size: number) => void
   setScanError: (error: string | null) => void
@@ -136,6 +137,15 @@ export const useCleanupStore = create<CleanupState>()(
         return { selectedTargets: newSelected }
       }),
       deselectAllTargets: () => set({ selectedTargets: new Set() }),
+      setTargetsSelected: (ids, selected) => set((state) => {
+        const next = new Set(state.selectedTargets)
+        if (selected) {
+          ids.forEach((id) => next.add(id))
+        } else {
+          ids.forEach((id) => next.delete(id))
+        }
+        return { selectedTargets: next }
+      }),
       setTotalReclaimable: (totalReclaimable) => set({ totalReclaimable }),
       setScanError: (scanError) => set({ scanError }),
       setCleanupStatus: (cleanupStatus) => set({ cleanupStatus }),
