@@ -6,6 +6,7 @@ import { isTauri, scanDuplicates } from '@/lib/ipc'
 import type { DuplicateFile, DuplicateGroup } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
+import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
   { label: 'Any size', value: 0 },
@@ -29,6 +30,12 @@ export function Duplicates() {
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
   const sample = usingSample || preview
+  const scanRoots = useCleanupStore((s) => s.scanRoots)
+  const populateDefaultRoots = useCleanupStore((s) => s.populateDefaultRoots)
+
+  useEffect(() => {
+    populateDefaultRoots()
+  }, [populateDefaultRoots])
 
   const refresh = useCallback(async () => {
     if (preview) {
@@ -37,9 +44,15 @@ export function Duplicates() {
       setLoading(false)
       return
     }
+    if (scanRoots.length === 0) {
+      setGroups([])
+      setUsingSample(false)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      setGroups(await scanDuplicates({ roots: [] }))
+      setGroups(await scanDuplicates({ roots: scanRoots, minSizeBytes: 0 }))
       setUsingSample(false)
     } catch (err) {
       console.error('[Duplicates] scan failed:', err)
@@ -48,7 +61,7 @@ export function Duplicates() {
     } finally {
       setLoading(false)
     }
-  }, [preview])
+  }, [preview, scanRoots])
 
   useEffect(() => {
     void refresh()
@@ -100,7 +113,7 @@ export function Duplicates() {
       setSelected(new Set())
       return
     }
-    toast.error('Duplicate cleanup ships in v1.0')
+    toast.error('Cleaning duplicates is coming soon')
   }
 
   const handleTrashAllButNewest = async (group: DuplicateGroup) => {
@@ -191,7 +204,11 @@ export function Duplicates() {
           <EmptyState
             icon={Copy}
             title="No duplicates found"
-            description="This page needs the v1.0 duplicate scanner (size + content hash). Once it ships, identical files across your scan roots will be grouped here."
+            description={
+              scanRoots.length === 0
+                ? 'Add scan roots in Settings, then run a scan to group identical files.'
+                : 'No content-identical files were found on the scan roots.'
+            }
           />
         </div>
       ) : filtered.length === 0 ? (

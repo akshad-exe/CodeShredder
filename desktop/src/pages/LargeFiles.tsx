@@ -6,6 +6,7 @@ import { isTauri, scanLargeFiles } from '@/lib/ipc'
 import type { LargeFileEntry } from '@/types/cleanup'
 import { formatBytes, formatCount, formatDate } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
+import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
   { label: 'Any size', value: 0 },
@@ -26,6 +27,12 @@ export function LargeFiles() {
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
   const sample = usingSample || preview
+  const scanRoots = useCleanupStore((s) => s.scanRoots)
+  const populateDefaultRoots = useCleanupStore((s) => s.populateDefaultRoots)
+
+  useEffect(() => {
+    populateDefaultRoots()
+  }, [populateDefaultRoots])
 
   const refresh = useCallback(async () => {
     if (preview) {
@@ -34,9 +41,15 @@ export function LargeFiles() {
       setLoading(false)
       return
     }
+    if (scanRoots.length === 0) {
+      setFiles([])
+      setUsingSample(false)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      setFiles(await scanLargeFiles({ roots: [] }))
+      setFiles(await scanLargeFiles({ roots: scanRoots, minSizeBytes: 0, limit: 200 }))
       setUsingSample(false)
     } catch (err) {
       console.error('[LargeFiles] scan failed:', err)
@@ -45,7 +58,7 @@ export function LargeFiles() {
     } finally {
       setLoading(false)
     }
-  }, [preview])
+  }, [preview, scanRoots])
 
   useEffect(() => {
     void refresh()
@@ -183,8 +196,12 @@ export function LargeFiles() {
         <div className="mt-4">
           <EmptyState
             icon={HardDrive}
-            title="No files scanned"
-            description="This page needs the v1.0 large-files backend. Once it ships, pick your scan roots to surface the biggest files on disk."
+            title="No files found"
+            description={
+              scanRoots.length === 0
+                ? 'Add scan roots in Settings, then run a scan to surface the biggest files on disk.'
+                : 'No files above your filter were found on the scan roots.'
+            }
           />
         </div>
       ) : filtered.length === 0 ? (
@@ -228,7 +245,7 @@ export function LargeFiles() {
                   type="button"
                   title="Reveal in folder"
                   className="btn-ghost !p-2 text-muted hover:text-text"
-                  onClick={() => toast.info('Reveal needs the v1.0 backend')}
+                  onClick={() => toast.info('Reveal in folder is coming soon')}
                 >
                   <FolderOpen className="h-4 w-4" />
                 </button>
@@ -238,7 +255,7 @@ export function LargeFiles() {
                   className="btn-ghost !p-2 text-muted hover:text-danger"
                   onClick={() => {
                     if (sample) void handleTrash()
-                    else toast.error('Large-file cleanup ships in v1.0')
+                    else toast.error('Cleaning large files is coming soon')
                   }}
                 >
                   <Trash2 className="h-4 w-4" />

@@ -23,7 +23,7 @@ fn expand_root(raw: &str) -> PathBuf {
 /// - drops any root that is a descendant of another root in the set, so
 ///   nested roots never scan the same files twice (e.g. `~/Code` and
 ///   `~/Code/ProjectX` would otherwise double-walk `ProjectX`).
-pub(super) fn normalize_roots(raw: &[String]) -> Vec<PathBuf> {
+pub fn normalize_roots(raw: &[String]) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
     for raw_root in raw {
         let expanded = expand_root(raw_root);

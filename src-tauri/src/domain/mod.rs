@@ -2,6 +2,7 @@
 
 pub mod caches;
 pub mod clean;
+pub mod explore;
 pub mod mtime;
 pub mod pattern;
 pub mod scan;

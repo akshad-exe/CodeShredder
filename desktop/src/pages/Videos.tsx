@@ -6,6 +6,7 @@ import { isTauri, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
+import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
   { label: 'Any size', value: 0 },
@@ -39,6 +40,12 @@ export function Videos() {
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
   const sample = usingSample || preview
+  const scanRoots = useCleanupStore((s) => s.scanRoots)
+  const populateDefaultRoots = useCleanupStore((s) => s.populateDefaultRoots)
+
+  useEffect(() => {
+    populateDefaultRoots()
+  }, [populateDefaultRoots])
 
   const refresh = useCallback(async () => {
     if (preview) {
@@ -47,9 +54,15 @@ export function Videos() {
       setLoading(false)
       return
     }
+    if (scanRoots.length === 0) {
+      setVideos([])
+      setUsingSample(false)
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      setVideos(await scanVideos({ roots: [] }))
+      setVideos(await scanVideos({ roots: scanRoots, minSizeBytes: 0 }))
       setUsingSample(false)
     } catch (err) {
       console.error('[Videos] scan failed:', err)
@@ -58,7 +71,7 @@ export function Videos() {
     } finally {
       setLoading(false)
     }
-  }, [preview])
+  }, [preview, scanRoots])
 
   useEffect(() => {
     void refresh()
@@ -180,7 +193,11 @@ export function Videos() {
           <EmptyState
             icon={Film}
             title="No videos found"
-            description="This page needs the v1.0 video scanner. Once it ships, video files on your scan roots will be listed here with size and duration."
+            description={
+              scanRoots.length === 0
+                ? 'Add scan roots in Settings, then run a scan to list video files on disk.'
+                : 'No video files were found on the scan roots.'
+            }
           />
         </div>
       ) : filtered.length === 0 ? (
@@ -233,7 +250,7 @@ export function Videos() {
                   type="button"
                   title="Reveal in folder"
                   className="btn-ghost !p-2 text-muted hover:text-text"
-                  onClick={() => toast.info('Reveal needs the v1.0 backend')}
+                  onClick={() => toast.info('Reveal in folder is coming soon')}
                 >
                   <FolderOpen className="h-4 w-4" />
                 </button>
@@ -243,7 +260,7 @@ export function Videos() {
                   className="btn-ghost !p-2 text-muted hover:text-danger"
                   onClick={() => {
                     if (sample) void handleTrash()
-                    else toast.error('Video cleanup ships in v1.0')
+                    else toast.error('Cleaning videos is coming soon')
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
