@@ -32,6 +32,9 @@ pub struct ScanTarget {
     pub path: String,
     pub display_path: String,
     pub project_name: String,
+    /// Full path of the owning project root. Distinct from `project_name`
+    /// because projects with the same name can live under different roots.
+    pub project_path: String,
     pub folder_name: String,
     pub category: String,
     pub size_bytes: u64,

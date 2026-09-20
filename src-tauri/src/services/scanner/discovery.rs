@@ -15,7 +15,7 @@ use crate::domain::mtime::format_time;
 use crate::domain::pattern::{category_for, is_venv_name};
 use crate::domain::scan::ScanTarget;
 use crate::services::safety::classify;
-use crate::services::scanner::display::{display_path_for, project_root_name};
+use crate::services::scanner::display::{display_path_for, project_root_name, project_root_path};
 use crate::services::scanner::measure::measure_target;
 use crate::services::scanner::prune::prune_children;
 use crate::services::scanner::{venv_enabled, ScanStats, CANCEL_REQUESTED};
@@ -112,6 +112,9 @@ pub(super) fn walk_root(
                     path: stored.path.clone(),
                     display_path: display_path_for(Path::new(&stored.path), &stored.folder_name),
                     project_name: project_root_name(Path::new(&stored.path), &stored.folder_name),
+                    project_path: project_root_path(Path::new(&stored.path), &stored.folder_name)
+                        .to_string_lossy()
+                        .into_owned(),
                     folder_name: stored.folder_name.clone(),
                     category: category_for(&stored.folder_name).to_owned(),
                     size_bytes: stored.size_bytes,

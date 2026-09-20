@@ -1,16 +1,25 @@
 //! Path-derived labels for the results list.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-/// The project root folder name, e.g. `CodeShredder` for
-/// `.../CodeShredder/src-tauri/target` or `Kiko` for `.../Kiko/node_modules`.
-/// `target` folders sit two levels down (project root -> crate -> target), so
-/// they look one level further up than everything else.
-pub(super) fn project_root_name(dir: &Path, folder_name: &str) -> String {
+/// The project root that owns the target folder, e.g.
+/// `.../CodeShredder` for `.../CodeShredder/src-tauri/target` or
+/// `.../Kiko` for `.../Kiko/node_modules`. `target` folders sit two levels down
+/// (project root -> crate -> target), so they resolve one level further up than
+/// everything else. The full path is the grouping key for the "by project" view.
+pub(super) fn project_root_path(dir: &Path, folder_name: &str) -> PathBuf {
     let depth = if folder_name == "target" { 2 } else { 1 };
     dir.ancestors()
         .nth(depth)
-        .and_then(|p| p.file_name())
+        .unwrap_or_else(|| dir.parent().unwrap_or(dir))
+        .to_path_buf()
+}
+
+/// The project root folder name, e.g. `CodeShredder` for
+/// `.../CodeShredder/src-tauri/target` or `Kiko` for `.../Kiko/node_modules`.
+pub(super) fn project_root_name(dir: &Path, folder_name: &str) -> String {
+    project_root_path(dir, folder_name)
+        .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or_default()
         .to_owned()

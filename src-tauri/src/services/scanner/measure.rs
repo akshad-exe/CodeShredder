@@ -12,7 +12,7 @@ use crate::domain::mtime::format_time;
 use crate::domain::pattern::category_for;
 use crate::domain::scan::ScanTarget;
 use crate::services::safety::classify;
-use crate::services::scanner::display::{display_path_for, project_root_name};
+use crate::services::scanner::display::{display_path_for, project_root_name, project_root_path};
 use crate::services::scanner::{ScanStats, CANCEL_REQUESTED};
 use crate::storage::cache::{CacheEntry, ScanCache};
 
@@ -80,6 +80,9 @@ pub(super) fn measure_target(
         path: dir.to_string_lossy().into_owned(),
         display_path: display_path_for(dir, folder_name),
         project_name,
+        project_path: project_root_path(dir, folder_name)
+            .to_string_lossy()
+            .into_owned(),
         folder_name: folder_name.to_owned(),
         category: category_for(folder_name).to_owned(),
         size_bytes,
@@ -98,6 +101,9 @@ fn replay_entry(dir: &Path, folder_name: &str, entry: &CacheEntry) -> ScanTarget
         path: dir.to_string_lossy().into_owned(),
         display_path: display_path_for(dir, folder_name),
         project_name: project_root_name(dir, folder_name),
+        project_path: project_root_path(dir, folder_name)
+            .to_string_lossy()
+            .into_owned(),
         folder_name: folder_name.to_owned(),
         category: category_for(folder_name).to_owned(),
         size_bytes: entry.size_bytes,
