@@ -19,8 +19,12 @@ use crate::domain::mtime::format_time;
 use crate::services::scanner::roots::normalize_roots;
 
 /// Video container extensions recognized by the video scan.
+///
+/// Deliberately excludes `ts`: a `.ts` file is overwhelmingly TypeScript source
+/// (the same single-extension collision that fills scans with `node_modules`
+/// typing files), and MPEG transport streams are rare enough to drop.
 const VIDEO_EXTS: &[&str] = &[
-    "mp4", "mkv", "mov", "avi", "wmv", "webm", "flv", "m4v", "mpg", "mpeg", "ts", "3gp",
+    "mp4", "mkv", "mov", "avi", "wmv", "webm", "flv", "m4v", "mpg", "mpeg", "3gp", "ogv",
 ];
 
 /// A single file walked during a scan, with the metadata Explore pages show.
@@ -295,6 +299,22 @@ mod tests {
         let filtered = scan_videos(&[base.to_string_lossy().into_owned()], 800);
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].name, "series.mkv");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn videos_ignore_typescript_files() {
+        let base = temp_tree("explore-vidts");
+        // `dynamic.d.ts` must not be picked up as video: bare `.ts` is the
+        // MPEG-transport-stream extension, but real-world trees carry TS source.
+        write_file(&base.join("A/dynamic.d.ts"), b"export const x = 1;");
+        write_file(&base.join("A/stream.ts"), &[0u8; 900]);
+        write_file(&base.join("A/real.mp4"), &[0u8; 1_000]);
+
+        let videos = scan_videos(&[base.to_string_lossy().into_owned()], 0);
+        assert_eq!(videos.len(), 1, ".ts (TypeScript) files must not match videos");
+        assert_eq!(videos[0].name, "real.mp4");
 
         let _ = std::fs::remove_dir_all(&base);
     }
