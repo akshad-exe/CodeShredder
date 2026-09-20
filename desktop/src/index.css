@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    color-scheme: dark;
     --background: #07090D;
     --sidebar: #0B0D12;
     --panel: #101217;
