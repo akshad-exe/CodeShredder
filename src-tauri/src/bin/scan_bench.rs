@@ -8,7 +8,7 @@
 //! ```sh
 //! cargo run --release --bin scan_bench -- \
 //!   --cache /tmp/scan-cache.json \
-//!   --roots /home/akshad/Codebase
+//!   --roots ~/Codebase
 //! ```
 //!
 //! Prints the `scan stats` trace record (phase counters) plus a wall-clock
