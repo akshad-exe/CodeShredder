@@ -1,0 +1,38 @@
+name: Bug report
+about: Something isn't working as expected
+title: ''
+labels: bug
+assignees: ''
+
+---
+
+**What happened**
+
+<!-- What did you observe? -->
+
+**What you expected**
+
+<!-- What should have happened instead? -->
+
+**Environment**
+
+- CodeShredder version:
+- OS and architecture: <!-- e.g. Windows 11 x64, macOS 15 arm64, Ubuntu 24.04 x86_64 -->
+- Install method: <!-- .msi / .exe / .dmg / AppImage / .deb / .rpm / from source -->
+
+**Steps to reproduce**
+
+1.
+2.
+3.
+
+**Logs**
+
+<!-- Paste the relevant part of the app log. Redact anything sensitive. -->
+
+```
+```
+
+**Anything else**
+
+<!-- Screenshots, etc. -->

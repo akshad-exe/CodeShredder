@@ -1,0 +1,43 @@
+name: Data loss / safety concern
+about: CodeShredder offered to delete something it should not have
+title: '[SAFETY] '
+labels: bug, high-priority
+assignees: ''
+
+---
+
+> **Please do not use this template for general bugs.** It exists because deletion
+> behaviour is the one thing that can lose someone's work irreversibly.
+
+**What was offered for deletion**
+
+<!-- The exact path/entry CodeShredder proposed to remove. -->
+
+**Why it should have been protected**
+
+<!-- e.g. it's a .git directory, a lockfile, hand-written source, environment file -->
+
+**What happened when you proceeded**
+
+<!-- Did it go to Trash (recoverable) or was it permanently deleted? -->
+
+**Steps to reproduce**
+
+1.
+2.
+3.
+
+**Environment**
+
+- CodeShredder version:
+- OS and architecture:
+
+**Logs**
+
+<!--
+Requesting log output. If paths contain anything you'd rather not share,
+replace the user-specific prefix but keep the structure visible.
+-->
+
+```
+```
