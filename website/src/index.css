@@ -1,86 +1,64 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --bg-main: #080A0B;
+    --bg-secondary: #0D1114;
+    --bg-surface: #11171B;
+    --bg-card: #12191E;
+    --text-primary: #F5F5F5;
+    --text-secondary: #A7ADB4;
+    --text-muted: #747D85;
+    --brand-orange: #FF702B;
+    --brand-highlight: #FF8A24;
+    --brand-deep: #F04420;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-orange: rgba(255, 112, 43, 0.35);
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    background-color: #080A0B;
+    color: #F5F5F5;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-html {
-  scroll-behavior: smooth;
+.font-handwriting {
+  font-family: 'Caveat', cursive;
 }
 
-body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
 }
 
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500;
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #080A0B;
+}
+::-webkit-scrollbar-thumb {
+  background: #1A2228;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #25313A;
 }
 
-.glass-card {
-  @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-white/20 dark:border-gray-700/50;
+/* Glow effects */
+.orange-glow {
+  box-shadow: 0 0 35px -5px rgba(255, 112, 43, 0.35);
 }
 
-.hero-gradient {
-  @apply absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950;
+.orange-glow-sm {
+  box-shadow: 0 0 15px -3px rgba(255, 112, 43, 0.25);
 }
 
-.noise-bg {
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
-
-.grid-pattern {
-  background-image: 
-    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+.orange-glow-lg {
+  box-shadow: 0 0 60px -10px rgba(255, 112, 43, 0.45);
 }

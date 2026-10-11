@@ -1,10 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3b82f6"/>
-      <stop offset="100%" style="stop-color:#a855f7"/>
+    <linearGradient id="docBodyGrad" x1="20" y1="15" x2="65" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFFFFF" />
+      <stop offset="70%" stopColor="#F2F3F5" />
+      <stop offset="100%" stopColor="#E0DDD7" />
+    </linearGradient>
+    <linearGradient id="shredOrangeGrad" x1="50" y1="45" x2="50" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFB03A" />
+      <stop offset="40%" stopColor="#FF702B" />
+      <stop offset="100%" stopColor="#E83713" />
+    </linearGradient>
+    <linearGradient id="foldFlapGrad" x1="58" y1="16" x2="78" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#FFA633" />
+      <stop offset="50%" stopColor="#FF702B" />
+      <stop offset="100%" stopColor="#E23E15" />
     </linearGradient>
   </defs>
-  <rect width="100" height="100" rx="20" fill="url(#g)"/>
-  <text x="50" y="68" font-family="Arial,sans-serif" font-size="50" font-weight="bold" fill="white" text-anchor="middle">C</text>
+  <path d="M 32 16 C 25 16, 22 19, 22 26 L 22 54 L 30 54 L 30 27 C 30 23, 32 22, 35 22 L 58 22 L 58 35 C 58 39, 61 42, 65 42 L 76 42 L 76 54 L 80 54 L 80 34 L 60 16 Z" fill="url(#docBodyGrad)" />
+  <path d="M 30 27 C 30 23, 32 22, 35 22 L 58 22 L 58 34 C 58 38, 61 41, 65 41 L 76 41 L 76 54 L 30 54 Z" fill="#11161B" />
+  <path d="M 23 27 C 23 19, 28 16, 35 16 L 59 16 L 59 21 L 35 21 C 31 21, 28 23, 28 27 L 28 54 L 23 54 Z" fill="url(#docBodyGrad)" />
+  <path d="M 59 16 L 77 34 C 76 35, 75 36, 73 37 C 70 38, 66 38, 64 36 C 61 33, 60 29, 60 25 C 60 21, 59 18, 59 16 Z" fill="url(#foldFlapGrad)" />
+  <g fill="#FFFFFF">
+    <path d="M 43.5 35.5 L 36 42 L 43.5 48.5 L 45.2 46.8 L 39.5 42 L 45.2 37.2 Z" />
+    <path d="M 52.8 33 L 47.2 51 L 49.5 51 L 55.1 33 Z" />
+    <path d="M 57.5 35.5 L 65 42 L 57.5 48.5 L 55.8 46.8 L 61.5 42 L 55.8 37.2 Z" />
+  </g>
+  <rect x="29" y="52" width="4.5" height="15" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="35" y="52" width="4.5" height="23" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="41" y="52" width="4.5" height="29" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="47" y="52" width="4.5" height="34" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="53" y="52" width="4.5" height="26" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="59" y="52" width="4.5" height="18" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="65" y="52" width="4.5" height="13" rx="1.5" fill="url(#shredOrangeGrad)" />
+  <rect x="26" y="65" width="3.5" height="3.5" rx="0.8" fill="#FF702B" />
+  <rect x="32" y="71" width="3.5" height="3.5" rx="0.8" fill="#FF8A24" />
+  <rect x="38" y="77" width="3.5" height="3.5" rx="0.8" fill="#F04420" />
+  <rect x="42" y="83" width="3.8" height="3.8" rx="0.8" fill="#FF702B" />
+  <rect x="51" y="84" width="3.8" height="3.8" rx="0.8" fill="#FF8A24" />
+  <rect x="55" y="76" width="3.5" height="3.5" rx="0.8" fill="#FF702B" />
+  <rect x="63" y="69" width="3.8" height="3.8" rx="0.8" fill="#FF8A24" />
+  <rect x="70" y="60" width="3.5" height="3.5" rx="0.8" fill="#FF702B" />
+  <rect x="75" y="55" width="3.2" height="3.2" rx="0.8" fill="#FF8A24" />
+  <rect x="70" y="66" width="3.5" height="3.5" rx="0.8" fill="#F04420" />
+  <rect x="77" y="62" width="3.2" height="3.2" rx="0.8" fill="#FF702B" />
 </svg>
