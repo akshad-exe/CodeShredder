@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { CodeShredderIcon } from './CodeShredderIcon';
 import { LinuxIcon, WslIcon, WindowsIcon } from './BrandIcons';
+import { siteConfig } from '../config/site';
 import ctaMountainImg from '../assets/images/cta_mountain_sunset_1791697159659.jpg';
 
 interface FileItem {
@@ -702,7 +703,7 @@ export const DesktopAppShowcase: React.FC = () => {
                     </p>
 
                     <div className="pt-2 flex items-center gap-3 text-xs">
-                      <a href="https://github.com/codeshredder/codeshredder" target="_blank" rel="noopener noreferrer" className="text-[#FF702B] hover:underline font-semibold">
+                      <a href={siteConfig.githubUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF702B] hover:underline font-semibold">
                         GitHub Repository
                       </a>
                       <span className="text-[#747D85]">·</span>
