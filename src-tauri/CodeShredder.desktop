@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name={{name}}
+GenericName=Disk Cleanup Utility
+Comment={{comment}}
+Exec={{exec}}
+Icon={{icon}}
+Terminal=false
+StartupNotify=true
+StartupWMClass=codeshredder
+Categories=Utility;System;Filesystem;X-FilesystemFilter;
+Keywords=cleanup;disk;space;junk;cache;node_modules;storage;
