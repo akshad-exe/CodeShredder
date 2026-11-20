@@ -242,6 +242,14 @@ fn cache_specs() -> Vec<CacheSpec> {
     );
     push(
         &mut specs,
+        "user-cache",
+        "user cache dir (.cache)",
+        "System",
+        CacheSafety::Safe,
+        candidates(&[env("XDG_CACHE_HOME"), home(".cache")]),
+    );
+    push(
+        &mut specs,
         "user-temp",
         "user temp files",
         "System",
@@ -445,6 +453,24 @@ mod tests {
             assert!(!entry.path.is_empty());
             assert!(std::path::Path::new(&entry.path).is_dir());
         }
+    }
+
+    #[test]
+    fn user_cache_spec_resolves_xdg_or_home() {
+        // On Unix the `.cache` spec must point at XDG_CACHE_HOME or `~/.cache`,
+        // never at an unrelated fallback. `~/.cache` may not exist in CI, so we
+        // only assert the candidates are formed correctly.
+        let spec = cache_specs()
+            .into_iter()
+            .find(|s| s.id == "user-cache")
+            .expect("user-cache spec present");
+        let candidates = spec
+            .candidates
+            .iter()
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+        let f = format!("{candidates:?}");
+        assert!(f.contains(".cache"));
     }
 
     #[test]
