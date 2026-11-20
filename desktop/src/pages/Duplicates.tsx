@@ -52,7 +52,7 @@ export function Duplicates() {
     }
     setLoading(true)
     try {
-      setGroups(await scanDuplicates({ roots: scanRoots, minSizeBytes: 0 }))
+      setGroups(await scanDuplicates({ roots: scanRoots, minSizeBytes: minSize }))
       setUsingSample(false)
     } catch (err) {
       console.error('[Duplicates] scan failed:', err)
@@ -61,7 +61,7 @@ export function Duplicates() {
     } finally {
       setLoading(false)
     }
-  }, [preview, scanRoots])
+  }, [preview, scanRoots, minSize])
 
   useEffect(() => {
     void refresh()
