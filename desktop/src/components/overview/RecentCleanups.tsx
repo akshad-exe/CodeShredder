@@ -19,10 +19,7 @@ export function RecentCleanups() {
   const [entries, setEntries] = useState<CleanupHistoryEntry[] | null>(null)
 
   useEffect(() => {
-    if (!isTauri()) {
-      setEntries([])
-      return
-    }
+    if (!isTauri()) return
     let cancelled = false
     getCleanupHistory(20)
       .then((history) => {
