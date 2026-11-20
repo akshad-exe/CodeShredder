@@ -15,8 +15,7 @@ function formatTime(iso: string): string {
   return date.toLocaleString()
 }
 
-export function RecentCleanups({ bare = false, limit }: { bare?: boolean; limit?: number }) {
-  const box = bare ? 'mt-3' : 'card'
+export function RecentCleanups() {
   const [entries, setEntries] = useState<CleanupHistoryEntry[] | null>(null)
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export function RecentCleanups({ bare = false, limit }: { bare?: boolean; limit?
 
   if (entries === null) {
     return (
-      <div className={box}>
+      <div className="card">
         <div className="flex h-5 w-32 animate-pulse rounded bg-panel-2" />
       </div>
     )
@@ -47,24 +46,22 @@ export function RecentCleanups({ bare = false, limit }: { bare?: boolean; limit?
 
   if (entries.length === 0) {
     return (
-      <div className={box}>
+      <div className="card">
         <p className="text-sm text-muted">
-          No cleanups yet.
+          No cleanup history yet. Your recent cleanup runs will show up here.
         </p>
       </div>
     )
   }
 
   return (
-    <div className={bare ? 'mt-3' : 'card space-y-3'}>
-      {!bare && (
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-accent" />
-          <p className="text-sm font-semibold text-text">Recent cleanups</p>
-        </div>
-      )}
+    <div className="card space-y-3">
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-accent" />
+        <p className="text-sm font-semibold text-text">Recent cleanups</p>
+      </div>
       <ul className="divide-y divide-border">
-        {(limit ? entries.slice(0, limit) : entries).map((entry, index) => (
+        {entries.map((entry, index) => (
           <li key={`${entry.timestamp}-${index}`} className="py-2.5">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
