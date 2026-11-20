@@ -1,6 +1,8 @@
 import { cn } from '@/lib/utils'
 import {
   CATEGORY_GROUPS,
+  CATEGORY_TAG_COLORS,
+  PATTERN_CATEGORIES,
   PATTERN_LABELS,
   PATTERN_COLORS,
   patternsForCategory,
@@ -15,16 +17,25 @@ export function PatternPills() {
   const locked = scanStatus === 'scanning'
 
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {CATEGORY_GROUPS.map(({ key, label }) => {
         const patterns = patternsForCategory(key)
         const enabledInGroup = patterns.filter((p) => enabledPatterns.includes(p)).length
         const allEnabled = enabledInGroup === patterns.length
         const someEnabled = enabledInGroup > 0 && !allEnabled
         const color = PATTERN_COLORS[key] ?? 'bg-accent'
+        const tagColor = CATEGORY_TAG_COLORS[key] ?? 'bg-accent/10 text-accent'
 
         return (
-          <div key={key} className="space-y-1.5">
+          <div
+            key={key}
+            className={cn(
+              'rounded-xl border border-border bg-panel p-3 transition-colors duration-150',
+              allEnabled
+                ? 'border-border hover:border-accent/40'
+                : 'border-border/70 hover:border-border',
+            )}
+          >
             <button
               type="button"
               disabled={locked}
@@ -40,7 +51,7 @@ export function PatternPills() {
                   'grid h-4 w-4 shrink-0 place-content-center rounded border transition-colors',
                   allEnabled
                     ? 'border-accent bg-accent text-background'
-                    : 'border-border bg-panel group-hover:border-accent/50',
+                    : 'border-border bg-panel-2 group-hover:border-accent/50',
                 )}
                 aria-hidden
               >
@@ -59,32 +70,43 @@ export function PatternPills() {
                   <span className="h-1.5 w-1.5 rounded-sm bg-accent" />
                 )}
               </span>
-              <span className={cn('h-2 w-2 rounded-sm', color)} aria-hidden />
+              <span className={cn('h-2.5 w-2.5 rounded-full', color)} aria-hidden />
               <span className="flex-1">{label}</span>
               <span className="text-xs tabular-nums text-faint">
                 {enabledInGroup}/{patterns.length}
               </span>
             </button>
-            <div className="flex flex-wrap items-center gap-1.5 pl-[22px]">
-              {patterns.map((pattern) => (
-                <button
-                  key={pattern}
-                  type="button"
-                  disabled={locked}
-                  onClick={() => togglePattern(pattern)}
-                  className={cn(
-                    'rounded-full border px-2 py-0.5 font-mono text-[10px] transition-colors duration-150',
-                    locked
-                      ? 'cursor-default'
-                      : 'cursor-pointer hover:border-accent/50',
-                    enabledPatterns.includes(pattern)
-                      ? 'border-accent/40 bg-accent/10 text-accent'
-                      : 'border-border bg-panel text-faint',
-                  )}
-                >
-                  {PATTERN_LABELS[pattern] ?? pattern}
-                </button>
-              ))}
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 pl-[30px]">
+              {patterns.map((pattern) => {
+                const category = PATTERN_CATEGORIES[pattern]
+                const dot = PATTERN_COLORS[category] ?? 'bg-accent'
+                return (
+                  <button
+                    key={pattern}
+                    type="button"
+                    disabled={locked}
+                    onClick={() => togglePattern(pattern)}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-full border px-2 py-1 font-mono text-[10px] transition-colors duration-150',
+                      locked
+                        ? 'cursor-default'
+                        : 'cursor-pointer hover:border-accent/50',
+                      enabledPatterns.includes(pattern)
+                        ? cn('border-current', tagColor)
+                        : 'border-border bg-panel-2 text-faint',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'h-1.5 w-1.5 rounded-full',
+                        enabledPatterns.includes(pattern) ? dot : 'border border-border bg-transparent',
+                      )}
+                      aria-hidden
+                    />
+                    {PATTERN_LABELS[pattern] ?? pattern}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )

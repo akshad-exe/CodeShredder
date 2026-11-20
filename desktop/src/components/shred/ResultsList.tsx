@@ -3,7 +3,7 @@ import { ChevronDown, Clock3, FolderGit2, ScanSearch } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { ResultRow } from './ResultRow'
-import { formatBytes, formatCount, formatDate } from '@/lib/format'
+import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { CleanupTarget } from '@/types/cleanup'
 
@@ -329,9 +329,14 @@ function GroupHeader({
           · {formatCount(group.fileCount)} files
         </span>
         {group.lastUsed && (
-          <span className="flex shrink-0 items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2 py-0.5 text-[11px] tabular-nums text-accent">
+          <span className={cn(
+            'flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] tabular-nums',
+            isRecent(group.lastUsed)
+              ? 'border-warning/30 bg-warning/10 text-warning'
+              : 'border-accent/25 bg-accent/5 text-accent',
+          )}>
             <Clock3 className="h-3 w-3" />
-            {formatDate(group.lastUsed)}
+            {formatTimeAgo(group.lastUsed)}
           </span>
         )}
       </button>

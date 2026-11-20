@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { ArchiveRestore, Loader2, Recycle, RotateCcw, Trash2 } from 'lucide-react'
 import { emptyTrash, isTauri, listTrash, purgeTrash, restoreTrash } from '@/lib/ipc'
 import type { TrashItem } from '@/types/cleanup'
-import { formatBytes, formatCount, formatDate } from '@/lib/format'
+import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
 
 export function RecycleBin() {
@@ -185,8 +186,8 @@ export function RecycleBin() {
                       {item.originalPath}
                     </span>
                     <span className="shrink-0">·</span>
-                    <span className="shrink-0">
-                      {formatDate(new Date(item.timeDeleted * 1000).toISOString())}
+                    <span className={cn('shrink-0', isRecent(new Date(item.timeDeleted * 1000).toISOString()) ? 'text-warning' : '')}>
+                      {formatTimeAgo(new Date(item.timeDeleted * 1000).toISOString())}
                     </span>
                   </div>
                 </div>

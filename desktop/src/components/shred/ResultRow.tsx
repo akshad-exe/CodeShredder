@@ -1,17 +1,11 @@
 import { FolderOpen, Trash2 } from 'lucide-react'
 import type { CleanupTarget, SafetyLevel } from '@/types/cleanup'
-import { formatBytes, formatCount, formatDate } from '@/lib/format'
-import { categoryLabel } from '@/lib/patterns'
+import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
+import { categoryLabel, CATEGORY_TAG_COLORS } from '@/lib/patterns'
 import { useCleanupStore } from '@/store/cleanupStore'
 import { cn } from '@/lib/utils'
 import { cleanupTargets, isTauri, revealFolder } from '@/lib/ipc'
 import { toast } from '@/components/ui/sonner'
-
-const SAFETY_BADGE: Record<SafetyLevel, string> = {
-  safe: 'badge-safe',
-  medium: 'badge-medium',
-  dangerous: 'badge-danger',
-}
 
 const SAFETY_LABEL: Record<SafetyLevel, string> = {
   safe: 'Safe',
@@ -105,7 +99,9 @@ export function ResultRow({
           <span className="shrink-0 font-mono text-xs text-muted">
             {target.folderName}
           </span>
-          <span className={cn('shrink-0', SAFETY_BADGE[target.safetyLevel])}>
+          <span
+            className={cn('shrink-0 badge', CATEGORY_TAG_COLORS[target.category] ?? 'bg-accent/10 text-accent')}
+          >
             {categoryLabel(target.category).toUpperCase()}
           </span>
         </div>
@@ -116,7 +112,9 @@ export function ResultRow({
             {formatCount(target.fileCount)} files
           </span>
           <span className="shrink-0">·</span>
-          <span className="shrink-0">{formatDate(target.lastModified)}</span>
+          <span className={cn('shrink-0', isRecent(target.lastModified) && 'text-warning')}>
+            {formatTimeAgo(target.lastModified)}
+          </span>
         </div>
         <div className="mt-2 h-1 w-40 overflow-hidden rounded-full bg-panel-2">
           <div

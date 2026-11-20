@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { formatBytes } from '@/lib/format'
-import { PATTERN_COLORS } from '@/data/mock'
+import { PATTERN_COLORS } from '@/lib/patterns'
 import { categoryLabel } from '@/lib/patterns'
+import { cn } from '@/lib/utils'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 export function SegmentedBar() {
@@ -36,15 +37,18 @@ export function SegmentedBar() {
           />
         ))}
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
         {groups.map(({ category, size }) => (
-          <div key={category} className="flex items-center gap-1.5 text-xs">
+          <span
+            key={category}
+            className="flex items-center gap-1.5 rounded-full border border-border bg-panel px-2.5 py-1 text-[11px]"
+          >
             <span
-              className={`h-2 w-2 rounded-sm ${PATTERN_COLORS[category] ?? 'bg-accent'}`}
+              className={cn('h-2 w-2 rounded-full', PATTERN_COLORS[category] ?? 'bg-accent')}
             />
             <span className="font-mono text-muted">{categoryLabel(category)}</span>
             <span className="text-faint">{formatBytes(size)}</span>
-          </div>
+          </span>
         ))}
       </div>
     </div>

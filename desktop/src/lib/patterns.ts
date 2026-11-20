@@ -165,11 +165,22 @@ export const PATTERN_LABELS: Record<string, string> = {
 
 /** Bar/legend color per ecosystem group (falls back to `bg-accent`). */
 export const PATTERN_COLORS: Record<string, string> = {
-  web: 'bg-accent',
+  web: 'bg-safe',
   python: 'bg-[#eab308]',
   systems: 'bg-[#22d3ee]',
   mobile: 'bg-[#f472b6]',
   package_caches: 'bg-[#a78bfa]',
+}
+
+/** Row-tag (pill) classes per ecosystem group. Mirrors `PATTERN_COLORS` above;
+ * these are the soft translucent variants used for the category badge on each
+ * result row. Falls back to accent. */
+export const CATEGORY_TAG_COLORS: Record<string, string> = {
+  web: 'bg-safe/10 text-safe',
+  python: 'bg-[#eab308]/10 text-[#eab308]',
+  systems: 'bg-[#22d3ee]/10 text-[#22d3ee]',
+  mobile: 'bg-[#f472b6]/10 text-[#f472b6]',
+  package_caches: 'bg-[#a78bfa]/10 text-[#a78bfa]',
 }
 
 /** The default selection of enabled patterns shown on first run. */
