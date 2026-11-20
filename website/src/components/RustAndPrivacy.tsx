@@ -11,22 +11,22 @@ export const RustAndPrivacy: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Powered by Rust */}
-          <div className="group rounded-2xl bg-[#11171B] border border-white/[0.08] hover:border-[#FF702B]/40 p-6 sm:p-8 flex items-start gap-6 transition-all duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-[#FF702B]/15 border border-[#FF702B]/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <RustIcon className="w-8 h-8 text-[#FF702B]" />
+          <div className="group rounded-2xl bg-panel border border-white/[0.08] hover:border-accent/40 p-6 sm:p-8 flex items-start gap-6 transition-all duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <RustIcon className="w-8 h-8 text-accent" />
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-bold text-white mb-2">
                 Powered by Rust
               </h3>
-              <p className="text-sm text-[#A7ADB4] leading-relaxed mb-4">
+              <p className="text-sm text-muted leading-relaxed mb-4">
                 Blazing fast. Memory safe. Built for performance and reliability.
               </p>
               <a
                 href={siteConfig.rustOfficialUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#FF702B] hover:text-[#FF8A24] transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:text-accent/80 transition-colors"
               >
                 <span>Why Rust?</span>
                 <ArrowRight className="w-4 h-4" />
@@ -35,20 +35,20 @@ export const RustAndPrivacy: React.FC = () => {
           </div>
 
           {/* Card 2: Your Data Stays Yours */}
-          <div className="group rounded-2xl bg-[#11171B] border border-white/[0.08] hover:border-[#FF702B]/40 p-6 sm:p-8 flex items-start gap-6 transition-all duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-[#FF702B]/15 border border-[#FF702B]/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Lock className="w-7 h-7 text-[#FF702B]" />
+          <div className="group rounded-2xl bg-panel border border-white/[0.08] hover:border-accent/40 p-6 sm:p-8 flex items-start gap-6 transition-all duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Lock className="w-7 h-7 text-accent" />
             </div>
             <div className="flex-1">
               <h3 className="text-xl font-bold text-white mb-2">
                 Your Data Stays Yours
               </h3>
-              <p className="text-sm text-[#A7ADB4] leading-relaxed mb-4">
+              <p className="text-sm text-muted leading-relaxed mb-4">
                 100% local. No telemetry. No data leaves your machine.
               </p>
               <button
                 onClick={() => setPrivacyModalOpen(true)}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#FF702B] hover:text-[#FF8A24] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:text-accent/80 transition-colors cursor-pointer"
               >
                 <span>Privacy first</span>
                 <ArrowRight className="w-4 h-4" />
@@ -61,16 +61,16 @@ export const RustAndPrivacy: React.FC = () => {
       {/* Privacy Guarantee Modal */}
       {privacyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#11171B] border border-white/15 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative">
+          <div className="bg-panel border border-white/15 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative">
             <button
               onClick={() => setPrivacyModalOpen(false)}
-              className="absolute top-4 right-4 text-[#A7ADB4] hover:text-white"
+              className="absolute top-4 right-4 text-muted hover:text-white"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-12 h-12 rounded-xl bg-[#FF702B]/20 border border-[#FF702B]/30 flex items-center justify-center mb-5 text-[#FF702B]">
+            <div className="w-12 h-12 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center mb-5 text-accent">
               <ShieldCheck className="w-6 h-6" />
             </div>
 
@@ -78,7 +78,7 @@ export const RustAndPrivacy: React.FC = () => {
               CodeShredder Privacy Guarantee
             </h3>
 
-            <div className="space-y-3 text-sm text-[#A7ADB4] leading-relaxed mb-6">
+            <div className="space-y-3 text-sm text-muted leading-relaxed mb-6">
               <p>
                 CodeShredder runs as a purely local native desktop executable compiled with Rust and Tauri.
               </p>
@@ -92,7 +92,7 @@ export const RustAndPrivacy: React.FC = () => {
 
             <button
               onClick={() => setPrivacyModalOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-[#080A0B] bg-[#FF702B] hover:bg-[#FF8A24] transition-colors"
+              className="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent/80 transition-colors"
             >
               Got it
             </button>

@@ -28,7 +28,7 @@ export const DeveloperEcosystems: React.FC = () => {
     },
     {
       name: 'Rust',
-      icon: <RustIcon className="w-11 h-11 text-[#FF702B] drop-shadow-[0_2px_14px_rgba(255,112,43,0.4)] transition-transform duration-200 group-hover:scale-115" />,
+      icon: <RustIcon className="w-11 h-11 text-accent drop-shadow-[0_2px_14px_rgba(22,139,255,0.4)] transition-transform duration-200 group-hover:scale-115" />,
     },
     {
       name: 'Python',
@@ -62,7 +62,7 @@ export const DeveloperEcosystems: React.FC = () => {
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-4">
           Built for every developer.
         </h2>
-        <p className="text-base sm:text-lg text-[#A7ADB4] max-w-2xl mx-auto mb-16 leading-relaxed">
+        <p className="text-base sm:text-lg text-muted max-w-2xl mx-auto mb-16 leading-relaxed">
           Whether you work with JavaScript, TypeScript, Rust, Python, mobile, or just
           love building — CodeShredder helps you keep your machine clean and fast.
         </p>
@@ -77,7 +77,7 @@ export const DeveloperEcosystems: React.FC = () => {
               <div className="mb-3.5 flex items-center justify-center h-12">
                 {eco.icon}
               </div>
-              <span className="text-sm font-semibold text-[#A7ADB4] group-hover:text-white transition-colors tracking-tight">
+              <span className="text-sm font-semibold text-muted group-hover:text-white transition-colors tracking-tight">
                 {eco.name}
               </span>
             </div>

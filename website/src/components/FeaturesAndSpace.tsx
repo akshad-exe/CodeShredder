@@ -35,7 +35,7 @@ export const FeaturesAndSpace: React.FC = () => {
     {
       title: 'Safe by Default',
       description: 'Moves to Trash, not permanent delete',
-      icon: <ShieldCheck className="w-5 h-5 text-[#FF8A24]" />,
+      icon: <ShieldCheck className="w-5 h-5 text-accent" />,
     },
     {
       title: 'Developer Focused',
@@ -96,7 +96,7 @@ export const FeaturesAndSpace: React.FC = () => {
             <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-white leading-tight mb-5 text-balance">
               A cleaner machine for<br />a better you.
             </h2>
-            <p className="text-base sm:text-lg text-[#A7ADB4] leading-relaxed mb-10 max-w-xl">
+            <p className="text-base sm:text-lg text-muted leading-relaxed mb-10 max-w-xl">
               Developers create a lot of junk. CodeShredder helps you find it,
               understand it, and remove it safely — so you can get back to building.
             </p>
@@ -112,7 +112,7 @@ export const FeaturesAndSpace: React.FC = () => {
                     <h3 className="text-base font-bold text-white mb-1">
                       {feat.title}
                     </h3>
-                    <p className="text-sm text-[#A7ADB4] leading-snug">
+                    <p className="text-sm text-muted leading-snug">
                       {feat.description}
                     </p>
                   </div>
@@ -123,17 +123,17 @@ export const FeaturesAndSpace: React.FC = () => {
 
           {/* Right Column: Reclaimable Space Dashboard Preview */}
           <div className="lg:col-span-5">
-            <div className="relative rounded-2xl bg-[#11171B] border border-white/[0.08] p-6 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)]">
+            <div className="relative rounded-2xl bg-panel border border-white/[0.08] p-6 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.6)]">
               {/* Header */}
               <div className="flex items-center gap-3.5 mb-6 pb-5 border-b border-white/[0.06]">
-                <div className="w-11 h-11 rounded-full bg-[#FF702B]/15 border border-[#FF702B]/30 flex items-center justify-center shrink-0">
+                <div className="w-11 h-11 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
                   <CodeShredderIcon size={24} />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-white tracking-tight">
                     Reclaim your space
                   </h3>
-                  <p className="text-xs text-[#A7ADB4]">
+                  <p className="text-xs text-muted">
                     We found <span className="font-semibold text-white">12.4 GB</span> of reclaimable space
                   </p>
                 </div>
@@ -154,7 +154,7 @@ export const FeaturesAndSpace: React.FC = () => {
                         {item.label}
                       </span>
                     </div>
-                    <span className="text-sm font-mono font-medium text-[#A7ADB4] tabular-nums">
+                    <span className="text-sm font-mono font-medium text-muted tabular-nums">
                       {item.size}
                     </span>
                   </div>
@@ -165,7 +165,7 @@ export const FeaturesAndSpace: React.FC = () => {
               <button
                 onClick={handleSimulateShred}
                 disabled={shreddingState === 'shredding'}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-[#080A0B] bg-[#FF702B] hover:bg-[#FF8A24] active:scale-[0.99] transition-all duration-150 shadow-[0_0_20px_rgba(255,112,43,0.3)] cursor-pointer disabled:opacity-75"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent/80 active:scale-[0.99] transition-all duration-150 shadow-[0_0_20px_rgba(22,139,255,0.3)] cursor-pointer disabled:opacity-75"
               >
                 {shreddingState === 'idle' && (
                   <>
@@ -174,13 +174,13 @@ export const FeaturesAndSpace: React.FC = () => {
                   </>
                 )}
                 {shreddingState === 'shredding' && (
-                  <div className="flex items-center gap-2 text-[#080A0B]">
-                    <div className="w-4 h-4 border-2 border-[#080A0B] border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center gap-2 text-white">
+                    <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
                     <span>Moving to OS Trash...</span>
                   </div>
                 )}
                 {shreddingState === 'done' && (
-                  <div className="flex items-center gap-1.5 text-[#080A0B]">
+                  <div className="flex items-center gap-1.5 text-white">
                     <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                     <span>12.4 GB Moved to Trash!</span>
                   </div>
@@ -188,7 +188,7 @@ export const FeaturesAndSpace: React.FC = () => {
               </button>
 
               <div className="mt-3 text-center">
-                <span className="text-[11px] text-[#747D85]">
+                <span className="text-[11px] text-faint">
                   Illustrative desktop dashboard preview · Non-destructive
                 </span>
               </div>

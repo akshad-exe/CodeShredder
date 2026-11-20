@@ -36,16 +36,16 @@ export const siteConfig = {
       requirements: 'Windows 10 / 11 (64-bit)',
       assets: [
         {
+          label: '.exe (installer)',
+          filename: 'CodeShredder_0.1.0_x64-setup.exe',
+          size: '3.4 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_x64-setup.exe`,
+        },
+        {
           label: '.msi',
           filename: 'CodeShredder_0.1.0_x64_en-US.msi',
           size: '5.0 MB',
           url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_x64_en-US.msi`,
-        },
-        {
-          label: '.exe',
-          filename: 'CodeShredder_0.1.0_x64-setup.exe',
-          size: '3.4 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_x64-setup.exe`,
         },
       ],
     },

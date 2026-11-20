@@ -11,7 +11,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick }) => {
   return (
-    <footer className="bg-[#050708] border-t border-white/[0.06] pt-20 pb-14 text-sm text-[#A7ADB4]">
+    <footer className="bg-background border-t border-white/[0.06] pt-20 pb-14 text-sm text-muted">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top 4-column + Catchphrase Area */}
         <div className="grid grid-cols-2 md:grid-cols-12 gap-10 lg:gap-12 pb-16">
@@ -20,7 +20,7 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
             <a href="#" className="mb-3 hover:opacity-95 transition-opacity inline-block">
               <CodeShredderWordmark iconSize={40} textSize="text-2xl font-black" />
             </a>
-            <p className="text-sm text-[#8A929A] font-medium tracking-wide mt-1">
+            <p className="text-sm text-muted font-medium tracking-wide mt-1">
               Clean. Reclaim. Code More.
             </p>
           </div>
@@ -161,7 +161,7 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
           {/* Right Brand Phrase: "Less Junk / More Building" */}
           <div className="col-span-1 md:col-span-2 flex items-center justify-end select-none">
             <div className="transform -rotate-6 text-right">
-              <span className="font-handwriting text-3xl sm:text-4xl lg:text-5xl font-bold text-[#FFA234] leading-tight block drop-shadow-md">
+              <span className="font-handwriting text-3xl sm:text-4xl lg:text-5xl font-bold text-accent leading-tight block drop-shadow-md">
                 Less Junk<br />More Building
               </span>
             </div>
@@ -169,12 +169,12 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
         </div>
 
         {/* Bottom Row */}
-        <div className="pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-[#747D85]">
+        <div className="pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-5 text-xs text-faint">
           <div>
             © {new Date().getFullYear()} CodeShredder. Open source. Built with Rust. Made for developers, by developers.
           </div>
 
-          <div className="flex items-center gap-5 text-[#A7ADB4]">
+          <div className="flex items-center gap-5 text-muted">
             <a
               href={siteConfig.githubUrl}
               target="_blank"

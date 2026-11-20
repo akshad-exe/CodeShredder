@@ -40,8 +40,8 @@ export const JunkCategories: React.FC = () => {
       id: 'target',
       name: 'target',
       icon: (
-        <div className="w-8 h-8 rounded-lg bg-[#FF702B]/15 border border-[#FF702B]/30 flex items-center justify-center text-[#FF702B] p-1.5 shadow-xs">
-          <RustIcon className="w-5 h-5 text-[#FF702B]" />
+        <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent p-1.5 shadow-xs">
+          <RustIcon className="w-5 h-5 text-accent" />
         </div>
       ),
     },
@@ -102,7 +102,7 @@ export const JunkCategories: React.FC = () => {
   ];
 
   return (
-    <section className="py-10 border-y border-white/[0.05] bg-[#0A0D10]/40">
+    <section className="py-10 border-y border-white/[0.05] bg-background/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-lg font-bold text-white mb-5 tracking-tight">
           Find and remove
@@ -115,14 +115,14 @@ export const JunkCategories: React.FC = () => {
               key={cat.id}
               className={`group flex flex-col items-center justify-center py-5 px-2.5 rounded-2xl transition-all duration-200 cursor-default ${
                 cat.isActive
-                  ? 'bg-[#12191E] border border-[#FF702B]/40 shadow-[0_0_15px_rgba(255,112,43,0.15)]'
-                  : 'bg-[#10161A] border border-white/[0.07] hover:border-[#FF702B]/40 hover:bg-[#141C22]'
+                  ? 'bg-panel border border-accent/40 shadow-[0_0_15px_rgba(22,139,255,0.15)]'
+                  : 'bg-[#10161A] border border-white/[0.07] hover:border-accent/40 hover:bg-panel-2'
               }`}
             >
               <div className="mb-3 transform group-hover:scale-110 transition-transform duration-200">
                 {cat.icon}
               </div>
-              <span className="text-[11px] sm:text-xs font-mono font-medium text-[#A7ADB4] group-hover:text-white transition-colors text-center truncate max-w-full px-1">
+              <span className="text-[11px] sm:text-xs font-mono font-medium text-muted group-hover:text-white transition-colors text-center truncate max-w-full px-1">
                 {cat.name}
               </span>
             </div>

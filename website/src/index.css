@@ -1,28 +1,51 @@
 @import "tailwindcss";
 
+/* Design tokens: identical to the desktop app (desktop/tailwind.config.ts). */
+@theme {
+  --color-background: #07090D;
+  --color-sidebar: #0B0D12;
+  --color-panel: #101217;
+  --color-panel-2: #151922;
+  --color-border: #262B36;
+  --color-text: #F5F7FA;
+  --color-muted: #8B93A7;
+  --color-faint: #596070;
+  --color-accent: #168BFF;
+  --color-danger: #FF4D4F;
+  --color-safe: #3DDC97;
+  --color-warning: #FFB020;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --animate-fadeIn: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @layer base {
-  :root {
-    --bg-main: #080A0B;
-    --bg-secondary: #0D1114;
-    --bg-surface: #11171B;
-    --bg-card: #12191E;
-    --text-primary: #F5F5F5;
-    --text-secondary: #A7ADB4;
-    --text-muted: #747D85;
-    --brand-orange: #FF702B;
-    --brand-highlight: #FF8A24;
-    --brand-deep: #F04420;
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-orange: rgba(255, 112, 43, 0.35);
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   body {
-    background-color: #080A0B;
-    color: #F5F5F5;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -40,25 +63,25 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #080A0B;
+  background: var(--color-background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1A2228;
+  background: var(--color-panel-2);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #25313A;
+  background: var(--color-border);
 }
 
 /* Glow effects */
-.orange-glow {
-  box-shadow: 0 0 35px -5px rgba(255, 112, 43, 0.35);
+.accent-glow {
+  box-shadow: 0 0 35px -5px rgba(22, 139, 255, 0.35);
 }
 
-.orange-glow-sm {
-  box-shadow: 0 0 15px -3px rgba(255, 112, 43, 0.25);
+.accent-glow-sm {
+  box-shadow: 0 0 15px -3px rgba(22, 139, 255, 0.25);
 }
 
-.orange-glow-lg {
-  box-shadow: 0 0 60px -10px rgba(255, 112, 43, 0.45);
+.accent-glow-lg {
+  box-shadow: 0 0 60px -10px rgba(22, 139, 255, 0.45);
 }

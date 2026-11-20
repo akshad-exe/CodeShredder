@@ -20,10 +20,10 @@ export const CodeShredderWordmark: React.FC<CodeShredderWordmarkProps> = ({
       <div className="flex flex-col">
         <div className={`font-extrabold tracking-tight leading-none ${textSize}`}>
           <span className="text-white">Code</span>
-          <span className="text-[#FF702B]">Shredder</span>
+          <span className="text-accent">Shredder</span>
         </div>
         {showTagline && (
-          <div className="text-[9px] font-medium tracking-[0.2em] text-[#A7ADB4] uppercase mt-1">
+          <div className="text-[9px] font-medium tracking-[0.2em] text-muted uppercase mt-1">
             Clean · Reclaim · Code More
           </div>
         )}

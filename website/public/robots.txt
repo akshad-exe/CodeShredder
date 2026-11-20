@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://akshad-exe.github.io/CodeShredder/sitemap.xml
