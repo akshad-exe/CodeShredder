@@ -190,20 +190,18 @@ export function Duplicates() {
         </div>
       )}
 
-      {groups.length > 0 && (
-        <div className="mt-4 flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter by file name or path…"
-              className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
-            />
-          </div>
-          <SelectMenu label="Minimum size" value={minSize} options={MIN_SIZES} onChange={setMinSize} />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Filter by file name or path…"
+            className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
+          />
         </div>
-      )}
+        <SelectMenu label="Minimum size" value={minSize} options={MIN_SIZES} onChange={setMinSize} />
+      </div>
 
       {loading ? (
         <div className="mt-4 space-y-2.5">

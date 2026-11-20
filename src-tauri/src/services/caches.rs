@@ -71,23 +71,35 @@ pub fn clean_cache(id: &str) -> Result<(PathBuf, u64), String> {
         return Err("path is protected and cannot be cleaned".to_string());
     }
 
-    let freed = dir_size(&path);
-    empty_contents(&path).map_err(|err| err.to_string())?;
+    let before = dir_size(&path);
+    empty_contents(&path)?;
+    let freed = before.saturating_sub(dir_size(&path));
     Ok((path, freed))
 }
 
 /// Removes every file and subdirectory under `root`, leaving `root` itself.
 /// Symlinks (including junctions) are removed as links, never followed.
-fn empty_contents(root: &Path) -> std::io::Result<()> {
-    for entry in std::fs::read_dir(root)? {
-        let entry = entry?;
+/// Entries that cannot be removed (in use, owned by someone else) are skipped
+/// so one stuck file does not abort the rest; it is an error only when nothing
+/// at all could be removed.
+fn empty_contents(root: &Path) -> Result<(), String> {
+    let (mut removed, mut failed) = (0usize, 0usize);
+    for entry in std::fs::read_dir(root).map_err(|e| e.to_string())?.flatten() {
         let path = entry.path();
-        let meta = std::fs::symlink_metadata(&path)?;
-        if meta.is_dir() {
-            std::fs::remove_dir_all(&path)?;
+        let is_dir = std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir());
+        let result = if is_dir {
+            std::fs::remove_dir_all(&path)
         } else {
-            std::fs::remove_file(&path)?;
+            std::fs::remove_file(&path)
+        };
+        if result.is_ok() {
+            removed += 1;
+        } else {
+            failed += 1;
         }
+    }
+    if removed == 0 && failed > 0 {
+        return Err(format!("could not remove {failed} item(s); they may be in use"));
     }
     Ok(())
 }
@@ -245,7 +257,9 @@ fn cache_specs() -> Vec<CacheSpec> {
         "user-cache",
         "user cache dir (.cache)",
         "System",
-        CacheSafety::Safe,
+        // Mostly regenerable, but it holds big downloads (AI models, browser
+        // engines) that are slow to fetch again, so never mark it Safe.
+        CacheSafety::Medium,
         candidates(&[env("XDG_CACHE_HOME"), home(".cache")]),
     );
     push(
@@ -253,7 +267,9 @@ fn cache_specs() -> Vec<CacheSpec> {
         "user-temp",
         "user temp files",
         "System",
-        CacheSafety::Safe,
+        // On Linux/macOS this is the shared /tmp, which holds live sockets and
+        // lock files of running apps; only Medium, and in-use entries are skipped.
+        CacheSafety::Medium,
         candidates(&[Some(std::env::temp_dir()), local_app_data("Temp")]),
     );
     push(
@@ -453,6 +469,19 @@ mod tests {
             assert!(!entry.path.is_empty());
             assert!(std::path::Path::new(&entry.path).is_dir());
         }
+    }
+
+    #[test]
+    fn empty_contents_clears_files_and_keeps_root() {
+        let root = std::env::temp_dir().join("cs-empty-contents");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("sub/deeper")).unwrap();
+        std::fs::write(root.join("a.txt"), "x").unwrap();
+        std::fs::write(root.join("sub/deeper/b.txt"), "y").unwrap();
+        empty_contents(&root).unwrap();
+        assert!(root.exists());
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
