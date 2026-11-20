@@ -5,15 +5,15 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --background: #07090D;
-    --sidebar: #0B0D12;
-    --panel: #101217;
-    --panel-2: #151922;
-    --border: #262B36;
-    --text: #F5F7FA;
-    --text-muted: #8B93A7;
-    --text-faint: #596070;
-    --accent: #168BFF;
+    --background: #080A0B;
+    --sidebar: #0D1114;
+    --panel: #11171B;
+    --panel-2: #161E24;
+    --border: #252D33;
+    --text: #F5F5F5;
+    --text-muted: #A7ADB4;
+    --text-faint: #747D85;
+    --accent: #FF702B;
     --danger: #FF4D4F;
     --safe: #3DDC97;
     --warning: #FFB020;
