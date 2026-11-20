@@ -25,21 +25,19 @@ pub async fn clean_caches(ids: Vec<String>) -> Vec<CacheCleanResult> {
     tracing::info!(count = ids.len(), "clean_caches called");
     tauri::async_runtime::spawn_blocking(move || {
         ids.iter()
-            .map(|id| {
-                match caches::clean_cache(id) {
-                    Ok((path, freed_bytes)) => CacheCleanResult {
-                        id: id.clone(),
-                        path: path.to_string_lossy().into_owned(),
-                        freed_bytes,
-                        error: None,
-                    },
-                    Err(error) => CacheCleanResult {
-                        id: id.clone(),
-                        path: String::new(),
-                        freed_bytes: 0,
-                        error: Some(error),
-                    },
-                }
+            .map(|id| match caches::clean_cache(id) {
+                Ok((path, freed_bytes)) => CacheCleanResult {
+                    id: id.clone(),
+                    path: path.to_string_lossy().into_owned(),
+                    freed_bytes,
+                    error: None,
+                },
+                Err(error) => CacheCleanResult {
+                    id: id.clone(),
+                    path: String::new(),
+                    freed_bytes: 0,
+                    error: Some(error),
+                },
             })
             .collect()
     })

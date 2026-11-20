@@ -124,7 +124,7 @@ pub fn category_for(folder_name: &str) -> &str {
         // Mobile & native (iOS / Android)
         "DerivedData" | ".gradle" | ".dart_tool" | "Pods" | ".expo" => "mobile",
         // Package manager caches (npm, yarn, pnpm, bun, cargo, composer)
-        ".npm" | ".pnpm-store" | ".yarn" | ".bun" | ".cargo"  => "package_caches",
+        ".npm" | ".pnpm-store" | ".yarn" | ".bun" | ".cargo" => "package_caches",
         other if is_venv_name(other) => "python",
         other => other,
     }
