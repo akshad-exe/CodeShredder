@@ -1,6 +1,6 @@
 [package]
 name = "codeshredder"
-version = "0.1.0"
+version = "0.1.1"
 description = "Fast, safe desktop cleanup for developers"
 default-run = "codeshredder"
 edition = "2021"
