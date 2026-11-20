@@ -60,7 +60,9 @@ pub(super) fn measure_target(
     let size_bytes = measure.size.load(Ordering::Relaxed);
     let file_count = measure.count.load(Ordering::Relaxed);
 
-    if let (Some(mtime), Ok(mut guard)) = (dir_mtime, cache.lock()) {
+    // A cancelled measurement is partial: caching it would replay a wrong size.
+    let cancelled = CANCEL_REQUESTED.load(Ordering::Relaxed);
+    if let (false, Some(mtime), Ok(mut guard)) = (cancelled, dir_mtime, cache.lock()) {
         guard.insert(
             dir,
             CacheEntry {

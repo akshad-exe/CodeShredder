@@ -83,6 +83,11 @@ pub(super) fn walk_root(
         }
     }
 
+    // A cancelled walk is incomplete: do not compare or store its fingerprint.
+    if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+        return;
+    }
+
     fingerprint.sort_unstable_by(|a, b| a.path.cmp(&b.path));
     ScanStats::add_elapsed_ms(&stats.time_discovering_ms, discovering_started);
 
@@ -153,6 +158,11 @@ pub(super) fn walk_root(
         }
     });
     ScanStats::add_elapsed_ms(&stats.time_measuring_ms, measuring_started);
+
+    // A cancelled scan has a partial fingerprint and partial sizes; never store it.
+    if CANCEL_REQUESTED.load(Ordering::Relaxed) {
+        return;
+    }
 
     let targets = new_targets
         .lock()

@@ -32,7 +32,7 @@ pub(crate) mod roots;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::Sender;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
 use discovery::walk_root;
@@ -46,6 +46,9 @@ use crate::storage::cache::ScanCache;
 /// Raised when the user asks to stop a running scan. Read (never written) by
 /// the walker and the measurer, so it is safe to call from any thread.
 pub(super) static CANCEL_REQUESTED: AtomicBool = AtomicBool::new(false);
+
+/// Bounded measurement pool, built once and reused by every scan.
+static MEASURE_POOL: OnceLock<Arc<rayon::ThreadPool>> = OnceLock::new();
 
 /// Live scan counters, shared across every root's walker and measurer. All
 /// atomics so the parallel walk needs no lock. Read once at the end of a scan
@@ -124,13 +127,17 @@ impl ScannerEngine {
         let cache = Arc::new(std::sync::Mutex::new(ScanCache::load()));
         let stats = Arc::new(ScanStats::default());
         let roots = normalize_roots(&input.roots);
-        let measure_pool = Arc::new(
-            rayon::ThreadPoolBuilder::new()
-                .num_threads(measure_threads())
-                .thread_name(|index| format!("cs-measure-{index}"))
-                .build()
-                .expect("failed to start the measurement thread pool"),
-        );
+        let measure_pool = MEASURE_POOL
+            .get_or_init(|| {
+                Arc::new(
+                    rayon::ThreadPoolBuilder::new()
+                        .num_threads(measure_threads())
+                        .thread_name(|index| format!("cs-measure-{index}"))
+                        .build()
+                        .expect("failed to start the measurement thread pool"),
+                )
+            })
+            .clone();
 
         rayon::scope(|scope| {
             for root in roots {
