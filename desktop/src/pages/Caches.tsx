@@ -36,8 +36,9 @@ export function Caches() {
       setUsingSample(false)
     } catch (err) {
       console.error('[Caches] list failed:', err)
-      setEntries(SAMPLE_CACHES)
-      setUsingSample(true)
+      setEntries([])
+      setUsingSample(false)
+      toast.error('Could not list caches')
     } finally {
       setLoading(false)
     }

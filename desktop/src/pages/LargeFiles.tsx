@@ -44,12 +44,6 @@ export function LargeFiles() {
       setLoading(false)
       return
     }
-    if (withMediaRoots(scanRoots).length === 0) {
-      setFiles([])
-      setUsingSample(false)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       setFiles(await scanLargeFiles({ roots: withMediaRoots(scanRoots), minSizeBytes: 0, limit: 200 }))
@@ -206,9 +200,7 @@ export function LargeFiles() {
             icon={HardDrive}
             title="No files found"
             description={
-              scanRoots.length === 0
-                ? 'Add scan roots in Settings, then run a scan to surface the biggest files on disk.'
-                : 'No files above your filter were found on the scan roots.'
+              'No files above your filter were found on the scan roots.'
             }
           />
         </div>

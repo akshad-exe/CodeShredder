@@ -7,6 +7,8 @@ import type { DuplicateFile, DuplicateGroup } from '@/types/cleanup'
 import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
+import { SelectMenu } from '@/components/ui/select-menu'
+import { withMediaRoots } from '@/lib/roots'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
@@ -26,7 +28,7 @@ export function Duplicates() {
   const [groups, setGroups] = useState<DuplicateGroup[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
+  const [minSize, setMinSize] = useState(MIN_SIZES[1].value)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [cleaning, setCleaning] = useState(false)
   const preview = !isTauri()
@@ -46,15 +48,9 @@ export function Duplicates() {
       setLoading(false)
       return
     }
-    if (scanRoots.length === 0) {
-      setGroups([])
-      setUsingSample(false)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
-      setGroups(await scanDuplicates({ roots: scanRoots, minSizeBytes: minSize }))
+      setGroups(await scanDuplicates({ roots: withMediaRoots(scanRoots), minSizeBytes: minSize }))
       setUsingSample(false)
     } catch (err) {
       console.error('[Duplicates] scan failed:', err)
@@ -205,17 +201,7 @@ export function Duplicates() {
               className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
             />
           </div>
-          <select
-            value={minSize}
-            onChange={(e) => setMinSize(Number(e.target.value))}
-            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
-          >
-            {MIN_SIZES.map((s) => (
-              <option key={s.label} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <SelectMenu label="Minimum size" value={minSize} options={MIN_SIZES} onChange={setMinSize} />
         </div>
       )}
 
@@ -235,9 +221,7 @@ export function Duplicates() {
             icon={Copy}
             title="No duplicates found"
             description={
-              scanRoots.length === 0
-                ? 'Add scan roots in Settings, then run a scan to group identical files.'
-                : 'No content-identical files were found on the scan roots.'
+              'No identical files were found in your scan folders, Videos, Downloads or Desktop.'
             }
           />
         </div>

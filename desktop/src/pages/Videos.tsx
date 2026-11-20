@@ -56,12 +56,6 @@ export function Videos() {
       setLoading(false)
       return
     }
-    if (withMediaRoots(scanRoots).length === 0) {
-      setVideos([])
-      setUsingSample(false)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       setVideos(await scanVideos({ roots: withMediaRoots(scanRoots), minSizeBytes: 0 }))
@@ -200,9 +194,7 @@ export function Videos() {
             icon={Film}
             title="No videos found"
             description={
-              scanRoots.length === 0
-                ? 'Add scan roots in Settings, then run a scan to list video files on disk.'
-                : 'No video files were found on the scan roots.'
+              'No video files were found on the scan roots.'
             }
           />
         </div>
