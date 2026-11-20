@@ -7,5 +7,4 @@ pub mod mtime;
 pub mod pattern;
 pub mod scan;
 pub mod trash;
-pub mod settings;
 pub mod wsl;

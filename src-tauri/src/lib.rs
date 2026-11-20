@@ -12,7 +12,6 @@ pub mod platform;
 pub mod services;
 pub mod state;
 pub mod storage;
-pub mod utils;
 
 use crate::error::Result;
 

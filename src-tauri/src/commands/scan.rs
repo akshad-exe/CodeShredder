@@ -3,10 +3,11 @@
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
 
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 use crate::domain::scan::{ScanInput, ScanSummary, ScanTarget};
 use crate::services::scanner::ScannerEngine;
+use crate::state::AppState;
 
 /// Targets are streamed to the frontend in batches to keep IPC churn flat as
 /// the result set grows: a full-size batch is emitted as soon as it fills, and
@@ -57,6 +58,14 @@ pub async fn scan_dev_folders(
         let mut total_size = 0u64;
         let mut total_count = 0u64;
         let mut batch = Vec::new();
+        // Registers the batch's paths as cleanable, then streams it to the UI.
+        let flush = |batch: &mut Vec<ScanTarget>| {
+            app_for_events
+                .state::<AppState>()
+                .allow(batch.iter().map(|t| t.path.clone()));
+            let _ = app_for_events.emit("scan-targets", &*batch);
+            batch.clear();
+        };
         loop {
             match rx.recv_timeout(TARGET_FLUSH) {
                 Ok(target) => {
@@ -64,19 +73,17 @@ pub async fn scan_dev_folders(
                     total_count += 1;
                     batch.push(target);
                     if batch.len() >= TARGET_BATCH {
-                        let _ = app_for_events.emit("scan-targets", &batch);
-                        batch.clear();
+                        flush(&mut batch);
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => {
                     if !batch.is_empty() {
-                        let _ = app_for_events.emit("scan-targets", &batch);
-                        batch.clear();
+                        flush(&mut batch);
                     }
                 }
                 Err(RecvTimeoutError::Disconnected) => {
                     if !batch.is_empty() {
-                        let _ = app_for_events.emit("scan-targets", &batch);
+                        flush(&mut batch);
                     }
                     break;
                 }

@@ -6,9 +6,12 @@
 
 use std::path::{Path, PathBuf};
 
+use tauri::Manager;
+
 use crate::domain::clean::{CleanError, CleanInput, CleanMode, CleanResult};
 use crate::services::history::{record_history, HistoryEntry};
 use crate::services::safety::is_protected;
+use crate::state::AppState;
 
 /// Runs a cleanup over the selected paths.
 ///
@@ -16,13 +19,42 @@ use crate::services::safety::is_protected;
 /// resolves into a system or home root is refused even if it somehow reached
 /// this command. The mode then decides how (or whether) the folder is removed.
 #[tauri::command]
-pub async fn cleanup_targets(input: CleanInput) -> CleanResult {
+pub async fn cleanup_targets(app: tauri::AppHandle, input: CleanInput) -> CleanResult {
+    let total = input.paths.len();
+    let mode = input.mode.unwrap_or_default();
+    tauri::async_runtime::spawn_blocking(move || {
+        run_cleanup(input, |path| app.state::<AppState>().is_allowed(path))
+    })
+    .await
+    .unwrap_or_else(|err| CleanResult {
+        total,
+        affected: 0,
+        failed: total,
+        mode: mode.to_string(),
+        errors: vec![CleanError {
+            path: String::new(),
+            error: err.to_string(),
+        }],
+    })
+}
+
+/// Core of [`cleanup_targets`]: paths that `is_allowed` rejects (never shown
+/// by a scan) are refused like protected ones.
+fn run_cleanup(input: CleanInput, is_allowed: impl Fn(&str) -> bool) -> CleanResult {
     let mode = input.mode.unwrap_or_default();
     let mut errors = Vec::new();
     let mut affected = 0usize;
 
     for raw in &input.paths {
         let path = PathBuf::from(raw);
+
+        if !is_allowed(raw) {
+            errors.push(CleanError {
+                path: raw.clone(),
+                error: "path was not returned by a scan".into(),
+            });
+            continue;
+        }
 
         // Never act on protected paths, whatever the mode.
         if is_protected(&path) {
@@ -88,5 +120,46 @@ fn remove_permanently(path: &Path) -> std::io::Result<()> {
         std::fs::remove_dir_all(path)
     } else {
         std::fs::remove_file(path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn input(paths: Vec<String>) -> CleanInput {
+        CleanInput {
+            paths,
+            mode: Some(CleanMode::Permanent),
+        }
+    }
+
+    #[test]
+    fn deletes_allowed_path_and_refuses_the_rest() {
+        let base = std::env::temp_dir().join(format!("cs-clean-test-{}", std::process::id()));
+        let allowed = base.join("node_modules");
+        let other = base.join("keep");
+        std::fs::create_dir_all(&allowed).unwrap();
+        std::fs::create_dir_all(&other).unwrap();
+        let allowed_s = allowed.to_string_lossy().into_owned();
+
+        let result = run_cleanup(
+            input(vec![
+                allowed_s.clone(),
+                other.to_string_lossy().into_owned(),
+            ]),
+            |p| p == allowed_s,
+        );
+
+        assert_eq!((result.affected, result.failed), (1, 1));
+        assert!(!allowed.exists());
+        assert!(other.exists());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn refuses_protected_path_even_if_allowed() {
+        let result = run_cleanup(input(vec!["/usr/bin".into()]), |_| true);
+        assert_eq!((result.affected, result.failed), (0, 1));
     }
 }
