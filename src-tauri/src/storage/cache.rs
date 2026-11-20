@@ -288,7 +288,7 @@ fn root_file_name(root: &str) -> String {
 /// Writes `bytes` to `path` via a same-directory temp file + rename, so a
 /// crash mid-write leaves the previous file intact. Falls back to a direct
 /// write if the rename is rejected (pathological platforms/filesystems).
-fn write_atomic(path: &Path, bytes: &[u8]) {
+pub(crate) fn write_atomic(path: &Path, bytes: &[u8]) {
     let tmp = path.with_extension("tmp");
     if fs::write(&tmp, bytes).is_err() {
         return;

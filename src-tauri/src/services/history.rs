@@ -74,7 +74,7 @@ pub fn record_history(entry: HistoryEntry) -> crate::error::Result<()> {
         fs::create_dir_all(dir)?;
     }
     let json = serde_json::to_string_pretty(&history)?;
-    fs::write(file, json)?;
+    crate::storage::cache::write_atomic(&file, json.as_bytes());
     Ok(())
 }
 
