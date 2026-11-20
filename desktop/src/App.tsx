@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell } from '@/layouts/AppShell'
 import type { PageId } from '@/lib/navigation'
 import { Overview } from '@/pages/Overview'
@@ -11,9 +11,26 @@ import { Duplicates } from '@/pages/Duplicates'
 import { Videos } from '@/pages/Videos'
 import { Settings } from '@/pages/Settings'
 import { About } from '@/pages/About'
+import { toast } from '@/components/ui/sonner'
+import { checkForUpdate } from '@/lib/updater'
 
 function App() {
   const [page, setPage] = useState<PageId>('overview')
+
+  // Quiet startup check: only speak up when an update exists.
+  useEffect(() => {
+    checkForUpdate()
+      .then((u) => {
+        if (u) {
+          toast(`CodeShredder ${u.version} is available`, {
+            description: 'Open About to install it.',
+            action: { label: 'Open About', onClick: () => setPage('about') },
+            duration: 10000,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <AppShell activePage={page} onNavigate={setPage}>
