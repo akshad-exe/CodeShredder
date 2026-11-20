@@ -171,7 +171,7 @@ export function ResultsList() {
           <p className="mt-4 text-sm font-medium text-text">No junk found yet</p>
           <p className="mt-1 text-xs text-muted">
             {hasProgress
-              ? 'Nothing matched your patterns in the scanned folders.'
+              ? 'Nothing matched in the scanned folders. If your projects live elsewhere, add that folder in Settings.'
               : 'Pick folders and hit Scan to detect developer junk.'}
           </p>
         </div>

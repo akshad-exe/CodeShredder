@@ -1,4 +1,4 @@
-import { Zap, ShieldCheck } from 'lucide-react'
+import { Zap } from 'lucide-react'
 import { NAV_GROUPS, type PageId } from '@/lib/navigation'
 import { SidebarItem } from './SidebarItem'
 import { SidebarGroup } from './SidebarGroup'
@@ -37,16 +37,6 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           </SidebarGroup>
         ))}
       </nav>
-
-      <div className="border-t border-border px-5 py-4">
-        <div className="flex items-start gap-2.5 rounded-lg bg-panel px-3 py-2.5">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-safe" />
-          <p className="text-[11px] leading-snug text-muted">
-            Nothing is deleted on first use. Items move to your Trash so you can
-            recover them.
-          </p>
-        </div>
-      </div>
     </aside>
   )
 }

@@ -234,23 +234,17 @@ export const useCleanupStore = create<CleanupState>()(
   )
 )
 
+/** Common places developers keep projects; the backend expands `~` and skips
+ * folders that don't exist. Add more in Settings. */
 function getDefaultScanRoots(): string[] {
-  const home = typeof window !== 'undefined' ? '' : ''
-  // We'll use Tauri's path resolver on the backend, but here we provide
-  // common patterns that the backend's expand_root will handle
-  if (navigator.platform.startsWith('Win')) {
-    return [
-      '~/Developer',
-      '~/Code',
-      '~/Projects',
-      '~/Repos',
-      '~/GitHub',
-    ]
-  }
   return [
     '~/Developer',
     '~/Code',
+    '~/Codebase',
     '~/Projects',
+    '~/dev',
+    '~/src',
+    '~/workspace',
     '~/Repos',
     '~/GitHub',
   ]
