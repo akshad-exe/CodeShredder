@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Copy, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_DUPLICATES } from '@/components/explore/sampleData'
-import { isTauri, scanDuplicates } from '@/lib/ipc'
+import { isTauri, scanDuplicates, cleanupTargets } from '@/lib/ipc'
 import type { DuplicateFile, DuplicateGroup } from '@/types/cleanup'
-import { formatBytes, formatCount, formatDate } from '@/lib/format'
+import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
 import { useCleanupStore } from '@/store/cleanupStore'
 
@@ -27,6 +28,7 @@ export function Duplicates() {
   const [query, setQuery] = useState('')
   const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [cleaning, setCleaning] = useState(false)
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
   const sample = usingSample || preview
@@ -56,8 +58,9 @@ export function Duplicates() {
       setUsingSample(false)
     } catch (err) {
       console.error('[Duplicates] scan failed:', err)
-      setGroups(SAMPLE_DUPLICATES)
-      setUsingSample(true)
+      setGroups([])
+      setUsingSample(false)
+      toast.error('Could not scan for duplicates')
     } finally {
       setLoading(false)
     }
@@ -97,6 +100,7 @@ export function Duplicates() {
     })
 
   const handleTrash = async (ids: string[]) => {
+    if (ids.length === 0) return
     if (sample) {
       toast.success(`Freed ${formatBytes(ids.reduce((acc, id) => {
         for (const g of groups) {
@@ -113,7 +117,33 @@ export function Duplicates() {
       setSelected(new Set())
       return
     }
-    toast.error('Cleaning duplicates is coming soon')
+    if (cleaning) return
+    setCleaning(true)
+    try {
+      const byId = new Map<string, DuplicateFile>()
+      for (const g of groups) {
+        for (const f of g.files) byId.set(f.id, f)
+      }
+      const paths = ids.map((id) => byId.get(id)?.path ?? '').filter(Boolean)
+      const summary = await cleanupTargets(paths, 'trash')
+      if (summary.affected > 0) {
+        toast.success(`Trashed ${summary.affected} file${summary.affected === 1 ? '' : 's'}`)
+      }
+      if (summary.failed > 0) {
+        toast.error(`Could not trash ${summary.failed} file${summary.failed === 1 ? '' : 's'}`)
+      }
+      setGroups((prev) =>
+        prev
+          .map((g) => ({ ...g, files: g.files.filter((f) => !ids.includes(f.id)) }))
+          .filter((g) => g.files.length > 1),
+      )
+      setSelected(new Set())
+    } catch (err) {
+      console.error('[Duplicates] trash failed:', err)
+      toast.error('Could not trash the selected files')
+    } finally {
+      setCleaning(false)
+    }
   }
 
   const handleTrashAllButNewest = async (group: DuplicateGroup) => {
@@ -234,7 +264,8 @@ export function Duplicates() {
                   </div>
                   <button
                     type="button"
-                    className="btn-ghost !px-2.5 !py-1.5 text-xs text-muted hover:text-danger"
+                    disabled={cleaning}
+                    className="btn-ghost !px-2.5 !py-1.5 text-xs text-muted hover:text-danger disabled:opacity-50"
                     onClick={() => void handleTrashAllButNewest(group)}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -272,13 +303,13 @@ export function Duplicates() {
                             {file.path}
                           </p>
                         </div>
-                        <span className="shrink-0 text-[11px] text-faint">
-                          {formatDate(file.modifiedAt)}
+                        <span className={cn('shrink-0 text-[11px]', isRecent(file.modifiedAt) ? 'text-warning' : 'text-faint')}>
+                          {formatTimeAgo(file.modifiedAt)}
                         </span>
                         <button
                           type="button"
                           title="Move to Trash"
-                          disabled={isNewest}
+                          disabled={isNewest || cleaning}
                           className="btn-ghost !p-2 text-muted hover:text-danger disabled:cursor-not-allowed disabled:opacity-30"
                           onClick={() => void handleTrash([file.id])}
                         >
@@ -307,7 +338,8 @@ export function Duplicates() {
           </div>
           <button
             type="button"
-            className="btn-primary"
+            disabled={cleaning}
+            className="btn-primary disabled:opacity-50"
             onClick={() => void handleTrash([...selected])}
           >
             <Trash2 className="h-4 w-4" />

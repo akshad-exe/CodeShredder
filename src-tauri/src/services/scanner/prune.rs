@@ -10,8 +10,9 @@ use crate::services::safety::is_protected;
 
 /// Folder names that are never interesting to scan inside, even when they
 /// match a pattern (a found `node_modules` contains only nested
-/// `node_modules`).
-const NO_JUNK_DIRS: &[&str] = &[
+/// `node_modules`). Shared with the Explore scanners so they skip the same
+/// junk the Shred page targets wholesale.
+pub const NO_JUNK_DIRS: &[&str] = &[
     "node_modules",
     "dist",
     "build",
@@ -37,8 +38,9 @@ const NO_JUNK_DIRS: &[&str] = &[
 
 /// Replaces the children list with one whose directories are pruned from the
 /// walk: matched nodes, virtual environments, duplicate-junk folders and
-/// protected system paths are never descended into.
-pub(super) fn prune_children(
+/// protected system paths are never descended into. Shared with the Explore
+/// scanners so they skip the same junk the Shred page targets wholesale.
+pub fn prune_children(
     patterns: &HashSet<String>,
     ignore: &[String],
     children: &mut [jwalk::Result<DirEntry<((), ())>>],

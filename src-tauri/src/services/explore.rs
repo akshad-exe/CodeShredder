@@ -16,6 +16,8 @@ use uuid::Uuid;
 
 use crate::domain::explore::{DuplicateFile, DuplicateGroup, LargeFileEntry, VideoEntry};
 use crate::domain::mtime::format_time;
+use crate::domain::pattern::ALL_PATTERNS;
+use crate::services::scanner::prune::prune_children;
 use crate::services::scanner::roots::normalize_roots;
 
 /// Video container extensions recognized by the video scan.
@@ -36,10 +38,17 @@ struct WalkedFile {
 }
 
 /// Collects every regular file under `root` at or above `min_size_bytes`.
-/// Unreadable entries are skipped, mirroring the main scanner.
+/// Unreadable entries are skipped, mirroring the main scanner. Directories the
+/// Shred scanner treats as junk (`target`, `node_modules`, caches, venvs, …)
+/// are never descended into — otherwise build artifacts and installed
+/// dependencies flood the Explore results as "duplicates" and "large files".
 fn collect_files(root: &Path, min_size_bytes: u64) -> Vec<WalkedFile> {
     let mut files = Vec::new();
-    for entry in WalkDir::new(root).skip_hidden(false) {
+    for entry in WalkDir::new(root).skip_hidden(false).process_read_dir({
+        let patterns =
+            std::collections::HashSet::from_iter(ALL_PATTERNS.iter().map(ToString::to_string));
+        move |_depth, _path, _state, children| prune_children(&patterns, &[], children)
+    }) {
         let Ok(entry) = entry else {
             continue;
         };
@@ -285,6 +294,27 @@ mod tests {
     }
 
     #[test]
+    fn duplicates_skip_junk_dirs() {
+        let base = temp_tree("explore-dupjunk");
+        write_file(&base.join("target/one.bin"), b"cargo build artifact");
+        write_file(&base.join("target/two.bin"), b"cargo build artifact");
+        write_file(&base.join("node_modules/one.js"), b"installed dep");
+        write_file(&base.join("node_modules/two.js"), b"installed dep");
+        write_file(&base.join("A/one.txt"), b"real content");
+        write_file(&base.join("B/two.txt"), b"real content");
+
+        let groups = scan_duplicates(&[base.to_string_lossy().into_owned()], 0);
+        assert_eq!(
+            groups.len(),
+            1,
+            "build/cache dirs must not flood duplicates"
+        );
+        assert_eq!(groups[0].files.len(), 2);
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
     fn videos_filters_by_extension_and_sorts() {
         let base = temp_tree("explore-vid");
         write_file(&base.join("A/clip.mp4"), &[0u8; 700]);
@@ -313,7 +343,11 @@ mod tests {
         write_file(&base.join("A/real.mp4"), &[0u8; 1_000]);
 
         let videos = scan_videos(&[base.to_string_lossy().into_owned()], 0);
-        assert_eq!(videos.len(), 1, ".ts (TypeScript) files must not match videos");
+        assert_eq!(
+            videos.len(),
+            1,
+            ".ts (TypeScript) files must not match videos"
+        );
         assert_eq!(videos[0].name, "real.mp4");
 
         let _ = std::fs::remove_dir_all(&base);

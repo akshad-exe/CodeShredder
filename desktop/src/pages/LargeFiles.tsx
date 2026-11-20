@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, HardDrive, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_LARGE_FILES } from '@/components/explore/sampleData'
-import { isTauri, scanLargeFiles } from '@/lib/ipc'
+import { cleanupTargets, isTauri, revealFolder, scanLargeFiles } from '@/lib/ipc'
 import type { LargeFileEntry } from '@/types/cleanup'
-import { formatBytes, formatCount, formatDate } from '@/lib/format'
+import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
 import { useCleanupStore } from '@/store/cleanupStore'
 
@@ -53,8 +54,9 @@ export function LargeFiles() {
       setUsingSample(false)
     } catch (err) {
       console.error('[LargeFiles] scan failed:', err)
-      setFiles(SAMPLE_LARGE_FILES)
-      setUsingSample(true)
+      setFiles([])
+      setUsingSample(false)
+      toast.error('Could not scan for large files')
     } finally {
       setLoading(false)
     }
@@ -98,14 +100,27 @@ export function LargeFiles() {
       return next
     })
 
-  const handleTrash = async () => {
+  const handleTrash = async (ids: string[] = [...selected]) => {
+    if (ids.length === 0) return
     if (sample) {
       toast.success(`Freed ${formatBytes(selectedSize)} (sample data)`)
-      setFiles((prev) => prev.filter((f) => !selected.has(f.id)))
+      setFiles((prev) => prev.filter((x) => !ids.includes(x.id)))
       setSelected(new Set())
       return
     }
-    toast.error('Large-file cleanup ships in v1.0')
+    const paths = files.filter((x) => ids.includes(x.id)).map((x) => x.path)
+    try {
+      const summary = await cleanupTargets(paths, 'trash')
+      if (summary.affected > 0) toast.success(`Trashed ${summary.affected} file${summary.affected === 1 ? '' : 's'}`)
+      if (summary.failed > 0) toast.error(`Could not trash ${summary.failed} file${summary.failed === 1 ? '' : 's'}`)
+      const failed = new Set(summary.errors.map((e) => e.path))
+      const done = new Set(files.filter((x) => ids.includes(x.id) && !failed.has(x.path)).map((x) => x.id))
+      setFiles((prev) => prev.filter((x) => !done.has(x.id)))
+      setSelected((s) => new Set([...s].filter((id) => !done.has(id))))
+    } catch (err) {
+      console.error('trash failed:', err)
+      toast.error('Could not trash the selected files')
+    }
   }
 
   return (
@@ -239,13 +254,15 @@ export function LargeFiles() {
                   <p className="text-sm font-semibold tabular-nums text-text">
                     {formatBytes(file.sizeBytes)}
                   </p>
-                  <p className="text-[11px] text-faint">{formatDate(file.modifiedAt)}</p>
+                  <p className={cn('text-[11px]', isRecent(file.modifiedAt) ? 'text-warning' : 'text-faint')}>
+            {formatTimeAgo(file.modifiedAt)}
+          </p>
                 </div>
                 <button
                   type="button"
                   title="Reveal in folder"
                   className="btn-ghost !p-2 text-muted hover:text-text"
-                  onClick={() => toast.info('Reveal in folder is coming soon')}
+                  onClick={() => (sample ? toast.info('Sample data') : void revealFolder(file.path))}
                 >
                   <FolderOpen className="h-4 w-4" />
                 </button>
@@ -253,10 +270,7 @@ export function LargeFiles() {
                   type="button"
                   title="Move to Trash"
                   className="btn-ghost !p-2 text-muted hover:text-danger"
-                  onClick={() => {
-                    if (sample) void handleTrash()
-                    else toast.error('Cleaning large files is coming soon')
-                  }}
+                  onClick={() => void handleTrash([file.id])}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
