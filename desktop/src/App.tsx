@@ -10,6 +10,7 @@ import { LargeFiles } from '@/pages/LargeFiles'
 import { Duplicates } from '@/pages/Duplicates'
 import { Videos } from '@/pages/Videos'
 import { Settings } from '@/pages/Settings'
+import { About } from '@/pages/About'
 
 function App() {
   const [page, setPage] = useState<PageId>('overview')
@@ -25,6 +26,7 @@ function App() {
       {page === 'large-files' && <LargeFiles />}
       {page === 'wsl' && <Wsl />}
       {page === 'settings' && <Settings />}
+      {page === 'about' && <About />}
     </AppShell>
   )
 }

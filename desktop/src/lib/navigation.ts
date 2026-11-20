@@ -9,6 +9,7 @@ import {
   HardDrive,
   Terminal,
   Settings,
+  Info,
 } from 'lucide-react'
 
 export type PageId =
@@ -21,6 +22,7 @@ export type PageId =
   | 'large-files'
   | 'wsl'
   | 'settings'
+  | 'about'
 
 export interface NavItem {
   id: PageId
@@ -105,6 +107,12 @@ export const NAV_GROUPS: NavGroup[] = [
         id: 'settings',
         label: 'Settings',
         icon: Settings,
+        tone: 'bg-slate-500/10 text-slate-300',
+      },
+      {
+        id: 'about',
+        label: 'About',
+        icon: Info,
         tone: 'bg-slate-500/10 text-slate-300',
       },
     ],
