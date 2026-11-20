@@ -92,7 +92,7 @@ export const RustAndPrivacy: React.FC = () => {
 
             <button
               onClick={() => setPrivacyModalOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent/80 transition-colors"
+              className="w-full py-2.5 px-4 rounded-xl text-sm font-bold text-black bg-accent hover:bg-accent/80 transition-colors"
             >
               Got it
             </button>

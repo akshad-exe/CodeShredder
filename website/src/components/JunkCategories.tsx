@@ -115,7 +115,7 @@ export const JunkCategories: React.FC = () => {
               key={cat.id}
               className={`group flex flex-col items-center justify-center py-5 px-2.5 rounded-2xl transition-all duration-200 cursor-default ${
                 cat.isActive
-                  ? 'bg-panel border border-accent/40 shadow-[0_0_15px_rgba(22,139,255,0.15)]'
+                  ? 'bg-panel border border-accent/40 shadow-[0_0_15px_rgba(255,112,43,0.15)]'
                   : 'bg-[#10161A] border border-white/[0.07] hover:border-accent/40 hover:bg-panel-2'
               }`}
             >

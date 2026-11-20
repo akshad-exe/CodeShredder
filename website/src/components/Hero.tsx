@@ -37,7 +37,7 @@ export const Hero: React.FC<HeroProps> = ({ onDownloadClick }) => {
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold tracking-tight text-white leading-[1.08] mb-6 max-w-xl text-balance">
               Free your space{' '}
-              <span className="text-accent drop-shadow-[0_0_28px_rgba(22,139,255,0.4)]">
+              <span className="text-accent drop-shadow-[0_0_28px_rgba(255,112,43,0.4)]">
                 for what matters.
               </span>
             </h1>

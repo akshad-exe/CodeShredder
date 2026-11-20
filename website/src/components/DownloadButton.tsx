@@ -43,7 +43,7 @@ export const DownloadButton: React.FC<DownloadButtonProps> = ({ size = 'lg', com
       href={asset?.url ?? '#download'}
       download={asset ? asset.filename : undefined}
       title={asset ? `${asset.filename} · ${asset.size}` : undefined}
-      className={`inline-flex items-center justify-center whitespace-nowrap font-bold text-white bg-accent hover:bg-accent/90 active:scale-[0.98] transition-all duration-150 shadow-[0_0_28px_rgba(22,139,255,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${SIZES[size]} ${className}`}
+      className={`inline-flex items-center justify-center whitespace-nowrap font-bold text-black bg-accent hover:bg-accent/90 active:scale-[0.98] transition-all duration-150 shadow-[0_0_28px_rgba(255,112,43,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${SIZES[size]} ${className}`}
     >
       <Icon className={size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'} />
       <span>{label}</span>

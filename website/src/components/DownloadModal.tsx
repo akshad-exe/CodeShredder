@@ -140,7 +140,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                 href={siteConfig.releasesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-accent hover:bg-accent/80 rounded-lg transition-all shadow-[0_0_15px_rgba(22,139,255,0.3)]"
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-all shadow-[0_0_15px_rgba(255,112,43,0.3)]"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download {download.platform}</span>

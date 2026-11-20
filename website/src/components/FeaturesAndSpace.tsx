@@ -165,7 +165,7 @@ export const FeaturesAndSpace: React.FC = () => {
               <button
                 onClick={handleSimulateShred}
                 disabled={shreddingState === 'shredding'}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent/80 active:scale-[0.99] transition-all duration-150 shadow-[0_0_20px_rgba(22,139,255,0.3)] cursor-pointer disabled:opacity-75"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-black bg-accent hover:bg-accent/80 active:scale-[0.99] transition-all duration-150 shadow-[0_0_20px_rgba(255,112,43,0.3)] cursor-pointer disabled:opacity-75"
               >
                 {shreddingState === 'idle' && (
                   <>

@@ -28,7 +28,7 @@ export const DeveloperEcosystems: React.FC = () => {
     },
     {
       name: 'Rust',
-      icon: <RustIcon className="w-11 h-11 text-accent drop-shadow-[0_2px_14px_rgba(22,139,255,0.4)] transition-transform duration-200 group-hover:scale-115" />,
+      icon: <RustIcon className="w-11 h-11 text-accent drop-shadow-[0_2px_14px_rgba(255,112,43,0.4)] transition-transform duration-200 group-hover:scale-115" />,
     },
     {
       name: 'Python',
