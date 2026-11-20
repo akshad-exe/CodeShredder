@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Film, FolderOpen, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_VIDEOS } from '@/components/explore/sampleData'
-import { isTauri, scanVideos } from '@/lib/ipc'
+import { cleanupTargets, isTauri, revealFolder, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
@@ -66,8 +66,9 @@ export function Videos() {
       setUsingSample(false)
     } catch (err) {
       console.error('[Videos] scan failed:', err)
-      setVideos(SAMPLE_VIDEOS)
-      setUsingSample(true)
+      setVideos([])
+      setUsingSample(false)
+      toast.error('Could not scan for videos')
     } finally {
       setLoading(false)
     }
@@ -103,14 +104,27 @@ export function Videos() {
       return next
     })
 
-  const handleTrash = async () => {
+  const handleTrash = async (ids: string[] = [...selected]) => {
+    if (ids.length === 0) return
     if (sample) {
       toast.success(`Freed ${formatBytes(selectedSize)} (sample data)`)
-      setVideos((prev) => prev.filter((v) => !selected.has(v.id)))
+      setVideos((prev) => prev.filter((x) => !ids.includes(x.id)))
       setSelected(new Set())
       return
     }
-    toast.error('Video cleanup ships in v1.0')
+    const paths = videos.filter((x) => ids.includes(x.id)).map((x) => x.path)
+    try {
+      const summary = await cleanupTargets(paths, 'trash')
+      if (summary.affected > 0) toast.success(`Trashed ${summary.affected} video${summary.affected === 1 ? '' : 's'}`)
+      if (summary.failed > 0) toast.error(`Could not trash ${summary.failed} video${summary.failed === 1 ? '' : 's'}`)
+      const failed = new Set(summary.errors.map((e) => e.path))
+      const done = new Set(videos.filter((x) => ids.includes(x.id) && !failed.has(x.path)).map((x) => x.id))
+      setVideos((prev) => prev.filter((x) => !done.has(x.id)))
+      setSelected((s) => new Set([...s].filter((id) => !done.has(id))))
+    } catch (err) {
+      console.error('trash failed:', err)
+      toast.error('Could not trash the selected videos')
+    }
   }
 
   return (
@@ -250,7 +264,7 @@ export function Videos() {
                   type="button"
                   title="Reveal in folder"
                   className="btn-ghost !p-2 text-muted hover:text-text"
-                  onClick={() => toast.info('Reveal in folder is coming soon')}
+                  onClick={() => (sample ? toast.info('Sample data') : void revealFolder(video.path))}
                 >
                   <FolderOpen className="h-4 w-4" />
                 </button>
@@ -258,10 +272,7 @@ export function Videos() {
                   type="button"
                   title="Move to Trash"
                   className="btn-ghost !p-2 text-muted hover:text-danger"
-                  onClick={() => {
-                    if (sample) void handleTrash()
-                    else toast.error('Cleaning videos is coming soon')
-                  }}
+                  onClick={() => void handleTrash([video.id])}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
