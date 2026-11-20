@@ -14,10 +14,11 @@ use std::path::{Component, Path, PathBuf};
 pub fn is_protected(path: &Path) -> bool {
     let abs = absolute(path);
     let norm = normalize(&abs);
-    if PROTECTED_ROOTS
-        .iter()
-        .any(|root| norm.starts_with(&normalize(Path::new(root))))
-    {
+    // Whole-segment match: `/dev` guards `/dev/x` but not `/developer/x`.
+    if PROTECTED_ROOTS.iter().any(|root| {
+        let root = normalize(Path::new(root));
+        norm == root || norm.starts_with(&format!("{root}/"))
+    }) {
         return true;
     }
     // Per-user OS folders that must survive even though their parent (the home
@@ -70,7 +71,21 @@ const PROTECTED_ROOTS: &[&str] = &[
 /// Normalizes a path to a forward-slash lowercase string so protected-root
 /// matching is case- and separator-insensitive across platforms.
 fn normalize(path: &Path) -> String {
-    path.to_string_lossy().replace('\\', "/").to_lowercase()
+    let norm = path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_lowercase()
+        .trim_end_matches('/')
+        .to_owned();
+    // WSL view of a Windows drive: `/mnt/c/Windows` is `c:/windows`.
+    match norm.strip_prefix("/mnt/").map(str::as_bytes) {
+        Some([drive, rest @ ..])
+            if drive.is_ascii_alphabetic() && matches!(rest.first(), None | Some(b'/')) =>
+        {
+            format!("{}:{}", *drive as char, String::from_utf8_lossy(rest))
+        }
+        _ => norm,
+    }
 }
 
 /// Resolves a path against the current directory, handling `~` and relative
@@ -121,6 +136,15 @@ mod tests {
             assert!(is_protected(Path::new("/etc")));
             assert!(is_protected(Path::new("/var/lib")));
         }
+    }
+
+    #[test]
+    fn matches_whole_segments_and_wsl_drives() {
+        assert!(!is_protected(Path::new("/developer/app/target")));
+        assert!(!is_protected(Path::new("/variants/x/node_modules")));
+        assert!(is_protected(Path::new("/mnt/c/Windows/System32")));
+        assert!(is_protected(Path::new("/mnt/c/Program Files/App")));
+        assert!(!is_protected(Path::new("/mnt/c/Users/me/proj/target")));
     }
 
     #[test]
