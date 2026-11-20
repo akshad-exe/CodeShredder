@@ -8,6 +8,7 @@ import type { LargeFileEntry } from '@/types/cleanup'
 import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
+import { SelectMenu } from '@/components/ui/select-menu'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
@@ -23,7 +24,7 @@ export function LargeFiles() {
   const [files, setFiles] = useState<LargeFileEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
+  const [minSize, setMinSize] = useState(MIN_SIZES[0].value)
   const [sort, setSort] = useState<SortKey>('size')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const preview = !isTauri()
@@ -175,26 +176,17 @@ export function LargeFiles() {
               className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
             />
           </div>
-          <select
-            value={minSize}
-            onChange={(e) => setMinSize(Number(e.target.value))}
-            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
-          >
-            {MIN_SIZES.map((s) => (
-              <option key={s.label} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <select
+          <SelectMenu label="Minimum size" value={minSize} options={MIN_SIZES} onChange={setMinSize} />
+          <SelectMenu
+            label="Sort by"
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
-          >
-            <option value="size">Largest first</option>
-            <option value="name">Name</option>
-            <option value="modified">Recently modified</option>
-          </select>
+            onChange={setSort}
+            options={[
+              { label: 'Largest first', value: 'size' },
+              { label: 'Name', value: 'name' },
+              { label: 'Recently modified', value: 'modified' },
+            ]}
+          />
         </div>
       )}
 

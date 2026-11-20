@@ -7,6 +7,7 @@ import { cleanupTargets, isTauri, revealFolder, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
+import { SelectMenu } from '@/components/ui/select-menu'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
@@ -36,7 +37,7 @@ export function Videos() {
   const [videos, setVideos] = useState<VideoEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [minSize, setMinSize] = useState(MIN_SIZES[2].value)
+  const [minSize, setMinSize] = useState(MIN_SIZES[0].value)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
@@ -179,17 +180,7 @@ export function Videos() {
               className="w-full rounded-lg border border-border bg-panel py-2 pl-9 pr-3 text-sm text-text outline-none transition-colors placeholder:text-faint focus:border-accent"
             />
           </div>
-          <select
-            value={minSize}
-            onChange={(e) => setMinSize(Number(e.target.value))}
-            className="rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none transition-colors focus:border-accent"
-          >
-            {MIN_SIZES.map((s) => (
-              <option key={s.label} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+          <SelectMenu label="Minimum size" value={minSize} options={MIN_SIZES} onChange={setMinSize} />
         </div>
       )}
 
