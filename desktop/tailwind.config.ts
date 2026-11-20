@@ -23,8 +23,8 @@ const config: Config = {
         warning: '#FFB020',
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['Plus Jakarta Sans Variable', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono Variable', 'monospace'],
       },
     },
   },

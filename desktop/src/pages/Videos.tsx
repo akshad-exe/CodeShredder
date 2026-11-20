@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Film, FolderOpen, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_VIDEOS } from '@/components/explore/sampleData'
+import { withMediaRoots } from '@/lib/roots'
 import { cleanupTargets, isTauri, revealFolder, scanVideos } from '@/lib/ipc'
 import type { VideoEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
@@ -54,7 +55,7 @@ export function Videos() {
       setLoading(false)
       return
     }
-    if (scanRoots.length === 0) {
+    if (withMediaRoots(scanRoots).length === 0) {
       setVideos([])
       setUsingSample(false)
       setLoading(false)
@@ -62,7 +63,7 @@ export function Videos() {
     }
     setLoading(true)
     try {
-      setVideos(await scanVideos({ roots: scanRoots, minSizeBytes: 0 }))
+      setVideos(await scanVideos({ roots: withMediaRoots(scanRoots), minSizeBytes: 0 }))
       setUsingSample(false)
     } catch (err) {
       console.error('[Videos] scan failed:', err)

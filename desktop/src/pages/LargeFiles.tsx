@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, HardDrive, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_LARGE_FILES } from '@/components/explore/sampleData'
+import { withMediaRoots } from '@/lib/roots'
 import { cleanupTargets, isTauri, revealFolder, scanLargeFiles } from '@/lib/ipc'
 import type { LargeFileEntry } from '@/types/cleanup'
 import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
@@ -42,7 +43,7 @@ export function LargeFiles() {
       setLoading(false)
       return
     }
-    if (scanRoots.length === 0) {
+    if (withMediaRoots(scanRoots).length === 0) {
       setFiles([])
       setUsingSample(false)
       setLoading(false)
@@ -50,7 +51,7 @@ export function LargeFiles() {
     }
     setLoading(true)
     try {
-      setFiles(await scanLargeFiles({ roots: scanRoots, minSizeBytes: 0, limit: 200 }))
+      setFiles(await scanLargeFiles({ roots: withMediaRoots(scanRoots), minSizeBytes: 0, limit: 200 }))
       setUsingSample(false)
     } catch (err) {
       console.error('[LargeFiles] scan failed:', err)
