@@ -10,7 +10,7 @@ CodeShredder is a fast, safe desktop cleanup app for developers and power users:
 
 ### Layout
 
-- `desktop/src/pages/` — `Overview`, `Shred`, `RecycleBin`, `Caches`, `Wsl`, `LargeFiles`, `Duplicates`, `Videos`, `Settings`. Routing is a simple `useState<PageId>` switch in `App.tsx` (see `desktop/src/lib/navigation.ts`).
+- `desktop/src/pages/` — `Overview`, `Shred`, `RecycleBin`, `Caches`, `Wsl`, `LargeFiles`, `Duplicates`, `Videos`, `Settings`, `About`. Routing is a simple `useState<PageId>` switch in `App.tsx` (see `desktop/src/lib/navigation.ts`).
 - `desktop/src/lib/ipc.ts` — all Tauri IPC wrappers; `types/cleanup.ts` — shared entry types incl. `WslProgress`.
 - `src-tauri/src/commands/` — Tauri command layer (`#[tauri::command]`).
 - `src-tauri/src/services/` — business logic (`wsl.rs`, `caches.rs`, `scanner.rs`, `trash.rs`, `safety.rs`, `history.rs`).
@@ -37,8 +37,9 @@ The real DB lives at `~/.codegraph/projects/codeshredder/codegraph.db` (native W
 
 ```sh
 npm run build          # frontend: tsc -b && vite build (~2-3 min)
-npm run lint           # oxlint (baseline: 4 pre-existing warnings — don't add more)
+npm run lint           # oxlint (baseline: 3 pre-existing warnings — don't add more)
 bun dev                # vite dev server
+bun run test           # frontend unit tests (bun test)
 npm run tauri:dev      # full Tauri dev (Windows needed for WSL features)
 ```
 

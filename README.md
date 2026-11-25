@@ -37,7 +37,7 @@ CodeShredder scans the folders you point it at and lists **known generated artif
 | | |
 |:--|:--|
 | **39 folder patterns** | `node_modules`, `target`, `.next`, `dist`, `build`, `.venv`, `__pycache__`, `.turbo`, `.parcel-cache`, `zig-out`, `DerivedData` and more (10 on by default) |
-| **Global caches** | `npm`, `yarn`, `pnpm`, `bun`, `pip`, `uv`, `cargo`, `go`, `maven`, `gradle`, `nuget`, `composer`, plus system temp and cache folders |
+| **Global caches** | `npm`, `yarn`, `pnpm`, `bun`, `pip`, `uv`, `cargo`, `go`, `maven`, `gradle`, `nuget`, `composer`, plus system cache folders |
 | **Parallel scanning** | `jwalk` + `rayon`, with a snapshot cache that speeds up repeat scans |
 
 </div>
@@ -48,7 +48,7 @@ CodeShredder scans the folders you point it at and lists **known generated artif
 |:--|:--|:--|
 | **Overview** | Reclaimable space and recent cleanups | All |
 | **Shred** | Finds generated folders in your projects, grouped by project | All |
-| **Caches** | Empties package-manager and temp caches. **This is permanent, not Trash.** | All (see [known limitations](#-known-limitations)) |
+| **Caches** | Empties package-manager caches (and temp files on Windows) after you confirm. **Permanent, not Trash.** | All |
 | **Large Files** | Biggest files in your scan folders, Videos, Downloads and Desktop | All |
 | **Videos** | Video files in the same folders, by size | All |
 | **Duplicates** | Identical files, matched by BLAKE3 content hash | All |
@@ -171,20 +171,22 @@ CodeShredder/
 
 ```bash
 bun run lint
+bun run test
 bun run build
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
 ```
 
-Unit tests cover path protection, the cleanup allow-list, cache emptying, trash size accounting and WSL output parsing. There are no frontend tests.
+Rust tests cover path protection, the cleanup allow-list, the cache guard, trash size accounting and WSL output parsing. The frontend has one test, for the duplicate keep-one rule.
 
 ## ⚠️ Known limitations
 
-- **Caches page on Windows:** caches under `AppData` and `C:\Windows` are listed but cleaning them is currently refused by the path guard.
-- **Temp files on Linux/macOS:** "user temp files" is the shared `/tmp`; cleaning it can disrupt running apps.
-- **Duplicates:** you can select every copy in a group. Keep at least one.
-- **Recycle Bin:** "Empty" and per-item delete act immediately, on everything in the system Trash.
-- **macOS:** items go to Trash, but listing and restoring them in the app is not supported.
+- The updater activates with the first release that is not marked as pre-release.
+- macOS: items go to Trash, but listing and restoring them in the app is not supported.
+- Large Files, Videos and Duplicates scans cannot be cancelled.
+- Builds are not code-signed.
+
+[AUDIT.md](AUDIT.md) tracks every known issue and its status.
 
 ## 🗺️ Roadmap
 
