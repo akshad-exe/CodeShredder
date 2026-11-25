@@ -7,6 +7,14 @@ export default defineConfig(() => {
   return {
     base: process.env.VITE_BASE_PATH || './',
     plugins: [react(), tailwindcss()],
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(import.meta.dirname, 'index.html'),
+          download: path.resolve(import.meta.dirname, 'download.html'),
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, '.'),

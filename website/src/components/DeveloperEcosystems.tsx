@@ -4,7 +4,6 @@ import {
   NextJsIcon,
   RustIcon,
   PythonIcon,
-  DockerIcon,
   WslIcon,
   LinuxIcon,
   AppleIcon,
@@ -35,10 +34,6 @@ export const DeveloperEcosystems: React.FC = () => {
       icon: <PythonIcon className="w-11 h-11 text-[#38BDF8] drop-shadow-[0_2px_14px_rgba(56,189,248,0.35)] transition-transform duration-200 group-hover:scale-115" />,
     },
     {
-      name: 'Docker',
-      icon: <DockerIcon className="w-11 h-11 text-[#2496ED] drop-shadow-[0_2px_14px_rgba(36,150,237,0.35)] transition-transform duration-200 group-hover:scale-115" />,
-    },
-    {
       name: 'WSL',
       icon: <WslIcon className="w-11 h-11 text-[#E95420] drop-shadow-[0_2px_14px_rgba(233,84,32,0.35)] transition-transform duration-200 group-hover:scale-115" />,
     },
@@ -67,8 +62,8 @@ export const DeveloperEcosystems: React.FC = () => {
           love building — CodeShredder helps you keep your machine clean and fast.
         </p>
 
-        {/* 9 Free-Standing Tech Logos without confining border boxes */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-6 sm:gap-8 justify-center items-end">
+        {/* 8 Free-Standing Tech Logos without confining border boxes */}
+        <div className="grid grid-cols-4 lg:grid-cols-8 gap-6 sm:gap-8 justify-center items-end">
           {ecosystems.map((eco, index) => (
             <div
               key={index}

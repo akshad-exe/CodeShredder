@@ -4,20 +4,15 @@ import { CodeShredderWordmark } from './CodeShredderWordmark';
 import { GitHubIcon } from './BrandIcons';
 import { siteConfig } from '../config/site';
 
-interface FooterProps {
-  onDownloadClick: () => void;
-  onPrivacyClick: () => void;
-}
-
-export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick }) => {
+export const Footer: React.FC = () => {
   return (
     <footer className="bg-background border-t border-white/[0.06] pt-20 pb-14 text-sm text-muted">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top 4-column + Catchphrase Area */}
-        <div className="grid grid-cols-2 md:grid-cols-12 gap-10 lg:gap-12 pb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-10 lg:gap-12 pb-16">
           {/* Column 1: Brand & Tagline */}
           <div className="col-span-2 md:col-span-4 flex flex-col items-start">
-            <a href="#" className="mb-3 hover:opacity-95 transition-opacity inline-block">
+            <a href="./" className="mb-3 hover:opacity-95 transition-opacity inline-block">
               <CodeShredderWordmark iconSize={40} textSize="text-2xl font-black" />
             </a>
             <p className="text-sm text-muted font-medium tracking-wide mt-1">
@@ -26,35 +21,32 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
           </div>
 
           {/* Column 2: Product */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-5">
               Product
             </h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-1 text-sm">
               <li>
-                <a href="#features" className="hover:text-white transition-colors">
+                <a href="./#features" className="inline-block py-1.5 hover:text-white transition-colors">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#screenshots" className="hover:text-white transition-colors">
+                <a href="./#screenshots" className="inline-block py-1.5 hover:text-white transition-colors">
                   Screenshots
                 </a>
               </li>
               <li>
-                <button
-                  onClick={onDownloadClick}
-                  className="hover:text-white transition-colors cursor-pointer text-left"
-                >
+                <a href="./download.html" className="inline-block py-1.5 hover:text-white transition-colors">
                   Download
-                </button>
+                </a>
               </li>
               <li>
                 <a
                   href={siteConfig.releasesUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Changelog
                 </a>
@@ -63,17 +55,17 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
           </div>
 
           {/* Column 3: Community */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-5">
               Community
             </h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-1 text-sm">
               <li>
                 <a
                   href={siteConfig.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   GitHub
                 </a>
@@ -83,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
                   href={siteConfig.issuesUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Issues
                 </a>
@@ -93,17 +85,17 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
                   href={siteConfig.discussionsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Discussions
                 </a>
               </li>
               <li>
                 <a
-                  href={`${siteConfig.githubUrl}#contributing`}
+                  href={siteConfig.contributingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Contribute
                 </a>
@@ -112,17 +104,17 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
           </div>
 
           {/* Column 4: Resources */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-5">
               Resources
             </h4>
-            <ul className="space-y-3 text-sm">
+            <ul className="space-y-1 text-sm">
               <li>
                 <a
                   href={siteConfig.docsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Docs
                 </a>
@@ -132,25 +124,22 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
                   href={siteConfig.roadmapUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   Roadmap
                 </a>
               </li>
               <li>
-                <button
-                  onClick={onPrivacyClick}
-                  className="hover:text-white transition-colors cursor-pointer text-left"
-                >
+                <a href="./#privacy" className="inline-block py-1.5 hover:text-white transition-colors">
                   Privacy
-                </button>
+                </a>
               </li>
               <li>
                 <a
                   href={siteConfig.licenseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
+                  className="inline-block py-1.5 hover:text-white transition-colors"
                 >
                   License
                 </a>
@@ -159,7 +148,7 @@ export const Footer: React.FC<FooterProps> = ({ onDownloadClick, onPrivacyClick 
           </div>
 
           {/* Right Brand Phrase: "Less Junk / More Building" */}
-          <div className="col-span-1 md:col-span-2 flex items-center justify-end select-none">
+          <div className="col-span-1 lg:col-span-2 flex items-center justify-end select-none">
             <div className="transform -rotate-6 text-right">
               <span className="font-handwriting text-3xl sm:text-4xl lg:text-5xl font-bold text-accent leading-tight block drop-shadow-md">
                 Less Junk<br />More Building

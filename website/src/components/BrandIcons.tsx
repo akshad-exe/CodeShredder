@@ -4,7 +4,6 @@ import {
   siNextdotjs,
   siRust,
   siPython,
-  siDocker,
   siLinux,
   siUbuntu,
   siApple,
@@ -79,10 +78,6 @@ export const NextJsIcon: React.FC<IconProps> = (props) => (
 
 export const PythonIcon: React.FC<IconProps> = (props) => (
   <SimpleIconSvg path={siPython.path} {...props} />
-);
-
-export const DockerIcon: React.FC<IconProps> = (props) => (
-  <SimpleIconSvg path={siDocker.path} {...props} />
 );
 
 export const JavaScriptIcon: React.FC<IconProps> = (props) => (

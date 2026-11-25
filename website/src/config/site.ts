@@ -26,9 +26,12 @@ export const siteConfig = {
   releasesUrl: `https://github.com/${REPO}/releases`,
   issuesUrl: `https://github.com/${REPO}/issues`,
   discussionsUrl: `https://github.com/${REPO}/discussions`,
+  downloadPageUrl: 'https://akshad-exe.github.io/CodeShredder/download.html',
   docsUrl: `https://github.com/${REPO}#readme`,
   licenseUrl: `https://github.com/${REPO}/blob/main/LICENSE`,
-  roadmapUrl: `https://github.com/${REPO}/milestones`,
+  contributingUrl: `https://github.com/${REPO}/blob/main/CONTRIBUTING.md`,
+  // The README heading starts with an emoji, whose variation selector is part of the anchor.
+  roadmapUrl: `https://github.com/${REPO}#%EF%B8%8F-roadmap`,
   rustOfficialUrl: 'https://www.rust-lang.org',
   downloads: {
     windows: {

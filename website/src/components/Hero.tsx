@@ -4,12 +4,10 @@ import { HeroIllustration } from './HeroIllustration';
 import { siteConfig } from '../config/site';
 import { DownloadButton, useDetectedPlatform } from './DownloadButton';
 import { PLATFORMS } from '../lib/platform';
+import { ReleaseNote } from './ReleaseNote';
+import { DesktopOnlyNotice } from './DesktopOnlyNotice';
 
-interface HeroProps {
-  onDownloadClick: () => void;
-}
-
-export const Hero: React.FC<HeroProps> = ({ onDownloadClick }) => {
+export const Hero: React.FC = () => {
   const platform = useDetectedPlatform();
   const others = PLATFORMS.filter((p) => p !== platform);
   return (
@@ -44,10 +42,11 @@ export const Hero: React.FC<HeroProps> = ({ onDownloadClick }) => {
 
             {/* Supporting Copy */}
             <p className="text-base sm:text-lg text-muted leading-relaxed mb-8 max-w-xl">
-              CodeShredder is a fast, safe desktop cleanup app for developers and power users.
-              It finds laptop junk, code junk, dependency folders, build artifacts, caches, and WSL
-              bloat — and helps you remove them safely through a beautiful desktop app.
+              CodeShredder finds dependency folders, build output, caches and WSL bloat,
+              shows what each one costs, and moves what you pick to the Trash.
             </p>
+
+            <DesktopOnlyNotice className="mb-6 max-w-xl" />
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -66,14 +65,15 @@ export const Hero: React.FC<HeroProps> = ({ onDownloadClick }) => {
 
             {/* Supporting Metadata */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-faint">
-              <button type="button" onClick={onDownloadClick} className="underline underline-offset-2 hover:text-white cursor-pointer">
+              <a href="./download.html" className="py-1.5 underline underline-offset-2 hover:text-white">
                 {platform ? `Also for ${others.join(' and ')}` : 'All platforms'}
-              </button>
+              </a>
               <span className="hidden sm:inline">|</span>
               <span>Open source</span>
               <span className="hidden sm:inline">|</span>
               <span>No telemetry</span>
             </div>
+            <ReleaseNote className="mt-3 max-w-xl" />
           </div>
 
           {/* Right Column: Custom Brand Illustration */}

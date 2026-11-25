@@ -12,7 +12,6 @@ interface CategoryItem {
   id: string;
   name: string;
   icon: React.ReactNode;
-  isActive?: boolean;
 }
 
 export const JunkCategories: React.FC = () => {
@@ -20,7 +19,6 @@ export const JunkCategories: React.FC = () => {
     {
       id: 'node_modules',
       name: 'node_modules',
-      isActive: true,
       icon: (
         <div className="w-8 h-8 rounded-lg bg-[#F7DF1E] flex items-center justify-center font-bold text-black text-xs shadow-xs">
           JS
@@ -109,20 +107,16 @@ export const JunkCategories: React.FC = () => {
         </h2>
 
         {/* 9 Category Tiles matching the exact card curvature, typography, and styling */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-3 lg:grid-cols-9 gap-3 sm:gap-3.5">
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className={`group flex flex-col items-center justify-center py-5 px-2.5 rounded-2xl transition-all duration-200 cursor-default ${
-                cat.isActive
-                  ? 'bg-panel border border-accent/40 shadow-[0_0_15px_rgba(255,112,43,0.15)]'
-                  : 'bg-[#10161A] border border-white/[0.07] hover:border-accent/40 hover:bg-panel-2'
-              }`}
+              className="group flex flex-col items-center justify-center py-5 px-2 rounded-2xl bg-[#10161A] border border-white/[0.07] hover:border-accent/40 hover:bg-panel-2 transition-all duration-200 cursor-default"
             >
               <div className="mb-3 transform group-hover:scale-110 transition-transform duration-200">
                 {cat.icon}
               </div>
-              <span className="text-[11px] sm:text-xs font-mono font-medium text-muted group-hover:text-white transition-colors text-center truncate max-w-full px-1">
+              <span className="text-[11px] sm:text-xs font-mono font-medium text-muted group-hover:text-white transition-colors text-center leading-tight [overflow-wrap:anywhere]">
                 {cat.name}
               </span>
             </div>

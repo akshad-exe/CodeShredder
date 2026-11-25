@@ -1,13 +1,10 @@
 import React from 'react';
-import { DownloadButton, PLATFORM_ICON, useDetectedPlatform } from './DownloadButton';
-import { PLATFORMS, type Platform } from '../lib/platform';
-import ctaMountainImg from '../assets/images/cta_mountain_sunset_1791697159659.jpg';
+import { DownloadButton, PLATFORM_ICON, downloadHref, useDetectedPlatform } from './DownloadButton';
+import { PLATFORMS } from '../lib/platform';
+import { ReleaseNote } from './ReleaseNote';
+import ctaMountainImg from '../assets/images/cta_mountain_sunset.webp';
 
-interface DownloadCTAProps {
-  onPlatformClick: (platform: Platform) => void;
-}
-
-export const DownloadCTA: React.FC<DownloadCTAProps> = ({ onPlatformClick }) => {
+export const DownloadCTA: React.FC = () => {
   const detected = useDetectedPlatform();
   const others = PLATFORMS.filter((p) => p !== detected);
   return (
@@ -48,18 +45,18 @@ export const DownloadCTA: React.FC<DownloadCTAProps> = ({ onPlatformClick }) => 
           {others.map((p) => {
             const Icon = PLATFORM_ICON[p];
             return (
-              <button
+              <a
                 key={p}
-                type="button"
-                onClick={() => onPlatformClick(p)}
+                href={downloadHref(p)}
                 className="flex items-center gap-2.5 px-6 py-4 rounded-xl text-base font-semibold text-white bg-panel/85 hover:bg-panel-2 border border-white/15 hover:border-white/30 backdrop-blur-md transition-all cursor-pointer"
               >
                 <Icon className="w-5 h-5 text-white" />
                 <span>{p}</span>
-              </button>
+              </a>
             );
           })}
         </div>
+        <ReleaseNote className="mt-6 max-w-xl mx-auto" />
       </div>
     </section>
   );

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { AppleIcon, LinuxIcon, WindowsIcon } from './BrandIcons';
-import { platformDownload } from '../config/site';
 import { detectPlatform, type Platform } from '../lib/platform';
 
 export const PLATFORM_ICON: Record<Platform, React.FC<{ className?: string }>> = {
@@ -28,21 +27,19 @@ interface DownloadButtonProps {
   className?: string;
 }
 
-/**
- * Primary call to action: downloads the installer for the visitor's OS.
- * On phones and unknown systems it scrolls to the full download section.
- */
+/** The download page, optionally opened on one platform's tab. */
+export const downloadHref = (platform?: Platform | null) =>
+  platform ? `./download.html?os=${platform}` : './download.html';
+
+/** Primary call to action: opens the download page for the visitor's OS. */
 export const DownloadButton: React.FC<DownloadButtonProps> = ({ size = 'lg', compact, className = '' }) => {
   const platform = useDetectedPlatform();
   const Icon = platform ? PLATFORM_ICON[platform] : Download;
-  const asset = platform ? platformDownload(platform).assets[0] : null;
   const label = compact ? 'Download' : platform ? `Download for ${platform}` : 'Download';
 
   return (
     <a
-      href={asset?.url ?? '#download'}
-      download={asset ? asset.filename : undefined}
-      title={asset ? `${asset.filename} · ${asset.size}` : undefined}
+      href={downloadHref(platform)}
       className={`inline-flex items-center justify-center whitespace-nowrap font-bold text-black bg-accent hover:bg-accent/90 active:scale-[0.98] transition-all duration-150 shadow-[0_0_28px_rgba(255,112,43,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${SIZES[size]} ${className}`}
     >
       <Icon className={size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'} />

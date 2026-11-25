@@ -1,851 +1,612 @@
 import React, { useState } from 'react';
 import {
-  Search,
-  Trash2,
-  Database,
-  Terminal,
-  FileText,
-  Copy,
-    Settings,
-  Info,
-  CheckCircle2,
-  ChevronRight,
-  ChevronDown,
-  Wrench,
-  Layers,
-  Box,
-  Check,
-  HardDrive,
-  RefreshCw,
-  Sparkles,
-  ShieldCheck,
-  AlertTriangle,
-  FolderOpen,
-  LayoutDashboard,
-  Recycle,
-  Film,
-  FolderX,
-  Plus,
-  X,
-  RotateCcw,
+  ArchiveRestore, ArrowRight, Check, ChevronDown, Clock3, Copy, ExternalLink, Film, FolderGit2,
+  FolderOpen, FolderX, HardDrive, Info, LayoutDashboard, Minus, Plus, Recycle, RotateCcw,
+  Search, Settings, ShieldCheck, Terminal, Trash2, X, Zap,
 } from 'lucide-react';
 import { CodeShredderIcon } from './CodeShredderIcon';
-import { LinuxIcon, WslIcon, WindowsIcon } from './BrandIcons';
 import { siteConfig } from '../config/site';
-import ctaMountainImg from '../assets/images/cta_mountain_sunset_1791697159659.jpg';
 
-interface FileItem {
-  id: string;
-  name: string;
-  sizeStr: string;
-  sizeBytes: number;
-  type: string;
-  path: string;
-}
+// A hand-built copy of the desktop app (Windows build, sample data).
+// shortcut: duplicates desktop/src by hand; update it when a page there changes.
 
 type TabId = 'overview' | 'shred' | 'recycle' | 'caches' | 'duplicates' | 'videos' | 'large_files' | 'wsl' | 'settings' | 'about';
-const ic = 'w-4 h-4';
-const NAV_GROUPS: { label?: string; items: { id: TabId; label: string; icon: React.ReactNode }[] }[] = [
-  { items: [{ id: 'overview', label: 'Overview', icon: <LayoutDashboard className={ic} /> }] },
+
+const NAV: { label?: string; items: { id: TabId; label: string; icon: typeof Trash2; tone: string }[] }[] = [
+  { items: [{ id: 'overview', label: 'Overview', icon: LayoutDashboard, tone: 'bg-accent/10 text-accent' }] },
   { label: 'Reclaim', items: [
-    { id: 'shred', label: 'Shred', icon: <Trash2 className={ic} /> },
-    { id: 'recycle', label: 'Recycle Bin', icon: <Recycle className={ic} /> },
-    { id: 'caches', label: 'Caches', icon: <FolderX className={ic} /> },
-    { id: 'duplicates', label: 'Duplicates', icon: <Copy className={ic} /> },
+    { id: 'shred', label: 'Shred', icon: Trash2, tone: 'bg-rose-500/10 text-rose-400' },
+    { id: 'recycle', label: 'Recycle Bin', icon: Recycle, tone: 'bg-emerald-500/10 text-emerald-400' },
+    { id: 'caches', label: 'Caches', icon: FolderX, tone: 'bg-amber-500/10 text-amber-400' },
+    { id: 'duplicates', label: 'Duplicates', icon: Copy, tone: 'bg-violet-500/10 text-violet-400' },
   ] },
   { label: 'Discover', items: [
-    { id: 'videos', label: 'Videos', icon: <Film className={ic} /> },
-    { id: 'large_files', label: 'Large Files', icon: <HardDrive className={ic} /> },
+    { id: 'videos', label: 'Videos', icon: Film, tone: 'bg-pink-500/10 text-pink-400' },
+    { id: 'large_files', label: 'Large Files', icon: HardDrive, tone: 'bg-cyan-500/10 text-cyan-400' },
   ] },
-  { label: 'System', items: [{ id: 'wsl', label: 'WSL', icon: <Terminal className={ic} /> }] },
+  { label: 'System', items: [
+    { id: 'wsl', label: 'WSL', icon: Terminal, tone: 'bg-indigo-500/10 text-indigo-400' },
+    { id: 'settings', label: 'Settings', icon: Settings, tone: 'bg-slate-500/10 text-slate-300' },
+    { id: 'about', label: 'About', icon: Info, tone: 'bg-slate-500/10 text-slate-300' },
+  ] },
 ];
 
-const initialFiles: FileItem[] = [
-  { id: '1', name: 'node_modules', sizeStr: '1.8 GB', sizeBytes: 1800, type: 'Dependency', path: '.../my-app/node_modules' },
-  { id: '2', name: '.next', sizeStr: '1.2 GB', sizeBytes: 1200, type: 'Build', path: '.../my-app/.next' },
-  { id: '3', name: 'target', sizeStr: '920 MB', sizeBytes: 920, type: 'Build', path: '.../rust-project/target' },
-  { id: '4', name: '.venv', sizeStr: '460 MB', sizeBytes: 460, type: 'Virtual Env', path: '.../ml-project/.venv' },
-  { id: '5', name: '__pycache__', sizeStr: '380 MB', sizeBytes: 380, type: 'Cache', path: '.../scripts/__pycache__' },
-  { id: '6', name: 'Docker cache', sizeStr: '1.1 GB', sizeBytes: 1100, type: 'Cache', path: '.../Docker' },
-  { id: '7', name: 'WSL (Ubuntu)', sizeStr: '4.3 GB', sizeBytes: 4300, type: 'WSL', path: '(Manage)' },
+const CATEGORY: Record<string, { dot: string; tag: string }> = {
+  python: { dot: 'bg-amber-400', tag: 'bg-amber-400/10 text-amber-400' },
+  systems: { dot: 'bg-cyan-400', tag: 'bg-cyan-400/10 text-cyan-400' },
+  web: { dot: 'bg-emerald-400', tag: 'bg-emerald-400/10 text-emerald-400' },
+};
+
+const TARGETS = [
+  { id: 't1', project: 'ml-labs', folder: '.venv', category: 'python', mb: 1802, files: '24,083', safety: 'Rebuildable', used: '3 months ago' },
+  { id: 't2', project: 'ml-labs', folder: '__pycache__', category: 'python', mb: 64, files: '1,204', safety: 'Safe', used: '3 months ago' },
+  { id: 't3', project: 'api-server', folder: 'target', category: 'systems', mb: 1188, files: '8,923', safety: 'Safe', used: '2 days ago' },
+  { id: 't4', project: 'game-engine', folder: 'target', category: 'systems', mb: 940, files: '6,517', safety: 'Safe', used: '5 weeks ago' },
+  { id: 't5', project: 'game-engine', folder: 'cmake-build-debug', category: 'systems', mb: 386, files: '2,044', safety: 'Safe', used: '5 weeks ago' },
+  { id: 't6', project: 'taskmanager', folder: 'node_modules', category: 'web', mb: 626, files: '38,120', safety: 'Safe', used: '2 weeks ago' },
+  { id: 't7', project: 'taskmanager', folder: '.turbo', category: 'web', mb: 88, files: '412', safety: 'Safe', used: '2 weeks ago' },
+  { id: 't8', project: 'portfolio-next', folder: 'node_modules', category: 'web', mb: 418, files: '27,362', safety: 'Safe', used: '4 days ago' },
+  { id: 't9', project: 'portfolio-next', folder: '.next', category: 'web', mb: 152, files: '4,210', safety: 'Safe', used: '4 days ago' },
+  { id: 't10', project: 'web-app', folder: 'node_modules', category: 'web', mb: 298, files: '22,150', safety: 'Safe', used: '1 month ago' },
+  { id: 't11', project: 'web-app', folder: 'dist', category: 'web', mb: 61, files: '389', safety: 'Safe', used: '1 month ago' },
+  { id: 't12', project: 'scraper-ai', folder: '.venv', category: 'python', mb: 512, files: '9,871', safety: 'Rebuildable', used: '6 months ago' },
+  { id: 't13', project: 'mobile-shop', folder: 'node_modules', category: 'web', mb: 744, files: '51,908', safety: 'Safe', used: '8 weeks ago' },
 ];
+
+const CACHES = [
+  { id: 'pnpm', name: 'pnpm store', path: '~\\AppData\\Local\\pnpm\\store', mb: 2007, eco: 'Node.js', safety: 'safe' },
+  { id: 'npm', name: 'npm cache', path: '~\\AppData\\Local\\npm-cache', mb: 1352, eco: 'Node.js', safety: 'safe' },
+  { id: 'cargo', name: 'cargo registry', path: '~\\.cargo\\registry', mb: 1239, eco: 'Rust', safety: 'medium' },
+  { id: 'gradle', name: 'gradle caches', path: '~\\.gradle\\caches', mb: 1110, eco: 'Java', safety: 'medium' },
+  { id: 'pip', name: 'pip cache', path: '~\\AppData\\Local\\pip\\Cache', mb: 820, eco: 'Python', safety: 'safe' },
+  { id: 'uv', name: 'uv cache', path: '~\\AppData\\Local\\uv\\cache', mb: 640, eco: 'Python', safety: 'safe' },
+  { id: 'go', name: 'go module cache', path: '~\\go\\pkg\\mod', mb: 590, eco: 'Go', safety: 'medium' },
+  { id: 'nuget', name: 'NuGet packages', path: '~\\.nuget\\packages', mb: 470, eco: '.NET', safety: 'medium' },
+  { id: 'bun', name: 'bun cache', path: '~\\.bun\\install\\cache', mb: 385, eco: 'Node.js', safety: 'safe' },
+  { id: 'temp', name: 'user temp files', path: '~\\AppData\\Local\\Temp', mb: 315, eco: 'System', safety: 'medium' },
+  { id: 'chrome', name: 'Chrome cache', path: '~\\AppData\\Local\\Google\\Chrome\\...\\Cache', mb: 268, eco: 'Browsers', safety: 'safe' },
+];
+
+const TRASH = [
+  { id: 'r1', name: 'node_modules', path: 'C:\\dev\\old-site\\node_modules', mb: 1434, when: 'today' },
+  { id: 'r2', name: 'target', path: 'C:\\dev\\cli-tool\\target', mb: 1126, when: 'today' },
+  { id: 'r3', name: '.next', path: 'C:\\dev\\blog\\.next', mb: 720, when: 'yesterday' },
+  { id: 'r4', name: '.venv', path: 'C:\\dev\\data-notebooks\\.venv', mb: 655, when: '2 days ago' },
+  { id: 'r5', name: 'dist', path: 'C:\\dev\\landing-page\\dist', mb: 142, when: '3 days ago' },
+  { id: 'r6', name: 'old-export.zip', path: 'C:\\Users\\me\\Downloads\\old-export.zip', mb: 980, when: 'last week' },
+  { id: 'r7', name: 'build', path: 'C:\\dev\\prototype\\build', mb: 87, when: 'last week' },
+];
+
+const VIDEOS = [
+  { id: 'v1', name: 'screen-recording.mov', path: '~\\Videos', mb: 3891, ext: 'mov' },
+  { id: 'v2', name: 'demo-final-v7.mp4', path: '~\\Videos', mb: 2662, ext: 'mp4' },
+  { id: 'v3', name: 'webinar.mkv', path: '~\\Downloads', mb: 1946, ext: 'mkv' },
+  { id: 'v4', name: 'conference-talk.mp4', path: '~\\Downloads', mb: 1210, ext: 'mp4' },
+  { id: 'v5', name: 'onboarding-raw.mp4', path: '~\\Desktop', mb: 980, ext: 'mp4' },
+  { id: 'v6', name: 'bug-repro.webm', path: '~\\Desktop', mb: 214, ext: 'webm' },
+  { id: 'v7', name: 'product-teaser.mov', path: '~\\Videos\\exports', mb: 168, ext: 'mov' },
+  { id: 'v8', name: 'standup-clip.mp4', path: '~\\Downloads', mb: 92, ext: 'mp4' },
+];
+
+const LARGE = [
+  { id: 'l1', name: 'dataset-v2.zip', path: '~\\Downloads', mb: 4300, ext: 'zip' },
+  { id: 'l2', name: 'train_weights.pt', path: 'C:\\dev\\ml-labs\\checkpoints', mb: 2662, ext: 'pt' },
+  { id: 'l3', name: 'database-backup.sql.gz', path: '~\\Desktop', mb: 1843, ext: 'gz' },
+  { id: 'l4', name: 'installer.iso', path: '~\\Downloads', mb: 1433, ext: 'iso' },
+  { id: 'l5', name: 'emulator-image.img', path: '~\\.android\\avd', mb: 1228, ext: 'img' },
+  { id: 'l6', name: 'release-artifacts.tar.gz', path: 'C:\\dev\\api-server', mb: 760, ext: 'gz' },
+  { id: 'l7', name: 'crash-dump.dmp', path: '~\\AppData\\Local\\CrashDumps', mb: 512, ext: 'dmp' },
+  { id: 'l8', name: 'server.log', path: 'C:\\dev\\api-server\\logs', mb: 344, ext: 'log' },
+];
+
+const DUPLICATES = [
+  { name: 'vacation.mp4', each: 118, files: [{ id: 'd1', path: '~\\Desktop' }, { id: 'd2', path: 'D:\\media\\clips' }] },
+  { name: 'resume-final.docx', each: 40, files: [{ id: 'd3', path: '~\\Documents' }, { id: 'd4', path: '~\\Desktop' }, { id: 'd5', path: 'D:\\backups' }] },
+  { name: 'node-v22-x64.msi', each: 31, files: [{ id: 'd6', path: '~\\Downloads' }, { id: 'd7', path: 'D:\\installers' }] },
+  { name: 'design-assets.zip', each: 264, files: [{ id: 'd8', path: '~\\Downloads' }, { id: 'd9', path: 'C:\\dev\\landing-page' }, { id: 'd10', path: 'D:\\backups' }] },
+  { name: 'IMG_4821.heic', each: 6, files: [{ id: 'd11', path: '~\\Pictures' }, { id: 'd12', path: '~\\Downloads' }] },
+];
+
+const size = (mb: number) => (mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${mb} MB`);
+const total = (items: { mb: number }[]) => items.reduce((sum, i) => sum + i.mb, 0);
+
+const PRIMARY = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-black bg-accent hover:bg-accent/85 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default';
+const SECONDARY = 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white bg-panel-2 border border-border hover:border-faint transition-colors cursor-pointer';
+const DANGER = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold text-white bg-danger hover:bg-danger/85 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default';
+const CARD = 'rounded-xl border border-border bg-panel';
+
+interface Confirm { title: string; text: string; action: string; run: () => void }
+
+function useSelection(initial: string[] = []) {
+  const [ids, setIds] = useState<string[]>(initial);
+  return {
+    ids,
+    has: (id: string) => ids.includes(id),
+    toggle: (id: string) => setIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
+    set: setIds,
+  };
+}
+
+function Box({ checked, label, onChange }: { checked: boolean | 'some'; label: string; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked === 'some' ? 'mixed' : checked}
+      aria-label={label}
+      onClick={onChange}
+      className={`w-6 h-6 shrink-0 grid place-content-center cursor-pointer`}
+    >
+      <span className={`w-4 h-4 rounded-[5px] border grid place-content-center ${checked ? 'bg-accent border-accent text-black' : 'border-faint/60 bg-panel-2'}`}>
+        {checked === true && <Check className="w-3 h-3 stroke-[3.5]" />}
+        {checked === 'some' && <Minus className="w-3 h-3 stroke-[3.5]" />}
+      </span>
+    </button>
+  );
+}
+
+function PageHeader({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h4 className="text-lg font-bold text-white">{title}</h4>
+        {sub && <p className="text-xs text-muted max-w-md">{sub}</p>}
+      </div>
+      <div className="flex gap-2">{children}</div>
+    </div>
+  );
+}
+
+function SelectionBar({ count, mb, label, onClick }: { count: number; mb: number; label: string; onClick: () => void }) {
+  if (count === 0) return null;
+  return (
+    <div className="sticky bottom-0 z-10 mx-auto flex w-fit items-center gap-5 rounded-xl border border-accent/40 bg-panel/95 px-4 py-2.5 shadow-xl backdrop-blur">
+      <span className="text-xs text-muted"><b className="text-white">{count}</b> selected <b className="ml-1.5 text-base text-white tabular-nums">{size(mb)}</b></span>
+      <button type="button" className={PRIMARY} onClick={onClick}><Trash2 className="w-3.5 h-3.5" />{label}</button>
+    </div>
+  );
+}
+
+function CategoryBar({ items }: { items: typeof TARGETS }) {
+  const groups = Object.keys(CATEGORY)
+    .map((key) => ({ key, rows: items.filter((t) => t.category === key) }))
+    .filter((g) => g.rows.length > 0);
+  return (
+    <div className="space-y-3">
+      <div className="flex h-2.5 overflow-hidden rounded-full bg-panel-2">
+        {groups.map((g) => <span key={g.key} className={CATEGORY[g.key].dot} style={{ width: `${(total(g.rows) / total(items)) * 100}%` }} />)}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {groups.map((g) => (
+          <div key={g.key} className="group relative">
+            <button type="button" className="flex items-center gap-1.5 rounded-full border border-border bg-panel px-2.5 py-1 text-[11px] hover:border-faint">
+              <span className={`w-2 h-2 rounded-full ${CATEGORY[g.key].dot}`} />
+              <span className="font-mono text-muted">{g.key}</span>
+              <span className="text-faint">{size(total(g.rows))}</span>
+            </button>
+            <ul className="invisible absolute left-0 top-full z-20 mt-1.5 w-64 space-y-1 rounded-lg border border-border bg-panel-2 p-3 opacity-0 shadow-xl transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              {[...g.rows].sort((a, b) => b.mb - a.mb).slice(0, 5).map((t) => (
+                <li key={t.id} className="flex justify-between gap-3 text-[11px]">
+                  <span className="truncate font-mono text-muted">{t.project} / {t.folder}</span>
+                  <span className="font-semibold text-white">{size(t.mb)}</span>
+                </li>
+              ))}
+              {g.rows.length > 5 && <li className="text-[11px] text-faint">+ {g.rows.length - 5} more</li>}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FileList({ title, sub, files, notify }: { title: string; sub: string; files: typeof VIDEOS; notify: (m: string) => void }) {
+  const [rows, setRows] = useState(files);
+  const sel = useSelection();
+  const chosen = rows.filter((f) => sel.has(f.id));
+  const trash = () => {
+    setRows((p) => p.filter((f) => !sel.has(f.id)));
+    sel.set([]);
+    notify(`Trashed ${chosen.length} file${chosen.length === 1 ? '' : 's'}`);
+  };
+  return (
+    <>
+      <PageHeader title={title} sub={sub}><button type="button" className={PRIMARY} onClick={() => setRows(files)}><RotateCcw className="w-3.5 h-3.5" />Scan</button></PageHeader>
+      <div className={`${CARD} px-4 py-3 text-xs font-semibold text-white`}>{rows.length} files · <span className="font-normal text-muted">{size(total(rows))}</span></div>
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-xs text-faint"><Search className="w-3.5 h-3.5" />Filter files…</div>
+      <div className="space-y-2">
+        {rows.map((f) => (
+          <div key={f.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${sel.has(f.id) ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'}`}>
+            <Box checked={sel.has(f.id)} label={`Select ${f.name}`} onChange={() => sel.toggle(f.id)} />
+            <span className="w-10 rounded bg-panel-2 py-0.5 text-center font-mono text-[10px] uppercase text-muted">{f.ext}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-white">{f.name}</p>
+              <p className="truncate font-mono text-[11px] text-faint">{f.path}</p>
+            </div>
+            <span className="text-xs font-semibold text-white tabular-nums">{size(f.mb)}</span>
+          </div>
+        ))}
+      </div>
+      <SelectionBar count={chosen.length} mb={total(chosen)} label="Move to Trash" onClick={trash} />
+    </>
+  );
+}
 
 export const DesktopAppShowcase: React.FC = () => {
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialFiles.map((f) => f.id));
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabId>('overview');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<Confirm | null>(null);
 
-  // Caches page states
-  const [selectedCaches, setSelectedCaches] = useState<string[]>(['npm', 'cargo', 'pip', 'go', 'vscode']);
-  // Large files page states
-  const [selectedLargeFiles, setSelectedLargeFiles] = useState<string[]>(['1', '2', '3']);
-  // WSL compaction simulation
-  const [wslCompacting, setWslCompacting] = useState(false);
-  const [wslCompacted, setWslCompacted] = useState(false);
+  const [targets, setTargets] = useState(TARGETS);
+  const picked = useSelection(TARGETS.filter((t) => t.safety === 'Safe').map((t) => t.id));
+  const [patternsOpen, setPatternsOpen] = useState(false);
+  const [mode, setMode] = useState<'trash' | 'permanent'>('trash');
+  const [caches, setCaches] = useState(CACHES);
+  const pickedCaches = useSelection();
+  const [bin, setBin] = useState(TRASH);
+  const [dupes, setDupes] = useState(DUPLICATES);
+  const [roots, setRoots] = useState(['~/Developer', '~/Code', '~/Projects', '~/work', 'D:/dev']);
+  const confirms = useSelection(['dangerous', 'medium']);
+  const compacted = useSelection();
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const notify = (message: string) => {
+    setNotice(message);
+    setTimeout(() => setNotice(null), 3000);
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === initialFiles.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(initialFiles.map((f) => f.id));
-    }
+  const chosen = targets.filter((t) => picked.has(t.id));
+  const chosenCaches = caches.filter((c) => pickedCaches.has(c.id));
+
+  const shred = () => {
+    const run = () => {
+      setTargets((p) => p.filter((t) => !picked.has(t.id)));
+      picked.set([]);
+      notify(`${mode === 'trash' ? 'Moved' : 'Permanently deleted'} ${chosen.length} folders${mode === 'trash' ? ' to Trash' : ''}`);
+    };
+    if (mode === 'trash') return run();
+    setConfirm({ title: 'Permanently delete these folders?', text: `${chosen.length} folders (${size(total(chosen))}). This cannot be undone.`, action: 'Delete permanently', run });
   };
 
-  const totalSelectedMb = selectedIds.reduce((sum, id) => {
-    const file = initialFiles.find((f) => f.id === id);
-    return sum + (file ? file.sizeBytes : 0);
-  }, 0);
+  const cleanCaches = (rows: typeof CACHES) =>
+    setConfirm({
+      title: 'Permanently delete cache contents?',
+      text: `${rows.map((c) => c.name).join(', ')} (${size(total(rows))}). This does not use the Trash and cannot be undone.`,
+      action: 'Delete permanently',
+      run: () => {
+        setCaches((p) => p.filter((c) => !rows.includes(c)));
+        pickedCaches.set([]);
+        notify(`Freed ${size(total(rows))}`);
+      },
+    });
 
-  const formattedSelectedSize =
-    totalSelectedMb >= 1000
-      ? `${(totalSelectedMb / 1000).toFixed(1)} GB`
-      : `${totalSelectedMb} MB`;
-
-  const handleAction = (msg: string) => {
-    setActionNotice(msg);
-    setTimeout(() => setActionNotice(null), 3500);
-  };
-
-  const handleCompactWsl = () => {
-    setWslCompacting(true);
-    setTimeout(() => {
-      setWslCompacting(false);
-      setWslCompacted(true);
-      handleAction('WSL2 VHDX compacted! Reclaimed 4.3 GB to Windows C:');
-    }, 1800);
-  };
+  const biggest = [...targets].sort((a, b) => b.mb - a.mb).slice(0, 5);
+  const projects = [...new Set(targets.map((t) => t.project))]
+    .map((name) => ({ name, rows: targets.filter((t) => t.project === name) }))
+    .sort((a, b) => total(b.rows) - total(a.rows));
 
   return (
     <section id="screenshots" className="py-20 md:py-28 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Subtle Backdrop Container around the desktop frame */}
-        <div className="relative rounded-3xl p-3 sm:p-6 lg:p-10 border border-white/[0.08] bg-background overflow-hidden shadow-[0_25px_80px_-20px_rgba(0,0,0,0.9)]">
-          {/* Background mountain ambient twilight scenery behind the window */}
-          <div className="absolute inset-0 -z-10 opacity-30">
-            <img
-              src={ctaMountainImg}
-              alt="Mountain landscape background"
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover object-center filter blur-xs"
-            />
-            <div className="absolute inset-0 bg-background/80" />
-          </div>
-
           {/* Desktop App Window Container */}
           <div className="rounded-2xl border border-white/[0.12] bg-[#0E1418] shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden">
             {/* Window Title Bar */}
             <div className="h-11 bg-background px-4 flex items-center justify-between border-b border-white/[0.06] select-none">
-              {/* macOS Traffic Lights */}
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E]" />
-                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
-                <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
-              </div>
 
-              {/* Window Title Center */}
-              <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-muted">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted">
                 <CodeShredderIcon size={16} />
-                <span>CodeShredder — Desktop Clean Utility ({siteConfig.version})</span>
+                <span>CodeShredder</span>
               </div>
-
-              {/* Windows Window Controls */}
-              <div className="flex items-center gap-3 text-faint text-xs">
-                <span className="hover:text-white cursor-pointer px-1">—</span>
-                <span className="hover:text-white cursor-pointer px-1">□</span>
-                <span className="hover:text-white cursor-pointer px-1">✕</span>
+              <div className="flex items-center gap-3 text-faint text-xs" aria-hidden>
+                <span>—</span><span>□</span><span>✕</span>
               </div>
             </div>
 
-            {/* Window Inner Layout (Sidebar + Main View) */}
-            <div className="grid grid-cols-1 md:grid-cols-12 min-h-[620px]">
-              {/* Sidebar */}
-              <div className="md:col-span-3 lg:col-span-3 bg-background border-r border-white/[0.06] p-4 flex flex-col justify-between">
-                <div>
-                  {/* Sidebar Brand Header */}
-                  <div className="flex items-center gap-2.5 px-2 py-2 mb-4">
-                    <CodeShredderIcon size={24} />
-                    <span className="text-base font-extrabold text-white tracking-tight">
-                      Code<span className="text-accent">Shredder</span>
-                    </span>
-                  </div>
-
-                  {/* Sidebar Navigation (mirrors the app's groups) */}
-                  <nav className="space-y-4">
-                    {NAV_GROUPS.map((group) => (
-                      <div key={group.label ?? 'main'} className="space-y-1">
-                        {group.label && (
-                          <div className="px-3 text-[10px] font-semibold uppercase tracking-wider text-faint">
-                            {group.label}
-                          </div>
-                        )}
-                        {group.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                              activeTab === item.id
-                                ? 'bg-accent/15 text-white font-semibold border border-accent/30'
-                                : 'text-muted border border-transparent hover:bg-white/[0.03] hover:text-white'
-                            }`}
-                          >
-                            {item.icon}
-                            <span>{item.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </nav>
-                </div>
-
-                {/* Sidebar Bottom Items */}
-                <div className="pt-4 border-t border-white/[0.06] space-y-1">
-                  <button
-                    onClick={() => setActiveTab('settings')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                      activeTab === 'settings'
-                        ? 'bg-accent/15 text-white font-semibold border border-accent/30'
-                        : 'text-muted border border-transparent hover:text-white hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('about')}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                      activeTab === 'about'
-                        ? 'bg-accent/15 text-white font-semibold border border-accent/30'
-                        : 'text-muted border border-transparent hover:text-white hover:bg-white/[0.03]'
-                    }`}
-                  >
-                    <Info className="w-4 h-4" />
-                    <span>About</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Main Panel Viewport */}
-              <div className="md:col-span-9 lg:col-span-9 p-4 sm:p-6 flex flex-col justify-between bg-panel">
-                {/* 1. SCAN VIEW (Default Showcase) */}
-                {activeTab === 'shred' && (
+            <div className="relative flex flex-col md:flex-row md:h-[660px] bg-background">
+              <aside className="md:w-52 shrink-0 border-b md:border-b-0 md:border-r border-border bg-sidebar p-3 md:overflow-y-auto">
+                <div className="hidden md:flex items-center gap-2.5 px-2 pb-3">
+                  <CodeShredderIcon size={32} />
                   <div>
-                    {/* Scan Complete Banner */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-panel-2 border border-white/[0.06] mb-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                          <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-white tracking-tight">
-                            Scan Complete
-                          </h4>
-                          <p className="text-xs text-muted">
-                            Found 12.4 GB of reclaimable space
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleAction('Shredding selected 12.4 GB...')}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-all shadow-[0_0_15px_rgba(255,112,43,0.3)] cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Shred Selected</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* 4 Summary Metric Cards */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                          <Box className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs sm:text-sm font-bold text-white font-mono tabular-nums">1.2 GB</div>
-                          <div className="text-[11px] text-muted">Dependencies</div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
-                          <Wrench className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs sm:text-sm font-bold text-white font-mono tabular-nums">4.8 GB</div>
-                          <div className="text-[11px] text-muted">Build Artifacts</div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                          <Layers className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs sm:text-sm font-bold text-white font-mono tabular-nums">2.1 GB</div>
-                          <div className="text-[11px] text-muted">Caches</div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
-                          <LinuxIcon className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs sm:text-sm font-bold text-white font-mono tabular-nums">4.3 GB</div>
-                          <div className="text-[11px] text-muted">WSL</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* File Results Table */}
-                    <div className="rounded-xl border border-white/[0.06] bg-panel-2 overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="border-b border-white/[0.06] text-faint font-semibold">
-                            <th className="py-2.5 px-3 w-8">
-                              <button
-                                onClick={toggleSelectAll}
-                                className={`w-4 h-4 rounded flex items-center justify-center cursor-pointer transition-colors ${
-                                  selectedIds.length === initialFiles.length
-                                    ? 'bg-accent text-black'
-                                    : 'border border-white/20 bg-white/5'
-                                }`}
-                                aria-label="Select all"
-                              >
-                                {selectedIds.length === initialFiles.length && (
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                )}
-                              </button>
-                            </th>
-                            <th className="py-2.5 px-3">Name</th>
-                            <th className="py-2.5 px-3">Size</th>
-                            <th className="py-2.5 px-3">Type</th>
-                            <th className="py-2.5 px-3">Path</th>
-                            <th className="py-2.5 px-3 w-8"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.04]">
-                          {initialFiles.map((file) => {
-                            const isChecked = selectedIds.includes(file.id);
-                            return (
-                              <tr
-                                key={file.id}
-                                onClick={() => toggleSelect(file.id)}
-                                className="hover:bg-white/[0.02] cursor-pointer transition-colors"
-                              >
-                                <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    onClick={() => toggleSelect(file.id)}
-                                    className={`w-4 h-4 rounded flex items-center justify-center cursor-pointer transition-colors ${
-                                      isChecked
-                                        ? 'bg-accent text-black'
-                                        : 'border border-white/20 bg-white/5'
-                                    }`}
-                                    aria-label={`Select ${file.name}`}
-                                  >
-                                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
-                                  </button>
-                                </td>
-                                <td className="py-2.5 px-3 font-mono font-medium text-white">
-                                  {file.name}
-                                </td>
-                                <td className="py-2.5 px-3 font-mono text-muted tabular-nums">
-                                  {file.sizeStr}
-                                </td>
-                                <td className="py-2.5 px-3 text-muted">
-                                  {file.type}
-                                </td>
-                                <td className="py-2.5 px-3 font-mono text-faint truncate max-w-[180px]">
-                                  {file.path}
-                                </td>
-                                <td className="py-2.5 px-3 text-faint">
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <p className="text-sm font-bold leading-tight text-white">CodeShredder</p>
+                    <p className="text-[11px] leading-tight text-faint">fast dev cleanup</p>
                   </div>
+                </div>
+                <nav className="flex gap-1 overflow-x-auto md:block md:space-y-3">
+                  {NAV.map((group) => (
+                    <div key={group.label ?? 'main'} className="contents md:block md:space-y-0.5">
+                      {group.label && <p className="hidden md:block px-2 text-[10px] font-semibold uppercase tracking-wider text-faint">{group.label}</p>}
+                      {group.items.map(({ id, label, icon: Icon, tone }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-current={tab === id ? 'page' : undefined}
+                          onClick={() => setTab(id)}
+                          className={`flex shrink-0 md:w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors cursor-pointer ${tab === id ? 'bg-panel-2 text-white' : 'text-muted hover:bg-panel-2 hover:text-white'}`}
+                        >
+                          <span className={`grid w-6 h-6 place-content-center rounded-md ${tone} ${tab === id ? 'ring-1 ring-inset ring-white/10' : ''}`}><Icon className="w-3.5 h-3.5" /></span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </nav>
+              </aside>
+
+              <div key={tab} className="flex-1 min-w-0 max-h-[70vh] md:max-h-none overflow-y-auto p-4 sm:p-6 space-y-4">
+                {tab === 'overview' && (
+                  <>
+                    <PageHeader title="Overview" />
+                    <div className={`${CARD} space-y-4 p-5`}>
+                      <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-faint">Reclaimable</p>
+                          <p className="text-4xl font-bold tabular-nums text-white">{size(total(targets))}</p>
+                          <p className="text-xs text-muted">{targets.length} folders can be cleaned</p>
+                        </div>
+                        <button type="button" className={PRIMARY} onClick={() => setTab('shred')}>Review results<ArrowRight className="w-3.5 h-3.5" /></button>
+                      </div>
+                      {targets.length > 0 && <CategoryBar items={targets} />}
+                    </div>
+                    <div className="grid lg:grid-cols-3 gap-3">
+                      {([
+                        ['caches', 'Caches', 'Package manager caches', FolderX, 'bg-amber-500/10 text-amber-400'],
+                        ['large_files', 'Large Files', 'What takes the most room', HardDrive, 'bg-cyan-500/10 text-cyan-400'],
+                        ['duplicates', 'Duplicates', 'Identical copies', Copy, 'bg-violet-500/10 text-violet-400'],
+                      ] as const).map(([id, label, hint, Icon, tone]) => (
+                        <button key={id} type="button" onClick={() => setTab(id)} className={`${CARD} flex items-center gap-2.5 p-3 text-left hover:border-faint cursor-pointer`}>
+                          <span className={`grid w-8 h-8 shrink-0 place-content-center rounded-lg ${tone}`}><Icon className="w-4 h-4" /></span>
+                          <span className="min-w-0"><span className="block text-xs font-semibold text-white">{label}</span><span className="block truncate text-[11px] text-muted">{hint}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className={`${CARD} space-y-3 p-4`}>
+                      <p className="text-xs font-semibold text-white">Biggest folders</p>
+                      {biggest.map((t) => (
+                        <div key={t.id}>
+                          <div className="flex justify-between text-xs"><span className="font-mono text-muted">{t.project} / {t.folder}</span><span className="font-semibold text-white">{size(t.mb)}</span></div>
+                          <div className="mt-1 h-1 rounded-full bg-panel-2"><div className="h-full rounded-full bg-accent" style={{ width: `${(t.mb / biggest[0].mb) * 100}%` }} /></div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
 
-                {/* 3. CACHES PAGE */}
-                {activeTab === 'caches' && (
-                  <div className="space-y-5">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#818CF8]/15 border border-[#818CF8]/30 flex items-center justify-center text-[#A5B4FC]">
-                          <Database className="w-4 h-4" />
-                        </div>
+                {tab === 'shred' && (
+                  <>
+                    <PageHeader title="Shred" sub="Find heavy developer folders and reclaim space safely.">
+                      <button type="button" className={PRIMARY} onClick={() => { setTargets(TARGETS); notify('Scan complete'); }}>Scan folders</button>
+                    </PageHeader>
+                    <div className="flex flex-wrap gap-1.5">
+                      {roots.map((r) => <span key={r} className="flex items-center gap-1.5 rounded-full border border-border bg-panel px-2.5 py-1 font-mono text-[11px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-safe" />{r}</span>)}
+                    </div>
+                    <button type="button" aria-expanded={patternsOpen} onClick={() => setPatternsOpen(!patternsOpen)} className="flex items-center gap-1 py-1 text-xs font-medium text-muted hover:text-white cursor-pointer">
+                      <ChevronDown className={`w-3.5 h-3.5 ${patternsOpen ? '' : '-rotate-90'}`} />Patterns · 10 enabled
+                    </button>
+                    {patternsOpen && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {['node_modules', '.next', '.nuxt', 'dist', 'build', 'target', '__pycache__', '.pytest_cache', '.parcel-cache', '.turbo'].map((p) => <span key={p} className="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-1 font-mono text-[11px] text-white">{p}</span>)}
+                      </div>
+                    )}
+                    <div className={`${CARD} space-y-3 p-4`}>
+                      <div className="flex flex-wrap items-end justify-between gap-2">
                         <div>
-                          <h4 className="text-sm font-bold text-white">Runtime & Package Caches</h4>
-                          <p className="text-xs text-muted">2.1 GB of cached packages safe to purge (re-downloaded on demand)</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-faint">Reclaimable</p>
+                          <p className="text-4xl font-bold tabular-nums text-white">{size(total(targets))}</p>
                         </div>
+                        <p className="text-[11px] text-faint">Hover a category to see its biggest folders</p>
                       </div>
-
-                      <button
-                        onClick={() => handleAction('Purged 2.1 GB of package caches!')}
-                        className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Purge All Caches (2.1 GB)
-                      </button>
+                      {targets.length > 0 && <CategoryBar items={targets} />}
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06]">
-                        <div className="text-xs text-muted">npm / yarn</div>
-                        <div className="text-base font-mono font-bold text-white mt-1">840 MB</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06]">
-                        <div className="text-xs text-muted">Cargo Crates</div>
-                        <div className="text-base font-mono font-bold text-white mt-1">620 MB</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06]">
-                        <div className="text-xs text-muted">pip / uv</div>
-                        <div className="text-base font-mono font-bold text-white mt-1">310 MB</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-panel-2 border border-white/[0.06]">
-                        <div className="text-xs text-muted">Go build</div>
-                        <div className="text-base font-mono font-bold text-white mt-1">420 MB</div>
-                      </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([['trash', 'Move to Trash', 'Recoverable', Recycle], ['permanent', 'Delete permanently', 'Not recoverable', Zap]] as const).map(([id, label, hint, Icon]) => (
+                        <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={`rounded-lg border p-3 text-left cursor-pointer ${mode === id ? 'border-accent/60 bg-accent/10 text-accent' : 'border-border bg-panel text-white'}`}>
+                          <span className="flex items-center gap-1.5 text-xs font-semibold"><Icon className="w-3.5 h-3.5" />{label}</span>
+                          <span className="text-[11px] text-faint">{hint}</span>
+                        </button>
+                      ))}
                     </div>
-
-                    <div className="space-y-2">
-                      {[
-                        { id: 'npm', name: 'npm Cache (~/.npm/_cacache)', size: '840 MB', desc: 'Cached tarballs from npm install commands' },
-                        { id: 'cargo', name: 'Cargo Registry Cache (~/.cargo/registry/cache)', size: '620 MB', desc: 'Pre-downloaded .crate archives from crates.io' },
-                        { id: 'pip', name: 'Python pip Cache (~/.cache/pip)', size: '310 MB', desc: 'Downloaded wheel files and index cache' },
-                        { id: 'go', name: 'Go Build Cache (~/.cache/go-build)', size: '420 MB', desc: 'Compiler hashes and cached package test results' },
-                        { id: 'vscode', name: 'VS Code Workspace Storage', size: '180 MB', desc: 'Stale cached state from closed editor windows' },
-                      ].map((cache) => (
-                        <div key={cache.id} className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedCaches.includes(cache.id)}
-                              onChange={() =>
-                                setSelectedCaches((prev) =>
-                                  prev.includes(cache.id)
-                                    ? prev.filter((i) => i !== cache.id)
-                                    : [...prev, cache.id]
-                                )
-                              }
-                              className="accent-accent rounded cursor-pointer"
-                            />
-                            <div>
-                              <div className="text-xs font-mono font-bold text-white">{cache.name}</div>
-                              <div className="text-[11px] text-muted">{cache.desc}</div>
+                    {targets.length > 0 && (
+                      <div className="flex items-center justify-end gap-1.5 text-xs text-muted">
+                        <Box
+                          checked={chosen.length === targets.length ? true : chosen.length > 0 ? 'some' : false}
+                          label="Select all targets"
+                          onChange={() => picked.set(chosen.length === targets.length ? [] : targets.map((t) => t.id))}
+                        />
+                        Select all
+                      </div>
+                    )}
+                    {projects.map(({ name, rows }) => {
+                      const ids = rows.map((t) => t.id);
+                      const count = ids.filter(picked.has).length;
+                      const toggleProject = () =>
+                        picked.set(count === ids.length
+                          ? picked.ids.filter((id) => !ids.includes(id))
+                          : [...new Set([...picked.ids, ...ids])]);
+                      return (
+                        <div key={name} className={`${CARD} overflow-hidden`}>
+                          <div className="flex items-center gap-2.5 bg-panel-2/70 px-3 py-1.5">
+                            <Box checked={count === ids.length ? true : count > 0 ? 'some' : false} label={`Select all targets in ${name}`} onChange={toggleProject} />
+                            <FolderGit2 className="w-4 h-4 text-accent" />
+                            <span className="text-xs font-semibold text-white">{name}</span>
+                            <span className="text-[11px] text-faint">{rows.length} target{rows.length === 1 ? '' : 's'}</span>
+                            <span className="hidden sm:flex items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2 text-[10px] text-accent"><Clock3 className="w-3 h-3" />{rows[0].used}</span>
+                            <span className="ml-auto text-xs font-semibold text-white">{size(total(rows))}</span>
+                          </div>
+                          {rows.map((t) => (
+                            <div key={t.id} className="flex items-center gap-2.5 border-l-2 border-t border-l-accent/30 border-t-border/60 py-2 pl-7 pr-3">
+                              <Box checked={picked.has(t.id)} label={`Select ${t.folder} in ${name}`} onChange={() => picked.toggle(t.id)} />
+                              <div className="min-w-0 flex-1">
+                                <p className="flex items-center gap-2 font-mono text-xs font-semibold text-white">{t.folder}<span className={`rounded-full px-2 text-[10px] font-medium uppercase ${CATEGORY[t.category].tag}`}>{t.category}</span></p>
+                                <p className="truncate font-mono text-[11px] text-faint">C:\dev\{name}\{t.folder} · {t.files} files</p>
+                              </div>
+                              <div className="text-right"><p className="text-xs font-semibold text-white">{size(t.mb)}</p><p className="text-[10px] text-faint">{t.safety}</p></div>
                             </div>
-                          </div>
-                          <div className="text-xs font-mono font-bold text-accent">{cache.size}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. WSL MANAGER PAGE */}
-                {activeTab === 'wsl' && (
-                  <div className="space-y-5">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#E95420]/15 border border-[#E95420]/30 flex items-center justify-center text-[#E95420]">
-                          <WslIcon className="w-5 h-5 text-[#E95420]" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-white">WSL2 Virtual Disk Reclaimer</h4>
-                          <p className="text-xs text-muted">Compact ext4.vhdx virtual disks that grow dynamically but never shrink</p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleCompactWsl}
-                        disabled={wslCompacting || wslCompacted}
-                        className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 disabled:opacity-60 rounded-lg transition-colors cursor-pointer flex items-center gap-2"
-                      >
-                        {wslCompacting ? (
-                          <>
-                            <div className="w-3.5 h-3.5 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                            <span>Compacting VHDX...</span>
-                          </>
-                        ) : wslCompacted ? (
-                          <span>Compacted (4.3 GB Freed)</span>
-                        ) : (
-                          <span>Compact All (4.3 GB)</span>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* WSL Distribution Cards */}
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <WslIcon className="w-4 h-4 text-[#E95420]" />
-                          <span className="text-xs font-bold text-white">Ubuntu-22.04 (Default WSL2)</span>
-                        </div>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {wslCompacted ? 'Compacted' : '4.3 GB Reclaimable'}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div className="p-2 rounded-lg bg-black/40">
-                          <div className="text-[10px] text-faint">Host Size on Windows</div>
-                          <div className="font-mono font-bold text-white mt-0.5">
-                            {wslCompacted ? '40.9 GB' : '45.2 GB'}
-                          </div>
-                        </div>
-                        <div className="p-2 rounded-lg bg-black/40">
-                          <div className="text-[10px] text-faint">Real Size inside Linux</div>
-                          <div className="font-mono font-bold text-white mt-0.5">12.8 GB</div>
-                        </div>
-                        <div className="p-2 rounded-lg bg-black/40">
-                          <div className="text-[10px] text-faint">Free Space inside VHD</div>
-                          <div className="font-mono font-bold text-accent mt-0.5">
-                            {wslCompacted ? '0.2 GB' : '4.3 GB'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-[11px] font-mono text-faint truncate">
-                        C:\Users\Developer\AppData\Local\Packages\CanonicalGroupLimited...\LocalState\ext4.vhdx
-                      </div>
-                    </div>
-
-                    {/* How WSL compaction works banner */}
-                    <div className="p-3.5 rounded-xl bg-[#10171C] border border-accent/20 flex items-start gap-3 text-xs text-muted">
-                      <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-white">Why WSL disks bloat:</span> WSL2 virtual disks expand dynamically when you download packages or build docker images, but deleting files in Linux does not shrink the .vhdx on Windows. CodeShredder shuts down WSL and executes diskpart compact to reclaim space immediately.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. LARGE FILES PAGE */}
-                {activeTab === 'large_files' && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Large File Explorer (&gt; 50 MB)</h4>
-                        <p className="text-xs text-muted">Found 22.1 GB of large binaries, disk images, and archives</p>
-                      </div>
-                      <button
-                        onClick={() => handleAction('Safely moved selected large files to Trash')}
-                        className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Move Selected to Trash
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {[
-                        { id: '1', name: 'docker-desktop-data.vhdx', size: '12.8 GB', path: '~/AppData/Local/Docker/wsl/data', type: 'Virtual Disk' },
-                        { id: '2', name: 'release-artifacts-v1.4.tar.gz', size: '4.2 GB', path: '~/projects/api/release-artifacts-v1.4.tar.gz', type: 'Archive' },
-                        { id: '3', name: 'train_weights_epoch_50.pt', size: '2.6 GB', path: '~/ml-pipeline/checkpoints/train_weights_epoch_50.pt', type: 'ML Weights' },
-                        { id: '4', name: 'postgres-backup-2024.sql.gz', size: '1.8 GB', path: '~/backups/postgres-backup-2024.sql.gz', type: 'Database' },
-                        { id: '5', name: 'electron-dist-win-x64.zip', size: '890 MB', path: '~/dist/electron-dist-win-x64.zip', type: 'Binary' },
-                      ].map((item) => (
-                        <div key={item.id} className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedLargeFiles.includes(item.id)}
-                              onChange={() =>
-                                setSelectedLargeFiles((prev) =>
-                                  prev.includes(item.id)
-                                    ? prev.filter((i) => i !== item.id)
-                                    : [...prev, item.id]
-                                )
-                              }
-                              className="accent-accent rounded cursor-pointer"
-                            />
-                            <div>
-                              <div className="text-xs font-mono font-bold text-white">{item.name}</div>
-                              <div className="text-[11px] text-muted">{item.type} · <span className="font-mono text-faint">{item.path}</span></div>
-                            </div>
-                          </div>
-                          <div className="text-xs font-mono font-bold text-accent">{item.size}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* OVERVIEW */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-5">
-                    <div>
-                      <h4 className="text-lg font-bold text-white">Overview</h4>
-                      <p className="text-xs text-muted">Where your disk space is going, and what you can safely reclaim.</p>
-                    </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        { label: 'Reclaimable', value: '12.4 GB', hot: true },
-                        { label: 'Projects found', value: '38' },
-                        { label: 'Freed so far', value: '41.7 GB' },
-                        { label: 'Last scan', value: '2 min ago' },
-                      ].map((c) => (
-                        <div key={c.label} className="p-3.5 rounded-xl bg-panel-2 border border-white/[0.06]">
-                          <div className="text-[10px] uppercase tracking-wider text-faint font-semibold">{c.label}</div>
-                          <div className={`mt-1 text-lg font-mono font-bold tabular-nums ${c.hot ? 'text-accent' : 'text-white'}`}>{c.value}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-3">
-                      <div className="text-xs font-bold text-white">Space by category</div>
-                      <div className="flex h-2.5 rounded-full overflow-hidden bg-background">
-                        <span className="bg-accent" style={{ width: '44%' }} />
-                        <span className="bg-amber-400" style={{ width: '24%' }} />
-                        <span className="bg-violet-400" style={{ width: '18%' }} />
-                        <span className="bg-emerald-400" style={{ width: '14%' }} />
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-accent mr-1.5" />Dependencies</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-amber-400 mr-1.5" />Build output</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-violet-400 mr-1.5" />Caches</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5" />Virtual envs</span>
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06]">
-                      <div className="text-xs font-bold text-white mb-2">Recent cleanups</div>
-                      {[['my-app', '2.9 GB', 'Today'], ['rust-project', '920 MB', 'Yesterday'], ['ml-project', '460 MB', '3 days ago']].map(([n, sz, when]) => (
-                        <div key={n} className="flex items-center justify-between py-1.5 text-xs border-t first:border-t-0 border-white/[0.05]">
-                          <span className="font-mono text-white">{n}</span>
-                          <span className="text-muted">{when}</span>
-                          <span className="font-mono text-accent tabular-nums">{sz}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* RECYCLE BIN */}
-                {activeTab === 'recycle' && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Recycle Bin</h4>
-                        <p className="text-xs text-muted">Everything CodeShredder removed stays here until you empty it. Restore any item.</p>
-                      </div>
-                      <button onClick={() => handleAction('Emptied the Recycle Bin and reclaimed 3.2 GB')} className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-colors cursor-pointer shrink-0">
-                        Empty Bin
-                      </button>
-                    </div>
-                    {[
-                      { n: 'node_modules', p: '~/projects/old-site', s: '1.4 GB', t: 'Today' },
-                      { n: 'target', p: '~/projects/cli-tool', s: '1.1 GB', t: 'Today' },
-                      { n: '.next', p: '~/projects/blog', s: '720 MB', t: 'Yesterday' },
-                    ].map((i) => (
-                      <div key={i.n + i.p} className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                        <div>
-                          <div className="text-xs font-mono font-bold text-white">{i.n}</div>
-                          <div className="text-[11px] text-muted"><span className="font-mono text-faint">{i.p}</span> · deleted {i.t}</div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono font-bold text-accent">{i.s}</span>
-                          <button onClick={() => handleAction(`Restored ${i.n} to ${i.p}`)} className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-md cursor-pointer">
-                            <RotateCcw className="w-3 h-3" />Restore
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* DUPLICATES */}
-                {activeTab === 'duplicates' && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Duplicate Files</h4>
-                        <p className="text-xs text-muted">Exact matches by BLAKE3 hash. Keep one copy, trash the rest. 3 groups · 2.4 GB wasted</p>
-                      </div>
-                      <button onClick={() => handleAction('Moved 4 duplicate files to Trash')} className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-colors cursor-pointer shrink-0">
-                        Trash Duplicates
-                      </button>
-                    </div>
-                    {[
-                      { n: 'ubuntu-22.04.iso', c: 3, s: '1.4 GB', p: ['~/Downloads', '~/Desktop/old', '~/vm-images'] },
-                      { n: 'dataset-v2.zip', c: 2, s: '640 MB', p: ['~/ml/data', '~/backups'] },
-                      { n: 'intro-video.mp4', c: 2, s: '380 MB', p: ['~/Videos', '~/projects/site/public'] },
-                    ].map((g) => (
-                      <div key={g.n} className="p-3 rounded-xl bg-panel-2 border border-white/[0.06]">
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs font-mono font-bold text-white">{g.n} <span className="text-muted font-sans font-normal">· {g.c} copies</span></div>
-                          <div className="text-xs font-mono font-bold text-accent">{g.s} each</div>
-                        </div>
-                        <div className="mt-1.5 space-y-0.5">
-                          {g.p.map((x, i) => (
-                            <div key={x} className="text-[11px] font-mono text-faint">{i === 0 ? '✓ keep ' : '✕ trash '}{x}</div>
                           ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      );
+                    })}
+                    <SelectionBar count={chosen.length} mb={total(chosen)} label={mode === 'trash' ? 'Move to Trash' : 'Permanently delete'} onClick={shred} />
+                  </>
                 )}
 
-                {/* VIDEOS */}
-                {activeTab === 'videos' && (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Videos</h4>
-                        <p className="text-xs text-muted">Largest video files on your disk. 5 found · 9.7 GB</p>
+                {tab === 'recycle' && (
+                  <>
+                    <PageHeader title="Recycle Bin" sub="Everything in your system Recycle Bin, including items deleted by other apps.">
+                      <button type="button" className={SECONDARY} onClick={() => setBin(TRASH)}><RotateCcw className="w-3.5 h-3.5" />Refresh</button>
+                      <button type="button" className={DANGER} disabled={bin.length === 0} onClick={() => setConfirm({ title: 'Empty the Recycle Bin?', text: `All ${bin.length} items will be permanently deleted.`, action: 'Empty permanently', run: () => { setBin([]); notify('Recycle Bin emptied'); } })}><Trash2 className="w-3.5 h-3.5" />Empty</button>
+                    </PageHeader>
+                    <div className={`${CARD} px-4 py-3 text-xs font-semibold text-white`}>{bin.length} items · <span className="font-normal text-muted">{size(total(bin))} claimable</span></div>
+                    {bin.map((item) => (
+                      <div key={item.id} className={`${CARD} flex items-center gap-3 px-3 py-2.5`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-white">{item.name}</p>
+                          <p className="truncate font-mono text-[11px] text-faint">{item.path} · {item.when}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-white">{size(item.mb)}</span>
+                        <button type="button" aria-label={`Restore ${item.name}`} className="p-1.5 text-muted hover:text-safe cursor-pointer" onClick={() => { setBin((p) => p.filter((x) => x.id !== item.id)); notify('Item restored to its original location'); }}><ArchiveRestore className="w-4 h-4" /></button>
                       </div>
-                      <button onClick={() => handleAction('Moved selected videos to Trash')} className="px-4 py-2 text-xs font-bold text-black bg-accent hover:bg-accent/80 rounded-lg transition-colors cursor-pointer shrink-0">
-                        Move Selected to Trash
-                      </button>
-                    </div>
-                    {[
-                      ['screen-recording-2024-03.mov', '3.8 GB', '~/Movies'],
-                      ['demo-final-v7.mp4', '2.6 GB', '~/projects/launch'],
-                      ['webinar-recording.mkv', '1.9 GB', '~/Downloads'],
-                      ['onboarding-raw.mp4', '980 MB', '~/Desktop'],
-                    ].map(([n, sz, path]) => (
-                      <div key={n} className="p-3 rounded-xl bg-panel-2 border border-white/[0.06] flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Film className="w-4 h-4 text-accent" />
-                          <div>
-                            <div className="text-xs font-mono font-bold text-white">{n}</div>
-                            <div className="text-[11px] font-mono text-faint">{path}</div>
+                    ))}
+                  </>
+                )}
+
+                {tab === 'caches' && (
+                  <>
+                    <PageHeader title="Caches" sub="Clear system-wide package manager caches. Cleaning is permanent.">
+                      <button type="button" className={SECONDARY} onClick={() => setCaches(CACHES)}><RotateCcw className="w-3.5 h-3.5" />Refresh</button>
+                      <button type="button" className={PRIMARY} disabled={chosenCaches.length === 0} onClick={() => cleanCaches(chosenCaches)}><FolderX className="w-3.5 h-3.5" />Clean caches</button>
+                    </PageHeader>
+                    <div className={`${CARD} px-4 py-3 text-xs font-semibold text-white`}>{caches.length} caches · <span className="font-normal text-muted">{size(total(caches))}</span></div>
+                    {caches.map((c) => (
+                      <div key={c.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${pickedCaches.has(c.id) ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'}`}>
+                        <Box checked={pickedCaches.has(c.id)} label={`Select ${c.name}`} onChange={() => pickedCaches.toggle(c.id)} />
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-2 text-xs font-semibold text-white">{c.name}<span className={`rounded-full px-2 text-[10px] font-medium ${c.safety === 'safe' ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'}`}>{c.safety}</span></p>
+                          <p className="truncate font-mono text-[11px] text-faint">{c.path}</p>
+                        </div>
+                        <div className="text-right"><p className="text-xs font-semibold text-white">{size(c.mb)}</p><p className="text-[10px] text-faint">{c.eco}</p></div>
+                        <button type="button" aria-label={`Clean ${c.name}`} className="p-1.5 text-muted hover:text-danger cursor-pointer" onClick={() => cleanCaches([c])}><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {tab === 'duplicates' && (
+                  <>
+                    <PageHeader title="Duplicates" sub="Find and remove identical files across your drives.">
+                      <button type="button" className={PRIMARY} onClick={() => setDupes(DUPLICATES)}><RotateCcw className="w-3.5 h-3.5" />Scan for duplicates</button>
+                    </PageHeader>
+                    {dupes.length === 0 && <p className={`${CARD} p-8 text-center text-xs text-muted`}>No duplicates found</p>}
+                    {dupes.map((g) => (
+                      <div key={g.name} className={CARD}>
+                        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+                          <p className="text-xs font-semibold text-white">{g.files.length} identical files <span className="font-normal text-muted">· {size(g.each)} each</span></p>
+                          <button type="button" className="flex items-center gap-1 py-1 text-[11px] text-muted hover:text-danger cursor-pointer" onClick={() => { setDupes((p) => p.filter((x) => x.name !== g.name)); notify(`Trashed ${g.files.length - 1} files, kept the newest`); }}><Trash2 className="w-3.5 h-3.5" />Trash all but newest</button>
+                        </div>
+                        {g.files.map((f, i) => (
+                          <div key={f.id} className="flex items-center gap-3 px-3 py-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="flex items-center gap-2 text-xs text-white">{g.name}{i === 0 && <span className="rounded-full bg-safe/10 px-2 text-[10px] font-medium text-safe">Newest</span>}</p>
+                              <p className="truncate font-mono text-[11px] text-faint">{f.path}\{g.name}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-xs font-mono font-bold text-accent">{sz}</div>
+                        ))}
                       </div>
                     ))}
-                  </div>
+                  </>
                 )}
 
-                {/* SETTINGS (mirrors the app: roots, patterns, ignore rules, behaviour) */}
-                {activeTab === 'settings' && (
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-lg font-bold text-white">Settings</h4>
-                      <p className="text-xs text-muted">Control scan roots, enabled patterns, ignored folders and deletion behavior.</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-bold text-white">Scan folders</div>
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-accent"><Plus className="w-3 h-3" />Add folder</span>
+                {tab === 'videos' && <FileList key="videos" title="Videos" sub="Spot large video files eating your disk, sorted by size." files={VIDEOS} notify={notify} />}
+                {tab === 'large_files' && <FileList key="large" title="Large Files" sub="Find videos, archives, logs and installer dumps eating your disk." files={LARGE} notify={notify} />}
+
+                {tab === 'wsl' && (
+                  <>
+                    <PageHeader title="WSL" sub="Clean distros and compact their virtual disks.">
+                      <button type="button" className={SECONDARY} onClick={() => notify('WSL shut down')}>Shut down WSL</button>
+                    </PageHeader>
+                    {[
+                      { name: 'Ubuntu-22.04', before: '45.2 GB', after: '40.9 GB', freed: '4.3 GB' },
+                      { name: 'Debian', before: '12.7 GB', after: '11.1 GB', freed: '1.6 GB' },
+                      { name: 'kali-linux', before: '8.4 GB', after: '7.8 GB', freed: '0.6 GB' },
+                    ].map((d) => (
+                      <div key={d.name} className={`${CARD} flex flex-wrap items-center gap-3 p-4`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-white">{d.name}</p>
+                          <p className="truncate font-mono text-[11px] text-faint">ext4.vhdx · {compacted.has(d.name) ? d.after : d.before}</p>
+                        </div>
+                        <button type="button" className={SECONDARY} onClick={() => notify(`Cleanup ran in ${d.name}`)}>Clean</button>
+                        <button type="button" className={PRIMARY} disabled={compacted.has(d.name)} onClick={() => setConfirm({ title: `Compact ${d.name}?`, text: 'All WSL distros are shut down first.', action: 'Compact', run: () => { compacted.toggle(d.name); notify(`Freed ${d.freed} from ${d.name}`); } })}>{compacted.has(d.name) ? 'Compacted' : 'Compact disk'}</button>
                       </div>
-                      {['~/projects', '~/work', 'D:\\dev'].map((r) => (
-                        <div key={r} className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-background border border-white/[0.06] text-xs font-mono text-muted">
-                          <span className="flex items-center gap-2"><FolderOpen className="w-3.5 h-3.5 text-accent" />{r}</span>
-                          <X className="w-3 h-3 text-faint" />
+                    ))}
+                  </>
+                )}
+
+                {tab === 'settings' && (
+                  <>
+                    <PageHeader title="Settings" sub="Control scan roots, enabled patterns, ignored folders and deletion behavior.">
+                      <button type="button" className={SECONDARY} onClick={() => setRoots(['~/Developer', '~/Code', '~/Projects', '~/work', 'D:/dev'])}><RotateCcw className="w-3.5 h-3.5" />Add default folders</button>
+                    </PageHeader>
+                    <div className={`${CARD} space-y-2 p-4`}>
+                      <p className="text-xs font-semibold text-white">Scan folders</p>
+                      {roots.map((r) => (
+                        <div key={r} className="flex items-center gap-2 rounded-lg border border-border bg-panel-2/60 px-3 py-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-safe" />
+                          <span className="flex-1 font-mono text-[11px] text-white">{r}</span>
+                          <button type="button" aria-label={`Remove ${r}`} className="p-1 text-faint hover:text-danger cursor-pointer" onClick={() => setRoots((p) => p.filter((x) => x !== r))}><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ))}
+                      <span className="flex items-center gap-1.5 text-[11px] text-muted"><FolderOpen className="w-3.5 h-3.5" /><Plus className="w-3 h-3" />Add folder…</span>
+                    </div>
+                    <div className={`${CARD} space-y-2 p-4`}>
+                      <p className="text-xs font-semibold text-white">Confirmations</p>
+                      {['dangerous', 'medium'].map((level) => (
+                        <div key={level} className="flex items-center gap-2 text-xs text-white">
+                          <Box checked={confirms.has(level)} label={`Confirm ${level} folders`} onChange={() => confirms.toggle(level)} />
+                          <span>Ask before deleting folders flagged <span className="font-medium text-warning">{level}</span></span>
                         </div>
                       ))}
                     </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-2">
-                      <div className="text-xs font-bold text-white">Scan patterns</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {['node_modules', 'target', '.next', 'dist', 'build', '.venv', '__pycache__', '.gradle', 'Pods'].map((x, i) => (
-                          <span key={x} className={`px-2.5 py-1 rounded-full text-[11px] font-mono border ${i < 7 ? 'bg-accent/15 border-accent/40 text-white' : 'bg-background border-white/10 text-muted'}`}>{x}</span>
-                        ))}
+                  </>
+                )}
+
+                {tab === 'about' && (
+                  <>
+                    <PageHeader title="About" sub="What CodeShredder is and where to find help." />
+                    <div className={`${CARD} space-y-3 p-5`}>
+                      <div className="flex items-center gap-3">
+                        <CodeShredderIcon size={44} />
+                        <div><p className="text-base font-bold text-white">CodeShredder</p><p className="font-mono text-[11px] text-muted">Tauri 2 + Rust</p></div>
                       </div>
+                      <p className="text-xs leading-relaxed text-muted">A fast, safe cleanup app for developers. It finds heavy generated folders, caches, WSL bloat, large files and duplicates, then moves what you pick to the Trash.</p>
+                      <p className="flex items-start gap-2 text-xs text-muted"><ShieldCheck className="w-4 h-4 shrink-0 text-safe" />Everything runs locally. No accounts or analytics; the only network call checks for updates.</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-2">
-                      <div className="text-xs font-bold text-white">Ignore rules</div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {['important-project', 'client-work/legacy'].map((x) => (
-                          <span key={x} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-background border border-white/10 text-muted">{x}<X className="w-3 h-3 text-faint" /></span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-panel-2 border border-white/[0.06] space-y-3">
-                      <div className="text-xs font-bold text-white">Cleanup behavior</div>
-                      {[
-                        ['Move to Recycle Bin / Trash (recommended)', 'Items stay restorable until you empty the bin'],
-                        ['Confirm before cleaning', 'Review the list and total size first'],
-                        ['Include extended patterns', 'Also scan .gradle, Pods, .terraform and more'],
-                      ].map(([t, d], i) => (
-                        <label key={t} className="flex items-start gap-3 cursor-pointer">
-                          <input type="checkbox" defaultChecked={i < 2} className="accent-accent mt-0.5 w-4 h-4 rounded cursor-pointer" />
-                          <span>
-                            <span className="block text-xs font-semibold text-white">{t}</span>
-                            <span className="block text-[11px] text-muted">{d}</span>
-                          </span>
-                        </label>
+                    <div className={`${CARD} p-3`}>
+                      {[['GitHub repository', siteConfig.githubUrl], ['Release notes', siteConfig.releasesUrl], ['Report an issue', siteConfig.issuesUrl]].map(([label, url]) => (
+                        <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-white hover:bg-panel-2">{label}<ExternalLink className="w-3.5 h-3.5 text-muted" /></a>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {/* ABOUT */}
-                {activeTab === 'about' && (
-                  <div className="p-6 rounded-xl bg-panel-2 border border-white/[0.06] space-y-4">
-                    <div className="flex items-center gap-3">
-                      <CodeShredderIcon size={40} />
-                      <div>
-                        <h4 className="text-base font-extrabold text-white">CodeShredder</h4>
-                        <div className="text-xs text-muted">Version {siteConfig.version} · Tauri 2 + Rust</div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted leading-relaxed">
-                      A fast, safe cleanup app for developers. It finds heavy generated folders, caches, WSL bloat, large files and duplicates, then moves what you pick to the Trash. Everything runs locally with no accounts, analytics or network calls.
-                    </p>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      {[['Windows', '10 / 11'], ['macOS', '12+'], ['Linux', 'AppImage · deb · rpm']].map(([a, b]) => (
-                        <div key={a} className="p-2.5 rounded-lg bg-background border border-white/[0.06]">
-                          <div className="text-xs font-bold text-white">{a}</div>
-                          <div className="text-[10px] text-muted">{b}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="pt-1 flex flex-wrap items-center gap-3 text-xs">
-                      <a href={siteConfig.githubUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">GitHub Repository</a>
-                      <span className="text-faint">·</span>
-                      <a href={siteConfig.releasesUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-semibold">Release notes</a>
-                      <span className="text-faint">·</span>
-                      <span className="text-faint">MIT License</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Table Bottom Action Bar (in scan view) */}
-                {activeTab === 'shred' && (
-                  <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted">
-                        {selectedIds.length} items selected
-                      </span>
-                      <span className="text-sm font-bold font-mono text-accent tabular-nums">
-                        {formattedSelectedSize}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleAction('Safely moved selected files to OS Trash!')}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-panel-2 hover:bg-[#222E37] border border-accent/40 hover:border-accent transition-all cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-accent" />
-                        <span>Move to Trash</span>
-                        <ChevronDown className="w-3 h-3 text-muted" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Interactive Toast Notice */}
-                {actionNotice && (
-                  <div className="mt-3 py-2 px-3 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2 animate-fadeIn">
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                    <span>{actionNotice}</span>
-                  </div>
+                    <p className="text-[11px] text-faint">Built by Akshad (<a href="https://github.com/akshad-exe" target="_blank" rel="noopener noreferrer" className="inline-block py-1 font-semibold text-accent hover:underline">@akshad-exe</a>) · Released under the MIT License.</p>
+                  </>
                 )}
               </div>
+
+              {notice && (
+                <p role="status" className="absolute right-3 top-3 z-30 rounded-lg border border-safe/30 bg-panel-2 px-3 py-2 text-xs text-safe shadow-xl animate-fadeIn">{notice}</p>
+              )}
+
+              {confirm && (
+                <div className="absolute inset-0 z-40 grid place-items-center bg-black/70 p-4">
+                  <div role="alertdialog" aria-label={confirm.title} className="w-full max-w-sm rounded-xl border border-border bg-panel p-5 shadow-2xl">
+                    <p className="text-sm font-bold text-white">{confirm.title}</p>
+                    <p className="mt-1.5 text-xs text-muted">{confirm.text}</p>
+                    <div className="mt-4 flex justify-end gap-2">
+                      <button type="button" className={SECONDARY} onClick={() => setConfirm(null)}>Cancel</button>
+                      <button type="button" className={DANGER} onClick={() => { confirm.run(); setConfirm(null); }}>{confirm.action}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        <p className="mt-3 text-center text-xs text-faint">Interactive preview of the Windows build with sample data. Nothing on your computer is touched.</p>
       </div>
     </section>
   );

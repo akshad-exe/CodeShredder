@@ -88,7 +88,7 @@ export const FeaturesAndSpace: React.FC = () => {
   ];
 
   return (
-    <section id="features" className="py-20 md:py-28 relative">
+    <section id="features" className="pt-20 pb-16 md:pt-28 md:pb-20 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
           {/* Left Column: Heading, Subtitle & 4 Features */}
@@ -134,7 +134,7 @@ export const FeaturesAndSpace: React.FC = () => {
                     Reclaim your space
                   </h3>
                   <p className="text-xs text-muted">
-                    We found <span className="font-semibold text-white">12.4 GB</span> of reclaimable space
+                    Example scan: <span className="font-semibold text-white">12.4 GB</span> reclaimable
                   </p>
                 </div>
               </div>
@@ -189,7 +189,7 @@ export const FeaturesAndSpace: React.FC = () => {
 
               <div className="mt-3 text-center">
                 <span className="text-[11px] text-faint">
-                  Illustrative desktop dashboard preview · Non-destructive
+                  Example figures, not from your machine. The button only plays an animation.
                 </span>
               </div>
             </div>

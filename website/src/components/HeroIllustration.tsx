@@ -1,10 +1,10 @@
 import React from 'react';
 import { CodeShredderIcon } from './CodeShredderIcon';
-import volcanicRidgeImg from '../assets/images/hero_volcanic_ridge_1791701362419.jpg';
+import volcanicRidgeImg from '../assets/images/hero_volcanic_ridge.webp';
 
 export const HeroIllustration: React.FC = () => {
   return (
-    <div className="relative w-full max-w-[600px] h-[520px] sm:h-[580px] lg:h-[620px] flex items-center justify-center select-none pointer-events-none overflow-visible">
+    <div className="relative w-full max-w-[600px] h-[360px] sm:h-[580px] lg:h-[620px] flex items-center justify-center select-none pointer-events-none overflow-visible">
       {/* 1. Base Layer: Dark Rugged Volcanic Mountain Ridge across bottom third */}
       <div className="absolute inset-x-0 bottom-0 h-[45%] flex items-end justify-center overflow-hidden">
         <div className="relative w-full h-full">
@@ -40,7 +40,7 @@ export const HeroIllustration: React.FC = () => {
         {/* Tilted Document Icon Container matching reference -7.5deg tilt */}
         <div className="relative transform -rotate-[7.5deg] transition-transform duration-500 hover:scale-102">
           {/* Authentic CodeShredder Vector Icon */}
-          <div className="w-[310px] sm:w-[360px] lg:w-[400px] aspect-square flex items-center justify-center">
+          <div className="w-[200px] sm:w-[360px] lg:w-[400px] aspect-square flex items-center justify-center">
             <CodeShredderIcon
               className="w-full h-full filter drop-shadow-[0_15px_30px_rgba(255,112,43,0.55)] drop-shadow-[0_0_15px_rgba(255,112,43,0.3)]"
             />
