@@ -137,3 +137,7 @@ export async function scanVideos(input: {
 }): Promise<VideoEntry[]> {
   return invoke<VideoEntry[]>('scan_videos', { input })
 }
+
+export async function existingRoots(roots: string[]): Promise<boolean[]> {
+  return invoke<boolean[]>('existing_roots', { roots })
+}

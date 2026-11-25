@@ -6,6 +6,7 @@ import { cleanCaches, isTauri, listCaches, revealFolder } from '@/lib/ipc'
 import type { CacheEntry } from '@/types/cleanup'
 import { formatBytes, formatCount } from '@/lib/format'
 import { toast } from '@/components/ui/sonner'
+import { ConfirmDialog, type PendingConfirm } from '@/components/ui/confirm-dialog'
 
 const SAFETY_CLASS: Record<CacheEntry['safety'], string> = {
   safe: 'bg-safe/10 text-safe',
@@ -19,6 +20,7 @@ export function Caches() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [cleaning, setCleaning] = useState(false)
+  const [pending, setPending] = useState<PendingConfirm | null>(null)
   const preview = !isTauri()
   const [usingSample, setUsingSample] = useState(false)
   const sample = usingSample || preview
@@ -137,8 +139,21 @@ export function Caches() {
     await refresh()
   }
 
+  /** Cache cleaning skips the Trash, so every path asks first. */
+  const confirmClean = (ids: string[], run: () => void) => {
+    const chosen = entries.filter((c) => ids.includes(c.id))
+    if (chosen.length === 0) return
+    const size = formatBytes(chosen.reduce((acc, c) => acc + c.sizeBytes, 0))
+    setPending({
+      title: 'Permanently delete cache contents?',
+      description: `${chosen.map((c) => c.name).join(', ')} (${size}). This does not use the Trash and cannot be undone.`,
+      actionLabel: 'Delete permanently',
+      run,
+    })
+  }
+
   return (
-    <div className="mx-auto max-w-[1400px] px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 pb-28 pt-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Caches</h1>
@@ -164,9 +179,9 @@ export function Caches() {
           </button>
           <button
             type="button"
-            disabled={entries.length === 0}
+            disabled={selected.size === 0 || cleaning}
             className="btn-primary"
-            onClick={() => void handleCleanSelected()}
+            onClick={() => confirmClean([...selected], () => void handleCleanSelected())}
           >
             {cleaning ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -276,7 +291,7 @@ export function Caches() {
                     disabled={cleaning}
                     title={`Clean ${entry.name}`}
                     className="btn-ghost !p-2 text-muted hover:text-danger"
-                    onClick={() => void handleClean(entry.id)}
+                    onClick={() => confirmClean([entry.id], () => void handleClean(entry.id))}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -298,12 +313,19 @@ export function Caches() {
               {formatBytes(selectedSize)}
             </p>
           </div>
-          <button type="button" className="btn-primary" onClick={() => void handleCleanSelected()}>
+          <button
+            type="button"
+            disabled={cleaning}
+            className="btn-primary"
+            onClick={() => confirmClean([...selected], () => void handleCleanSelected())}
+          >
             <Trash2 className="h-4 w-4" />
             Clean selected
           </button>
         </div>
       )}
+
+      <ConfirmDialog pending={pending} onClose={() => setPending(null)} />
     </div>
   )
 }

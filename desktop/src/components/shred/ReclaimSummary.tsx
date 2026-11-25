@@ -32,7 +32,7 @@ export function ReclaimSummary() {
         </p>
       </div>
       <p className="pb-1 text-xs text-faint">
-        Tap pills to include or skip a pattern
+        Hover a category to see its biggest folders
       </p>
     </div>
   )

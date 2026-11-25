@@ -21,7 +21,7 @@ export function useClean() {
         mode,
         errors: [],
       })
-      store.removeTrashedTargets()
+      store.removeTargets(selected.map((t) => t.id))
       toast.success(`Moved ${selected.length} folders to Trash`)
       return
     }
@@ -35,7 +35,9 @@ export function useClean() {
       )
       store.setCleanupStatus(summary.failed > 0 ? 'error' : 'complete')
       store.setCleanupSummary(summary)
-      store.removeTrashedTargets()
+      // Rows that failed stay listed (and selected) so they can be retried.
+      const failed = new Set(summary.errors.map((e) => e.path))
+      store.removeTargets(selected.filter((t) => !failed.has(t.path)).map((t) => t.id))
       if (summary.failed > 0) {
         toast.error(
           `Cleaned ${summary.affected} of ${summary.total} folders`,

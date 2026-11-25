@@ -70,7 +70,7 @@ export function About() {
           </p>
           <p className="mt-3 flex items-start gap-2 text-sm text-muted">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-safe" />
-            Everything runs locally. No accounts, analytics or network calls.
+            Everything runs locally. No accounts or analytics; the only network call checks for updates.
           </p>
         </section>
 
@@ -136,7 +136,17 @@ export function About() {
           </ul>
         </section>
 
-        <p className="px-1 text-xs text-faint">Released under the MIT License.</p>
+        <p className="px-1 text-xs text-faint">
+          Built by Akshad (
+          <button
+            type="button"
+            onClick={() => open('https://github.com/akshad-exe')}
+            className="font-semibold text-accent hover:underline"
+          >
+            @akshad-exe
+          </button>
+          ) · Released under the MIT License.
+        </p>
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { useScanEvents } from '@/hooks/useScan'
 import { useEffect, useState } from 'react'
 import { AppShell } from '@/layouts/AppShell'
 import type { PageId } from '@/lib/navigation'
@@ -16,6 +17,8 @@ import { checkForUpdate } from '@/lib/updater'
 
 function App() {
   const [page, setPage] = useState<PageId>('overview')
+
+  useScanEvents()
 
   // Quiet startup check: only speak up when an update exists.
   useEffect(() => {

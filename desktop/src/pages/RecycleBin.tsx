@@ -5,12 +5,15 @@ import type { TrashItem } from '@/types/cleanup'
 import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
+import { ConfirmDialog, type PendingConfirm } from '@/components/ui/confirm-dialog'
+import { IS_MAC, TRASH_NAME } from '@/lib/platform'
 
 export function RecycleBin() {
   const [items, setItems] = useState<TrashItem[]>([])
   const [loading, setLoading] = useState(true)
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const [emptying, setEmptying] = useState(false)
+  const [pending, setPending] = useState<PendingConfirm | null>(null)
 
   const refresh = async () => {
     if (!isTauri()) {
@@ -23,7 +26,7 @@ export function RecycleBin() {
       setItems(await listTrash())
     } catch (err) {
       console.error('[RecycleBin] list failed:', err)
-      toast.error('Could not read the Recycle Bin', {
+      toast.error(`Could not read the ${TRASH_NAME}`, {
         description: err instanceof Error ? err.message : String(err),
       })
     } finally {
@@ -89,7 +92,7 @@ export function RecycleBin() {
       if (res.failed > 0) {
         toast.error('Empty failed', { description: res.errors[0] })
       } else {
-        toast.success(`Emptied ${res.succeeded} items from the Recycle Bin`)
+        toast.success(`Emptied ${res.succeeded} items from the ${TRASH_NAME}`)
         setItems([])
       }
     } catch (err) {
@@ -107,25 +110,44 @@ export function RecycleBin() {
     <div className="mx-auto max-w-[1400px] px-8 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Recycle Bin</h1>
+          <h1 className="text-2xl font-bold text-text">{TRASH_NAME}</h1>
           <p className="mt-1 text-sm text-muted">
-            Items moved to Trash by Shred live here until you restore or
-            permanently delete them.
+            {IS_MAC
+              ? 'Listing and restoring is not supported on macOS yet. Open Trash in Finder to recover items.'
+              : `Everything in your system ${TRASH_NAME}, including items deleted by other apps.`}
           </p>
         </div>
-        <button
-          type="button"
-          disabled={items.length === 0 || emptying}
-          className="btn-danger shrink-0"
-          onClick={() => void handleEmpty()}
-        >
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            disabled={loading}
+            className="btn-secondary"
+            onClick={() => void refresh()}
+          >
+            <RotateCcw className="h-4 w-4" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            disabled={items.length === 0 || emptying}
+            className="btn-danger"
+            onClick={() =>
+              setPending({
+                title: `Empty the ${TRASH_NAME}?`,
+                description: `All ${formatCount(items.length)} items, including ones not removed by CodeShredder, will be permanently deleted.`,
+                actionLabel: 'Empty permanently',
+                run: () => void handleEmpty(),
+              })
+            }
+          >
           {emptying ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Trash2 className="h-4 w-4" />
           )}
-          Empty Recycle Bin
-        </button>
+            Empty {TRASH_NAME}
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 card">
@@ -155,7 +177,7 @@ export function RecycleBin() {
         <div className="mt-4 grid place-items-center rounded-xl border border-dashed border-border bg-panel px-4 py-16 text-center">
           <div>
             <Recycle className="mx-auto h-10 w-10 text-faint" />
-            <p className="mt-4 text-sm font-medium text-text">Recycle Bin is empty</p>
+            <p className="mt-4 text-sm font-medium text-text">{TRASH_NAME} is empty</p>
             <p className="mt-1 text-xs text-muted">
               Items you move to Trash from the Shred page will appear here.
             </p>
@@ -215,19 +237,17 @@ export function RecycleBin() {
                   </button>
                   <button
                     type="button"
-                    title="Reveal in folder"
-                    disabled={busy}
-                    className="btn-ghost !p-2 text-muted hover:text-text"
-                    onClick={() => void refresh()}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
                     title="Permanently delete"
                     disabled={busy}
                     className="btn-ghost !p-2 text-muted hover:text-danger"
-                    onClick={() => void handlePurge(item.id)}
+                    onClick={() =>
+                      setPending({
+                        title: 'Delete this item permanently?',
+                        description: `${item.originalPath} cannot be recovered afterwards.`,
+                        actionLabel: 'Delete permanently',
+                        run: () => void handlePurge(item.id),
+                      })
+                    }
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -237,6 +257,8 @@ export function RecycleBin() {
           })}
         </div>
       )}
+
+      <ConfirmDialog pending={pending} onClose={() => setPending(null)} />
     </div>
   )
 }

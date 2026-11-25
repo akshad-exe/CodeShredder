@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FolderOpen, Plus, RotateCcw, X } from 'lucide-react'
 import { open } from '@tauri-apps/plugin-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { PatternPills } from '@/components/shred/PatternPills'
 import { DeleteModeSelect } from '@/components/shred/DeleteModeSelect'
 import { useCleanupStore } from '@/store/cleanupStore'
+import { existingRoots, isTauri } from '@/lib/ipc'
+import { cn } from '@/lib/utils'
 
 export function Settings() {
   const scanRoots = useCleanupStore((s) => s.scanRoots)
@@ -16,6 +18,14 @@ export function Settings() {
   const setSettings = useCleanupStore((s) => s.setSettings)
 
   const [ignoreDraft, setIgnoreDraft] = useState('')
+  const [missing, setMissing] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (!isTauri()) return
+    existingRoots(scanRoots)
+      .then((found) => setMissing(new Set(scanRoots.filter((_, i) => !found[i]))))
+      .catch((err) => console.error('[Settings] folder check failed:', err))
+  }, [scanRoots])
 
   const handleAddFolder = async () => {
     const selected = await open({
@@ -54,7 +64,7 @@ export function Settings() {
         </div>
         <button
           type="button"
-          onClick={populateDefaultRoots}
+          onClick={() => populateDefaultRoots(true)}
           className="btn-secondary !text-xs"
         >
           <RotateCcw className="h-3.5 w-3.5" />
@@ -84,10 +94,18 @@ export function Settings() {
                 key={root}
                 className="flex items-center gap-2 rounded-lg border border-border bg-panel-2/60 px-3 py-2"
               >
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-safe" />
+                <span
+                  className={cn(
+                    'h-1.5 w-1.5 shrink-0 rounded-full',
+                    missing.has(root) ? 'bg-border' : 'bg-safe',
+                  )}
+                />
                 <span className="flex-1 truncate font-mono text-xs text-text">
                   {root}
                 </span>
+                {missing.has(root) && (
+                  <span className="shrink-0 text-[11px] text-faint">not found</span>
+                )}
                 <button
                   type="button"
                   aria-label={`Remove ${root}`}

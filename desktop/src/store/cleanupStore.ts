@@ -44,11 +44,12 @@ interface CleanupState {
   setScanError: (error: string | null) => void
   setCleanupStatus: (status: CleanupState['cleanupStatus']) => void
   setCleanupSummary: (summary: CleanSummary | null) => void
-  removeTrashedTargets: () => void
   removeTargets: (ids: string[]) => void
   setSettings: (settings: Partial<AppSettings>) => void
   resetScan: () => void
-  populateDefaultRoots: () => void
+  rootsSeeded: boolean
+  /** Adds the default folders once; `force` re-adds them on request. */
+  populateDefaultRoots: (force?: boolean) => void
 }
 
 const defaultSettings: AppSettings = {
@@ -65,6 +66,7 @@ export const useCleanupStore = create<CleanupState>()(
     (set, get) => ({
       // Initial state
       scanRoots: [],
+      rootsSeeded: false,
       enabledPatterns: defaultSettings.enabledPatterns,
       scanStatus: 'idle',
       scanProgress: 0,
@@ -79,8 +81,8 @@ export const useCleanupStore = create<CleanupState>()(
       
       // Actions
       setScanRoots: (roots) => set({ scanRoots: roots }),
-      addScanRoot: (root) => set((state) => ({ 
-        scanRoots: [...state.scanRoots, root] 
+      addScanRoot: (root) => set((state) => ({
+        scanRoots: [...new Set([...state.scanRoots, root])],
       })),
       removeScanRoot: (root) => set((state) => ({ 
         scanRoots: state.scanRoots.filter((r) => r !== root) 
@@ -150,18 +152,6 @@ export const useCleanupStore = create<CleanupState>()(
       setScanError: (scanError) => set({ scanError }),
       setCleanupStatus: (cleanupStatus) => set({ cleanupStatus }),
       setCleanupSummary: (cleanupSummary) => set({ cleanupSummary }),
-      removeTrashedTargets: () => set((state) => {
-        const trashedIds = new Set(state.selectedTargets)
-        const targets = state.targets.filter((t) => !trashedIds.has(t.id))
-        const reclaimed = state.targets
-          .filter((t) => trashedIds.has(t.id))
-          .reduce((acc, t) => acc + t.sizeBytes, 0)
-        return {
-          targets,
-          selectedTargets: new Set(),
-          totalReclaimable: Math.max(0, state.totalReclaimable - reclaimed),
-        }
-      }),
       removeTargets: (ids) => set((state) => {
         const removed = new Set(ids)
         const targets = state.targets.filter((t) => !removed.has(t.id))
@@ -195,13 +185,12 @@ export const useCleanupStore = create<CleanupState>()(
         totalReclaimable: 0,
         scanError: null,
       }),
-      populateDefaultRoots: () => {
-        const roots = getDefaultScanRoots()
-        const existing = new Set(get().scanRoots)
-        const newRoots = roots.filter((r) => !existing.has(r))
-        if (newRoots.length > 0) {
-          set((state) => ({ scanRoots: [...state.scanRoots, ...newRoots] }))
-        }
+      populateDefaultRoots: (force = false) => {
+        if (get().rootsSeeded && !force) return
+        set((state) => ({
+          rootsSeeded: true,
+          scanRoots: [...new Set([...state.scanRoots, ...getDefaultScanRoots()])],
+        }))
       },
     }),
     {
@@ -209,6 +198,7 @@ export const useCleanupStore = create<CleanupState>()(
       partialize: (state) => ({ 
         settings: state.settings,
         scanRoots: state.scanRoots,
+        rootsSeeded: state.rootsSeeded,
         enabledPatterns: state.enabledPatterns,
       }),
       merge: (persisted, current) => {

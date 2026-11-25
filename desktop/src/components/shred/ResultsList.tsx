@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, Clock3, FolderGit2, ScanSearch } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useCleanupStore } from '@/store/cleanupStore'
@@ -117,6 +117,25 @@ export function ResultsList() {
   const collapseAll = () => setCollapsed(new Set(groups.map((g) => g.key)))
   const expandAll = () => setCollapsed(new Set())
 
+  // The list starts below the page header, so the virtualizer needs that offset;
+  // without it, it renders the wrong rows and scrolling shows a blank gap.
+  const listRef = useRef<HTMLDivElement>(null)
+  const [scrollMargin, setScrollMargin] = useState(0)
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const main = document.querySelector('main')
+    if (!list || !main?.firstElementChild) return
+    const measure = () =>
+      setScrollMargin(
+        list.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop,
+      )
+    measure()
+    // Content above can grow (e.g. opening Patterns) without re-rendering us.
+    const observer = new ResizeObserver(measure)
+    observer.observe(main.firstElementChild)
+    return () => observer.disconnect()
+  })
+
   // Windowed rendering against the page's own scroll container (`main`), so a
   // home-wide scan with thousands of rows stays a handful of mounted elements
   // instead of mounting every target into the DOM.
@@ -125,6 +144,7 @@ export function ResultsList() {
     getScrollElement: () => document.querySelector('main'),
     estimateSize: (index) => (rows[index].kind === 'group' ? 48 : 100),
     overscan: 10,
+    scrollMargin,
     getItemKey: (index) => {
       const row = rows[index]
       return row.kind === 'group' ? `g:${row.group.key}` : `t:${row.target.id}`
@@ -226,7 +246,7 @@ export function ResultsList() {
           </label>
         </div>
       </div>
-      <div className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+      <div ref={listRef} className="relative" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
         {rowVirtualizer.getVirtualItems().map((virtualItem) => {
           const row = rows[virtualItem.index]
           const blockEnd = isLastInBlock(virtualItem.index)
@@ -242,7 +262,7 @@ export function ResultsList() {
                 hasChildren ? 'pb-0' : rowGap ? 'pb-2.5' : 'pb-0',
                 row.kind === 'target' && 'pl-8',
               )}
-              style={{ transform: `translateY(${virtualItem.start}px)` }}
+              style={{ transform: `translateY(${virtualItem.start - scrollMargin}px)` }}
             >
               {row.kind === 'group' ? (
                 <GroupHeader

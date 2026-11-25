@@ -20,6 +20,7 @@ export function Shred() {
   const [scrolled, setScrolled] = useState(false)
 
   const targets = useCleanupStore((s) => s.targets)
+  const enabledCount = useCleanupStore((s) => s.enabledPatterns.length)
   const selectedTargets = useCleanupStore((s) => s.selectedTargets)
   const scanError = useCleanupStore((s) => s.scanError)
   const mode = useCleanupStore((s) => s.settings.deleteMode)
@@ -92,7 +93,7 @@ export function Shred() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 pb-28 pt-8">
       <div className="space-y-6">
         <ShredHeader onScan={startScan} onStop={stopScan} />
 
@@ -108,7 +109,14 @@ export function Shred() {
 
         <div className="space-y-3">
           <ScopeTabs />
-          <PatternPills />
+          <details className="group">
+            <summary className="cursor-pointer select-none text-xs font-medium text-muted hover:text-text">
+              Patterns · {enabledCount} enabled
+            </summary>
+            <div className="mt-3">
+              <PatternPills />
+            </div>
+          </details>
         </div>
 
         <div className="card space-y-4">

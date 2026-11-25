@@ -1,4 +1,3 @@
-import { Zap } from 'lucide-react'
 import { NAV_GROUPS, type PageId } from '@/lib/navigation'
 import { SidebarItem } from './SidebarItem'
 import { SidebarGroup } from './SidebarGroup'
@@ -12,9 +11,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-sidebar">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="grid h-8 w-8 place-content-center rounded-lg bg-accent/15 text-accent">
-          <Zap className="h-4 w-4" />
-        </div>
+        <img src="/favicon.svg" alt="" className="h-9 w-9" />
         <div>
           <p className="text-sm font-bold leading-tight text-text">CodeShredder</p>
           <p className="text-[11px] leading-tight text-faint">fast dev cleanup</p>

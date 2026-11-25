@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
 import { SAMPLE_DUPLICATES } from '@/components/explore/sampleData'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/sonner'
 import { SelectMenu } from '@/components/ui/select-menu'
 import { withMediaRoots } from '@/lib/roots'
+import { removesEveryCopy } from '@/lib/duplicates'
 import { useCleanupStore } from '@/store/cleanupStore'
 
 const MIN_SIZES = [
@@ -41,7 +42,12 @@ export function Duplicates() {
     populateDefaultRoots()
   }, [populateDefaultRoots])
 
+  // Only the newest scan may write results; a slow older one is ignored.
+  const latestScan = useRef(0)
+
   const refresh = useCallback(async () => {
+    const scan = ++latestScan.current
+    setSelected(new Set())
     if (preview) {
       setGroups(SAMPLE_DUPLICATES)
       setUsingSample(true)
@@ -50,15 +56,18 @@ export function Duplicates() {
     }
     setLoading(true)
     try {
-      setGroups(await scanDuplicates({ roots: withMediaRoots(scanRoots), minSizeBytes: minSize }))
+      const found = await scanDuplicates({ roots: withMediaRoots(scanRoots), minSizeBytes: minSize })
+      if (scan !== latestScan.current) return
+      setGroups(found)
       setUsingSample(false)
     } catch (err) {
+      if (scan !== latestScan.current) return
       console.error('[Duplicates] scan failed:', err)
       setGroups([])
       setUsingSample(false)
       toast.error('Could not scan for duplicates')
     } finally {
-      setLoading(false)
+      if (scan === latestScan.current) setLoading(false)
     }
   }, [preview, scanRoots, minSize])
 
@@ -87,16 +96,25 @@ export function Duplicates() {
     return acc
   }, 0)
 
-  const toggle = (id: string) =>
-    setSelected((s) => {
-      const next = new Set(s)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const KEEP_ONE = 'Keep at least one copy of each file'
+
+  const toggle = (id: string) => {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    if (removesEveryCopy(groups, next)) {
+      toast.error(KEEP_ONE)
+      return
+    }
+    setSelected(next)
+  }
 
   const handleTrash = async (ids: string[]) => {
     if (ids.length === 0) return
+    if (removesEveryCopy(groups, ids)) {
+      toast.error(KEEP_ONE)
+      return
+    }
     if (sample) {
       toast.success(`Freed ${formatBytes(ids.reduce((acc, id) => {
         for (const g of groups) {
@@ -128,9 +146,13 @@ export function Duplicates() {
       if (summary.failed > 0) {
         toast.error(`Could not trash ${summary.failed} file${summary.failed === 1 ? '' : 's'}`)
       }
+      const failed = new Set(summary.errors.map((e) => e.path))
       setGroups((prev) =>
         prev
-          .map((g) => ({ ...g, files: g.files.filter((f) => !ids.includes(f.id)) }))
+          .map((g) => ({
+            ...g,
+            files: g.files.filter((f) => !ids.includes(f.id) || failed.has(f.path)),
+          }))
           .filter((g) => g.files.length > 1),
       )
       setSelected(new Set())
@@ -149,7 +171,7 @@ export function Duplicates() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-8 py-8">
+    <div className="mx-auto max-w-[1400px] px-8 pb-28 pt-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-text">Duplicates</h1>

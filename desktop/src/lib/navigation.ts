@@ -11,6 +11,7 @@ import {
   Settings,
   Info,
 } from 'lucide-react'
+import { IS_WINDOWS, TRASH_NAME } from './platform'
 
 export type PageId =
   | 'overview'
@@ -59,7 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         id: 'recycle-bin',
-        label: 'Recycle Bin',
+        label: TRASH_NAME,
         icon: Recycle,
         tone: 'bg-emerald-500/10 text-emerald-400',
       },
@@ -97,12 +98,17 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'System',
     items: [
-      {
-        id: 'wsl',
-        label: 'WSL',
-        icon: Terminal,
-        tone: 'bg-indigo-500/10 text-indigo-400',
-      },
+      // WSL only exists on Windows.
+      ...(IS_WINDOWS
+        ? [
+            {
+              id: 'wsl' as const,
+              label: 'WSL',
+              icon: Terminal,
+              tone: 'bg-indigo-500/10 text-indigo-400',
+            },
+          ]
+        : []),
       {
         id: 'settings',
         label: 'Settings',
