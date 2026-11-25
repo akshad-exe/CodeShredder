@@ -18,16 +18,14 @@ pub fn run() -> Result<()> {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_os::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             crate::commands::scan::scan_dev_folders,
             crate::commands::scan::cancel_scan,
+            crate::commands::scan::existing_roots,
             crate::commands::clean::cleanup_targets,
             crate::commands::history::get_cleanup_history,
             crate::commands::caches::list_caches,

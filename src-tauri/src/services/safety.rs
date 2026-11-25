@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use crate::domain::pattern::is_venv_name;
 use crate::domain::scan::SafetyLevel;
 
 pub use crate::platform::protected::is_protected;
@@ -47,7 +48,17 @@ const SAFE_PATTERNS: &[&str] = &[
 
 /// Folder names that can be rebuilt but need more setup (env tooling, lock
 /// files, pod specs), so they warrant a heads-up.
-const MEDIUM_PATTERNS: &[&str] = &[".venv", "venv", ".gradle", "Pods", "vendor"];
+const MEDIUM_PATTERNS: &[&str] = &[
+    ".venv",
+    "venv",
+    ".gradle",
+    "Pods",
+    "vendor",
+    ".npm",
+    ".pnpm-store",
+    ".yarn",
+    ".bun",
+];
 
 /// Classifies a target folder by name. Protected paths always win: if the path
 /// resolves into a protected root it is graded Dangerous regardless of name.
@@ -58,7 +69,7 @@ pub fn classify(folder_name: &str, path: &Path) -> SafetyLevel {
     }
     if SAFE_PATTERNS.contains(&folder_name) {
         SafetyLevel::Safe
-    } else if MEDIUM_PATTERNS.contains(&folder_name) {
+    } else if MEDIUM_PATTERNS.contains(&folder_name) || is_venv_name(folder_name) {
         SafetyLevel::Medium
     } else {
         // Unknown folders that match no known pattern are the riskiest: we

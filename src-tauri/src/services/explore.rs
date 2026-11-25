@@ -129,7 +129,7 @@ fn file_digest(path: &Path) -> Option<blake3::Hash> {
 pub fn scan_duplicates(roots: &[String], min_size_bytes: u64) -> Vec<DuplicateGroup> {
     let mut by_size: HashMap<u64, Vec<WalkedFile>> = HashMap::new();
     for root in normalize_roots(roots) {
-        for file in collect_files(&root, min_size_bytes) {
+        for file in collect_files(&root, min_size_bytes.max(1)) {
             by_size.entry(file.size_bytes).or_default().push(file);
         }
     }

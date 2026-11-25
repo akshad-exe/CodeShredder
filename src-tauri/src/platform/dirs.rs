@@ -40,19 +40,3 @@ pub fn local_app_data(rel: &str) -> Option<PathBuf> {
 pub const fn local_app_data(_rel: &str) -> Option<PathBuf> {
     None
 }
-
-/// Joins a Windows env-var-relative path (e.g. `%WINDIR%`). Always `None` on
-/// other platforms.
-#[cfg(target_os = "windows")]
-#[must_use]
-pub fn windows_var(name: &str, rel: &str) -> Option<PathBuf> {
-    std::env::var_os(name).map(|root| PathBuf::from(root).join(rel))
-}
-
-/// Joins a Windows env-var-relative path (e.g. `%WINDIR%`). Always `None` on
-/// other platforms.
-#[cfg(not(target_os = "windows"))]
-#[must_use]
-pub const fn windows_var(_name: &str, _rel: &str) -> Option<PathBuf> {
-    None
-}

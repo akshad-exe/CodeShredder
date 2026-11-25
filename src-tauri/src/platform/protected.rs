@@ -14,6 +14,10 @@ use std::path::{Component, Path, PathBuf};
 pub fn is_protected(path: &Path) -> bool {
     let abs = absolute(path);
     let norm = normalize(&abs);
+    // A filesystem or drive root normalizes to "" or "c:".
+    if norm.is_empty() || (norm.len() == 2 && norm.ends_with(':')) {
+        return true;
+    }
     // Whole-segment match: `/dev` guards `/dev/x` but not `/developer/x`.
     if PROTECTED_ROOTS.iter().any(|root| {
         let root = normalize(Path::new(root));
@@ -77,6 +81,8 @@ fn normalize(path: &Path) -> String {
         .to_lowercase()
         .trim_end_matches('/')
         .to_owned();
+    // `canonicalize` on Windows returns verbatim paths: `\\?\C:\Windows`.
+    let norm = norm.strip_prefix("//?/").map(str::to_owned).unwrap_or(norm);
     // WSL view of a Windows drive: `/mnt/c/Windows` is `c:/windows`.
     match norm.strip_prefix("/mnt/").map(str::as_bytes) {
         Some([drive, rest @ ..])
@@ -91,7 +97,9 @@ fn normalize(path: &Path) -> String {
 /// Resolves a path against the current directory, handling `~` and relative
 /// paths defensively so a stray input cannot escape the check.
 fn absolute(path: &Path) -> PathBuf {
-    if path.is_absolute() {
+    // Windows-style absolute paths are guarded on every OS, so keep them as is.
+    let raw = path.as_os_str().as_encoded_bytes();
+    if path.has_root() || raw.starts_with(br"\\") || raw.get(1) == Some(&b':') {
         return path.to_path_buf();
     }
     let mut resolved = PathBuf::new();
@@ -145,6 +153,14 @@ mod tests {
         assert!(is_protected(Path::new("/mnt/c/Windows/System32")));
         assert!(is_protected(Path::new("/mnt/c/Program Files/App")));
         assert!(!is_protected(Path::new("/mnt/c/Users/me/proj/target")));
+    }
+
+    #[test]
+    fn blocks_verbatim_windows_paths_and_roots() {
+        assert!(is_protected(Path::new(r"\\?\C:\Windows\System32")));
+        assert!(!is_protected(Path::new(r"\\?\C:\Code\proj\target")));
+        assert!(is_protected(Path::new("/")));
+        assert!(is_protected(Path::new(r"C:\")));
     }
 
     #[test]

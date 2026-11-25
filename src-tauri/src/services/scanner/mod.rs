@@ -213,5 +213,6 @@ pub(crate) fn temp_tree(tag: &str) -> std::path::PathBuf {
     let _ = std::fs::remove_dir_all(&base);
     std::fs::create_dir_all(base.join("A/B")).expect("create A/B");
     std::fs::create_dir_all(base.join("A/C")).expect("create A/C");
-    base
+    // Canonical form, so assertions match what `normalize_roots` returns.
+    dunce::canonicalize(base).expect("canonicalize temp tree")
 }

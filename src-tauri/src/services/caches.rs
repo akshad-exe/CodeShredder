@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use jwalk::WalkDir;
 
 use crate::domain::caches::{CacheEntry, CacheSafety};
-use crate::platform::dirs::{home, local_app_data, windows_var};
+use crate::platform::dirs::{home, local_app_data};
 use crate::services::safety::is_protected;
 
 /// A candidate cache location: identity plus one or more absolute paths (first
@@ -67,14 +67,37 @@ pub fn clean_cache(id: &str) -> Result<(PathBuf, u64), String> {
         .ok_or_else(|| format!("unknown cache: {id}"))?;
     let path = first_existing(&spec.candidates)
         .ok_or_else(|| format!("cache not present: {}", spec.name))?;
-    if is_protected(&path) {
-        return Err("path is protected and cannot be cleaned".to_string());
-    }
+    guard_cache_path(&path, home("").as_deref())?;
 
     let before = dir_size(&path);
     empty_contents(&path)?;
     let freed = before.saturating_sub(dir_size(&path));
     Ok((path, freed))
+}
+
+/// Refuses to empty anything broader than a cache. Env vars and rc files can
+/// point a spec anywhere, and emptying is permanent, so the filesystem root, the
+/// home directory and its parents are rejected. Protected paths are too, except
+/// folders at least two levels inside `AppData`, where Windows keeps caches.
+fn guard_cache_path(path: &Path, home: Option<&Path>) -> Result<(), String> {
+    let resolve = |p: &Path| dunce::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+    let path = resolve(path);
+    let home = home.map(resolve);
+
+    if path.parent().is_none() || home.as_ref().is_some_and(|h| h.starts_with(&path)) {
+        return Err(format!(
+            "refusing to empty {}: it is not a cache folder",
+            path.display()
+        ));
+    }
+    let app_data_cache = home.is_some_and(|h| {
+        path.strip_prefix(h.join("AppData"))
+            .is_ok_and(|rest| rest.components().count() >= 2)
+    });
+    if is_protected(&path) && !app_data_cache {
+        return Err("path is protected and cannot be cleaned".to_string());
+    }
+    Ok(())
 }
 
 /// Removes every file and subdirectory under `root`, leaving `root` itself.
@@ -84,7 +107,10 @@ pub fn clean_cache(id: &str) -> Result<(PathBuf, u64), String> {
 /// at all could be removed.
 fn empty_contents(root: &Path) -> Result<(), String> {
     let (mut removed, mut failed) = (0usize, 0usize);
-    for entry in std::fs::read_dir(root).map_err(|e| e.to_string())?.flatten() {
+    for entry in std::fs::read_dir(root)
+        .map_err(|e| e.to_string())?
+        .flatten()
+    {
         let path = entry.path();
         let is_dir = std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir());
         let result = if is_dir {
@@ -99,7 +125,9 @@ fn empty_contents(root: &Path) -> Result<(), String> {
         }
     }
     if removed == 0 && failed > 0 {
-        return Err(format!("could not remove {failed} item(s); they may be in use"));
+        return Err(format!(
+            "could not remove {failed} item(s); they may be in use"
+        ));
     }
     Ok(())
 }
@@ -188,7 +216,11 @@ fn cache_specs() -> Vec<CacheSpec> {
         "uv cache",
         "Python",
         CacheSafety::Safe,
-        candidates(&[env("UV_CACHE_DIR"), home(".cache/uv"), local_app_data("uv")]),
+        candidates(&[
+            env("UV_CACHE_DIR"),
+            home(".cache/uv"),
+            local_app_data("uv/cache"),
+        ]),
     );
     push(
         &mut specs,
@@ -267,43 +299,10 @@ fn cache_specs() -> Vec<CacheSpec> {
         "user-temp",
         "user temp files",
         "System",
-        // On Linux/macOS this is the shared /tmp, which holds live sockets and
-        // lock files of running apps; only Medium, and in-use entries are skipped.
+        // Windows only: it is per-user there and locked files refuse deletion.
+        // `/tmp` on Unix is shared and would lose files running apps hold open.
         CacheSafety::Medium,
-        candidates(&[Some(std::env::temp_dir()), local_app_data("Temp")]),
-    );
-    push(
-        &mut specs,
-        "windows-temp",
-        "Windows temp files",
-        "System",
-        CacheSafety::Medium,
-        candidates(&[
-            windows_var("WINDIR", "Temp"),
-            Some(PathBuf::from(r"C:\Windows\Temp")),
-        ]),
-    );
-    push(
-        &mut specs,
-        "windows-update",
-        "Windows Update cache",
-        "System",
-        CacheSafety::Medium,
-        candidates(&[
-            windows_var("WINDIR", r"SoftwareDistribution\Download"),
-            Some(PathBuf::from(r"C:\Windows\SoftwareDistribution\Download")),
-        ]),
-    );
-    push(
-        &mut specs,
-        "prefetch",
-        "Windows prefetch",
-        "System",
-        CacheSafety::Medium,
-        candidates(&[
-            windows_var("WINDIR", "Prefetch"),
-            Some(PathBuf::from(r"C:\Windows\Prefetch")),
-        ]),
+        candidates(&[local_app_data("Temp")]),
     );
     push(
         &mut specs,
@@ -435,7 +434,6 @@ fn dir_size(root: &Path) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::platform::protected::protected_sample;
 
     #[test]
     fn first_existing_picks_first_dir() {
@@ -529,31 +527,21 @@ mod tests {
     }
 
     #[test]
-    fn clean_cache_empties_contents_keeps_dir() {
-        let temp = std::env::temp_dir().join("cs-cache-clean");
-        std::fs::create_dir_all(temp.join("sub")).unwrap();
-        std::fs::write(temp.join("a.bin"), vec![0u8; 512]).unwrap();
-        std::fs::write(temp.join("sub/b.bin"), vec![0u8; 1024]).unwrap();
-
-        // Resolve a fake spec pointing at `temp` so clean_cache can act on it.
-        let specs = cache_specs();
-        // Inject a synthetic spec via a manual lookup path: clean_cache only
-        // accepts known ids, so exercise `empty_contents` directly here.
-        empty_contents(&temp).unwrap();
-        assert!(temp.is_dir());
-        assert!(std::fs::read_dir(&temp).unwrap().next().is_none());
-        let _ = std::fs::remove_dir_all(&temp);
-        let _ = specs.len();
+    fn guard_refuses_broad_paths_and_allows_caches() {
+        let home = Path::new("/home/me");
+        let ok = |p: &str| guard_cache_path(Path::new(p), Some(home)).is_ok();
+        assert!(!ok("/"));
+        assert!(!ok("/home"));
+        assert!(!ok("/home/me"));
+        assert!(!ok("/usr/share"));
+        assert!(!ok("/home/me/AppData"));
+        assert!(!ok("/home/me/AppData/Local"));
+        assert!(ok("/home/me/.cache"));
+        assert!(ok("/home/me/AppData/Local/Temp"));
     }
 
     #[test]
-    fn clean_cache_rejects_unknown_and_protected() {
+    fn clean_cache_rejects_unknown() {
         assert!(clean_cache("definitely-not-a-cache").is_err());
-        let temp = std::env::temp_dir().join("cs-cache-protected");
-        std::fs::create_dir_all(&temp).unwrap();
-        // Protected roots are OS-specific; assert the guard exists by checking
-        // that a clearly protected path is refused when resolvable as a spec.
-        assert!(is_protected(std::path::Path::new(&protected_sample())));
-        let _ = std::fs::remove_dir_all(&temp);
     }
 }

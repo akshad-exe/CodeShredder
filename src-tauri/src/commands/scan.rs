@@ -16,6 +16,14 @@ use crate::state::AppState;
 const TARGET_BATCH: usize = 25;
 const TARGET_FLUSH: Duration = Duration::from_millis(100);
 
+/// Tells the settings page which configured scan folders exist.
+#[tauri::command]
+#[must_use]
+#[expect(clippy::needless_pass_by_value)]
+pub fn existing_roots(roots: Vec<String>) -> Vec<bool> {
+    crate::services::scanner::roots::roots_exist(&roots)
+}
+
 /// Asks the in-progress scan to stop early. Targets already streamed stay
 /// visible; the scanner just stops descending into new folders.
 #[tauri::command]

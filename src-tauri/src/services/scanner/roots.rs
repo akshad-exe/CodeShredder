@@ -1,17 +1,22 @@
 //! Normalizing and deduplicating the configured scan roots.
 
-use std::fs;
 use std::path::PathBuf;
+
+use crate::platform::dirs::home;
 
 /// Expands a leading `~/` to the user's home directory, trimming whitespace.
 fn expand_root(raw: &str) -> PathBuf {
     let trimmed = raw.trim();
-    if let Some(rest) = trimmed.strip_prefix("~/") {
-        if let Ok(home) = std::env::var("HOME") {
-            return PathBuf::from(home).join(rest);
-        }
+    if let Some(path) = trimmed.strip_prefix("~/").and_then(home) {
+        return path;
     }
     PathBuf::from(trimmed)
+}
+
+/// Whether each root (with `~/` expanded) is a directory on this machine.
+#[must_use]
+pub fn roots_exist(raw: &[String]) -> Vec<bool> {
+    raw.iter().map(|r| expand_root(r).is_dir()).collect()
 }
 
 /// Normalizes the scan roots into one effective, deduplicated set:
@@ -27,7 +32,8 @@ pub fn normalize_roots(raw: &[String]) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = Vec::new();
     for raw_root in raw {
         let expanded = expand_root(raw_root);
-        let canonical = fs::canonicalize(&expanded).unwrap_or(expanded);
+        // dunce: plain `C:\...` paths on Windows instead of `\\?\C:\...`.
+        let canonical = dunce::canonicalize(&expanded).unwrap_or(expanded);
         if canonical.is_dir() && !roots.contains(&canonical) {
             roots.push(canonical);
         }
@@ -52,6 +58,7 @@ pub fn normalize_roots(raw: &[String]) -> Vec<PathBuf> {
 mod tests {
     use super::super::temp_tree;
     use super::*;
+    use std::fs;
 
     #[test]
     fn normalize_roots_dedupes_identical_paths() {
