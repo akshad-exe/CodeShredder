@@ -16,7 +16,7 @@ You need [Rust](https://rustup.rs) (stable), [Bun](https://bun.sh), and the [Tau
 On Linux:
 
 ```bash
-sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf libayatana-appindicator3-dev
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf libayatana-appindicator3-dev xdg-utils
 ```
 
 ## Before you open a PR
