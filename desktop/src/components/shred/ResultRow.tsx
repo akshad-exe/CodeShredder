@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { FolderOpen, Trash2 } from 'lucide-react'
 import type { CleanupTarget, SafetyLevel } from '@/types/cleanup'
 import { formatBytes, formatCount, formatTimeAgo, isRecent } from '@/lib/format'
@@ -83,11 +84,9 @@ export function ResultRow({
         className,
       )}
     >
-      <input
-        type="checkbox"
+      <Checkbox
         checked={selected}
-        onChange={() => toggleTargetSelection(target.id)}
-        className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+        onCheckedChange={() => toggleTargetSelection(target.id)}
         aria-label={`Select ${target.path}`}
       />
 

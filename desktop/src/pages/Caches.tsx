@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, FolderX, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
@@ -251,11 +252,9 @@ export function Caches() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isSelected}
-                  onChange={() => toggle(entry.id)}
-                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  onCheckedChange={() => toggle(entry.id)}
                   aria-label={`Select ${entry.name}`}
                 />
                 <div className="min-w-0 flex-1">

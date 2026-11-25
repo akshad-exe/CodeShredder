@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, Clock3, FolderGit2, ScanSearch } from 'lucide-react'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -235,11 +236,9 @@ export function ResultsList() {
             </button>
           )}
           <label className="flex cursor-pointer items-center gap-2 text-xs text-muted">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={(e) => (e.target.checked ? selectAllTargets() : deselectAllTargets())}
-              className="h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+            <Checkbox
+              checked={allSelected ? true : selectedTargets.size > 0 ? 'indeterminate' : false}
+              onCheckedChange={() => (allSelected ? deselectAllTargets() : selectAllTargets())}
               aria-label="Select all targets"
             />
             Select all
@@ -316,14 +315,9 @@ function GroupHeader({
         hasChildren ? 'rounded-t-lg' : 'rounded-lg',
       )}
     >
-      <input
-        type="checkbox"
-        checked={allSelected}
-        onChange={(e) => setTargetsSelected(ids, e.target.checked)}
-        ref={(el) => {
-          if (el) el.indeterminate = partial
-        }}
-        className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+      <Checkbox
+        checked={partial ? 'indeterminate' : allSelected}
+        onCheckedChange={() => setTargetsSelected(ids, !allSelected)}
         aria-label={`Select all targets in ${group.name}`}
       />
       <button

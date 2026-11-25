@@ -61,5 +61,5 @@ build to validate. `runas` 1.2 has no `.output()`, only `.status()`; success = e
 
 - **Windows-only code is NOT compiled on Ubuntu** (cfg'd `target_os = "windows"`), so compile errors there (e.g. `runas::Command::args` vs `.args(&[...])`) only surface when building on Windows. `runas` 1.2 has no `.output()`, only `.status()`; success = exit code 0.
 - WSL compact auto-elevates the diskpart step via `runas` (UAC prompt). Freed bytes are verified by before/after vhdx size.
-- Frontend checkbox preference: raw accent checkboxes (`<input type="checkbox" ... accent-[var(--accent)] />`) — do NOT reintroduce shadcn `Checkbox`. Treemap was removed — do not re-add.
+- Checkboxes use the shadcn `Checkbox` (`components/ui/checkbox.tsx`) — no raw `<input type="checkbox">`. Treemap was removed — do not re-add.
 - Scrollbars are hidden app-wide via the `.no-scrollbar` utility (`index.css`); scrolling still works.

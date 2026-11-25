@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock, Film, FolderOpen, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
@@ -211,11 +212,9 @@ export function Videos() {
                   isSelected ? 'border-accent/50 bg-accent/5' : 'border-border bg-panel'
                 }`}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isSelected}
-                  onChange={() => toggle(video.id)}
-                  className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                  onCheckedChange={() => toggle(video.id)}
                   aria-label={`Select ${video.name}`}
                 />
                 <span className={`grid h-9 w-9 shrink-0 place-content-center rounded-lg bg-panel-2 ${VIDEO_EXT[video.ext] ?? 'text-muted'}`}>

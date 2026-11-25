@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, Loader2, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { EmptyState } from '@/components/explore/EmptyState'
@@ -287,11 +288,9 @@ export function Duplicates() {
                           isSelected ? 'bg-accent/5' : ''
                         }`}
                       >
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={isSelected}
-                          onChange={() => toggle(file.id)}
-                          className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+                          onCheckedChange={() => toggle(file.id)}
                           aria-label={`Select ${file.name}`}
                         />
                         <div className="min-w-0 flex-1">

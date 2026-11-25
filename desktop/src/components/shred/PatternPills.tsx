@@ -1,3 +1,4 @@
+import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import {
   CATEGORY_GROUPS,
@@ -36,46 +37,24 @@ export function PatternPills() {
                 : 'border-border/70 hover:border-border',
             )}
           >
-            <button
-              type="button"
-              disabled={locked}
-              onClick={() => toggleCategory(key)}
+            <label
               className={cn(
-                'group flex w-full items-center gap-2.5 text-left text-sm font-medium transition-colors',
+                'flex w-full items-center gap-2.5 text-sm font-medium transition-colors',
                 locked ? 'cursor-default' : 'cursor-pointer',
                 allEnabled ? 'text-text' : 'text-muted',
               )}
             >
-              <span
-                className={cn(
-                  'grid h-4 w-4 shrink-0 place-content-center rounded border transition-colors',
-                  allEnabled
-                    ? 'border-accent bg-accent text-background'
-                    : 'border-border bg-panel-2 group-hover:border-accent/50',
-                )}
-                aria-hidden
-              >
-                {allEnabled && (
-                  <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none">
-                    <path
-                      d="M2.5 6.5l2.5 2.5 4.5-5"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-                {someEnabled && (
-                  <span className="h-1.5 w-1.5 rounded-sm bg-accent" />
-                )}
-              </span>
+              <Checkbox
+                checked={someEnabled ? 'indeterminate' : allEnabled}
+                disabled={locked}
+                onCheckedChange={() => toggleCategory(key)}
+              />
               <span className={cn('h-2.5 w-2.5 rounded-full', color)} aria-hidden />
               <span className="flex-1">{label}</span>
               <span className="text-xs tabular-nums text-faint">
                 {enabledInGroup}/{patterns.length}
               </span>
-            </button>
+            </label>
             <div className="mt-3 flex flex-wrap items-center gap-1.5 pl-[30px]">
               {patterns.map((pattern) => {
                 const category = PATTERN_CATEGORIES[pattern]
