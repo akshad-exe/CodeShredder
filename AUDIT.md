@@ -53,6 +53,7 @@ Windows and macOS behaviour is **not** verified until CI and a manual run on tho
 | 25 | "Recycle Bin" and WSL shown on every OS | "Trash" outside Windows; WSL only on Windows; macOS explains Trash limits | Fixed |
 | 32 | Scrolling Shred results showed a blank gap | The virtualizer accounts for the content above the list | Fixed |
 | 33 | Category totals gave no detail | Hover or focus shows the five biggest folders | Added |
+| 34 | Scans and cache sizes could silently come back empty when the shared thread pool was busy | Folder walks use their own threads; covered by a test | Fixed |
 
 ## Release, dependencies and CI
 
@@ -69,6 +70,27 @@ CI now: skips docs-only changes; read-only token; pinned Bun (`packageManager`);
 app and website builds; `cargo fmt --check` and `clippy -D warnings` on Linux; `cargo test --locked`
 on Linux and Windows; bundles only outside pull requests; caches saved from `main`; job timeouts;
 7-day artifact retention.
+
+## Website
+
+| # | Issue | Fix | Status |
+|:--|:--|:--|:--|
+| W1 | Downloads point to the old pre-release | Labelled as an older pre-release; needs a new release, then `site.ts` | **Open: your action** |
+| W2 | Mobile header cut off | Header Download button hidden on narrow phones | Fixed |
+| W3 | Privacy text ignored the update check | Reworded | Fixed |
+| W4 | Docker listed as supported | Removed | Fixed |
+| W5, W10 | The interactive app preview differed from the app | Rebuilt to match the current pages, with a caption; spacing reduced | Fixed |
+| W6-W8 | Privacy, Contribute and Roadmap links went to the wrong place | Point at the right targets | Fixed |
+| W9 | No warning that builds are unsigned | Added beside the download buttons | Fixed |
+| W11-W13 | Stuck highlight, cut-off label, wordy hero, unlabelled example figures | Corrected | Fixed |
+| W14 | 1.4 MB of background images | WebP, 86 KB | Fixed |
+| W15 | Fonts loaded from Google | Served with the site | Fixed |
+| W16 | Privacy pop-up lacked Escape and dialog semantics | Native `<dialog>` | Fixed |
+| W17 | Small tap targets | At least 24px tall | Fixed |
+| W18 | Tablet header overflowed; phone layouts were cramped | Menu below 1024px; reflowed grids, hero, footer and preview; phones are told the app is desktop-only | Fixed |
+| W19 | Download buttons fetched a file immediately, with no install help | Dedicated `download.html` with platform tabs, install steps and checksums | Added |
+
+The preview in `DesktopAppShowcase.tsx` is a hand-built copy; update it when an app page changes.
 
 ## Still open
 
