@@ -103,7 +103,7 @@ jobs:
         with:
           releaseId: ${{ github.event.release.id }}
           args: ${{ matrix.os == 'macos' && '--target universal-apple-darwin' || '' }}
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
 
       # Generate per-OS checksums over all produced bundles
       - name: Generate release checksums
@@ -116,7 +116,8 @@ jobs:
           fi
           if [ -d "$BUNDLE_DIR" ]; then
             cd "$BUNDLE_DIR"
-            find . -type f -exec sha256sum {} \; > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
+            # Bare file names, so `sha256sum -c` works next to the downloaded assets.
+            find . -type f -exec sha256sum {} \; | sed 's|\./.*/||' > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
           else
             echo "Bundle directory not found, skipping checksums"
           fi
@@ -128,7 +129,7 @@ jobs:
         run: |
           if [ -f "checksums-${{ matrix.os }}.sha256" ]; then
             gh release upload "${{ github.event.release.tag_name }}" \
-              "checksums-${{ matrix.os }}.sha256"
+              "checksums-${{ matrix.os }}.sha256" --clobber
           else
             echo "Checksum file not found, skipping upload"
           fi

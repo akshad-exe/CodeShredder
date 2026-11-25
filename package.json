@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "bun run --filter codeshredder-frontend dev",
     "build": "bun run --filter codeshredder-frontend build",
+    "lint": "bun run --filter codeshredder-frontend lint",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri": "tauri"
