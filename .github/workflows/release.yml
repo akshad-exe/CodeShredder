@@ -33,24 +33,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Ensure tag matches package.json version (allows beta/alpha/rc suffixes)
-      - name: Ensure tag matches package version
+      # Every manifest must carry the tag's version (beta/alpha/rc suffixes allowed)
+      - name: Ensure tag matches all version files
         shell: bash
         run: |
           TAG=${GITHUB_REF#refs/tags/v}
-          VERSION=$(node -p "require('./package.json').version")
-          # Strip pre-release suffix for comparison (e.g., 0.1.0-beta.1 → 0.1.0)
-          TAG_BASE=$(echo "$TAG" | sed -E 's/-[a-z]+\.[0-9]+$//')
-          if [ "$TAG_BASE" != "$VERSION" ]; then
-            echo "Tag ($TAG) base ($TAG_BASE) does not match package.json version ($VERSION)"
-            exit 1
-          fi
+          BASE=$(echo "$TAG" | sed -E 's/-[a-z]+\.[0-9]+$//')
+          for f in package.json desktop/package.json src-tauri/tauri.conf.json; do
+            V=$(node -p "require('./$f').version")
+            [ "$V" = "$BASE" ] || { echo "$f is $V, tag is $TAG"; exit 1; }
+          done
+          V=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
+          [ "$V" = "$BASE" ] || { echo "Cargo.toml is $V, tag is $TAG"; exit 1; }
 
       # Setup Bun
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
 
       # Cache Bun dependencies
       - name: Cache Bun dependencies

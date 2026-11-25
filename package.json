@@ -9,6 +9,7 @@
     "dev": "bun run --filter codeshredder-frontend dev",
     "build": "bun run --filter codeshredder-frontend build",
     "lint": "bun run --filter codeshredder-frontend lint",
+    "test": "bun test desktop/src",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri": "tauri"
@@ -16,5 +17,5 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"
   },
-  "packageManager": "bun@1.0.0"
+  "packageManager": "bun@1.4.4"
 }

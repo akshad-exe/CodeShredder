@@ -2,75 +2,101 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore: ['**.md', 'LICENSE']
   pull_request:
+    paths-ignore: ['**.md', 'LICENSE']
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & typecheck
+  frontend:
+    name: Lint, test & build web
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Version comes from "packageManager" in package.json.
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Lint (oxlint)
-        run: bun run --filter codeshredder-frontend lint
-      - name: Typecheck & build web
-        run: bun run --filter codeshredder-frontend build
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run test
+      - run: bun run build
+      - name: Build website
+        working-directory: website
+        run: bun install --frozen-lockfile && bun run build
 
-  rust-check:
-    name: Rust tests + clippy
-    runs-on: ubuntu-latest
+  rust:
+    name: Rust (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows too: `cfg(windows)` code and path rules never compile elsewhere.
+        platform: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux system deps
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-      - name: Run tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Format
+        if: runner.os == 'Linux'
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      # The Tauri context macro requires the frontend output directory to exist.
+      - name: Stub frontend output
+        shell: bash
+        run: mkdir -p desktop/dist
+      - name: Test
+        # Windows' default temp dir is inside AppData, which the path guard refuses.
+        env:
+          TMP: ${{ runner.temp }}
+          TEMP: ${{ runner.temp }}
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - name: Clippy
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
+        if: runner.os == 'Linux'
+        run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
-  build-tauri:
-    name: Build Tauri (${{ matrix.platform }})
-    needs: [lint-and-typecheck, rust-check]
+  # Full bundles are the slow part, so pull requests stop at the checks above.
+  bundle:
+    name: Bundle (${{ matrix.platform }})
+    if: github.event_name != 'pull_request'
+    needs: [frontend, rust]
     strategy:
       fail-fast: false
       matrix:
         platform: [windows-latest, ubuntu-22.04, macos-latest]
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux system deps
-        if: matrix.platform == 'ubuntu-22.04'
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
       - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: bun install --frozen-lockfile
       - name: Build Tauri app
         shell: bash
         # Updater artifacts need the private signing key; only release.yml gets it.
@@ -79,6 +105,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bundles-${{ matrix.platform }}
-          path: |
-            src-tauri/target/release/bundle/*
+          path: src-tauri/target/release/bundle/*
           if-no-files-found: error
+          retention-days: 7
