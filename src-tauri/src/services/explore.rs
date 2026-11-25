@@ -10,7 +10,6 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use jwalk::WalkDir;
 use rayon::prelude::*;
 use uuid::Uuid;
 
@@ -19,6 +18,7 @@ use crate::domain::mtime::format_time;
 use crate::domain::pattern::ALL_PATTERNS;
 use crate::services::scanner::prune::prune_children;
 use crate::services::scanner::roots::normalize_roots;
+use crate::services::scanner::walker;
 
 /// Video container extensions recognized by the video scan.
 ///
@@ -44,7 +44,7 @@ struct WalkedFile {
 /// dependencies flood the Explore results as "duplicates" and "large files".
 fn collect_files(root: &Path, min_size_bytes: u64) -> Vec<WalkedFile> {
     let mut files = Vec::new();
-    for entry in WalkDir::new(root).skip_hidden(false).process_read_dir({
+    for entry in walker(root).process_read_dir({
         let patterns =
             std::collections::HashSet::from_iter(ALL_PATTERNS.iter().map(ToString::to_string));
         move |_depth, _path, _state, children| prune_children(&patterns, &[], children)
@@ -349,6 +349,21 @@ mod tests {
             ".ts (TypeScript) files must not match videos"
         );
         assert_eq!(videos[0].name, "real.mp4");
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn walk_returns_files_while_the_global_rayon_pool_is_busy() {
+        let base = temp_tree("explore-busy");
+        write_file(&base.join("A/one.bin"), b"content");
+        // Occupy every shared worker for longer than jwalk's 1 s default timeout.
+        for _ in 0..rayon::current_num_threads() {
+            rayon::spawn(|| std::thread::sleep(std::time::Duration::from_secs(3)));
+        }
+
+        let entries = scan_large_files(&[base.to_string_lossy().into_owned()], 0, 10);
+        assert_eq!(entries.len(), 1);
 
         let _ = std::fs::remove_dir_all(&base);
     }

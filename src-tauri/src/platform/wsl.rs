@@ -618,7 +618,7 @@ Windows Subsystem for Linux Distributions:
 NAME                    STATE           VERSION
 Windows Subsystem for Linux has no installed distributions.
 ";
-        assert!(parse_wsl_list_output(output).is_empty());
+        assert_eq!(parse_wsl_list_output(output), []);
     }
 
     #[test]

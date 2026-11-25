@@ -11,11 +11,10 @@
 
 use std::path::{Path, PathBuf};
 
-use jwalk::WalkDir;
-
 use crate::domain::caches::{CacheEntry, CacheSafety};
 use crate::platform::dirs::{home, local_app_data};
 use crate::services::safety::is_protected;
+use crate::services::scanner::walker;
 
 /// A candidate cache location: identity plus one or more absolute paths (first
 /// existing wins, so the same spec can resolve differently per OS).
@@ -422,8 +421,7 @@ fn first_existing(candidates: &[PathBuf]) -> Option<PathBuf> {
 /// Total size in bytes of every regular file under `root`, walked in parallel
 /// via jwalk. Symlinks are not followed and their links are not counted.
 fn dir_size(root: &Path) -> u64 {
-    WalkDir::new(root)
-        .skip_hidden(false)
+    walker(root)
         .into_iter()
         .filter_map(std::result::Result::ok)
         .filter(|entry| entry.file_type.is_file())
@@ -464,7 +462,7 @@ mod tests {
         // consistent, filterable list back (never a panic on missing dirs).
         let entries = list_caches();
         for entry in &entries {
-            assert!(!entry.path.is_empty());
+            assert_ne!(entry.path, "");
             assert!(std::path::Path::new(&entry.path).is_dir());
         }
     }

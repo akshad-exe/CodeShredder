@@ -178,8 +178,8 @@ mod imp {
             // still return a well-formed vector.
             let items = list_items();
             for item in &items {
-                assert!(!item.id.is_empty());
-                assert!(!item.name.is_empty());
+                assert_ne!(item.id, "");
+                assert_ne!(item.name, "");
             }
         }
     }

@@ -44,9 +44,6 @@ rayon = "1"
 # Trash
 trash = "5"
 
-# Elevated (UAC) execution for WSL diskpart compaction
-runas = "1"
-
 # UUID
 uuid = { version = "1", features = ["v4", "serde"] }
 
@@ -56,6 +53,10 @@ chrono = { version = "0.4", features = ["serde"] }
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Elevated (UAC) execution for WSL diskpart compaction
+[target.'cfg(target_os = "windows")'.dependencies]
+runas = "1"
 
 # Clippy lints
 [lints]

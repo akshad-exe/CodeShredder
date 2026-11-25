@@ -30,18 +30,31 @@ pub(crate) mod prune;
 pub(crate) mod roots;
 
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, OnceLock};
 use std::time::Instant;
 
 use discovery::walk_root;
+use jwalk::{Parallelism, WalkDir};
 use measure::measure_threads;
 use roots::normalize_roots;
 
 use crate::domain::pattern::DEFAULT_PATTERNS;
 use crate::domain::scan::{ScanInput, ScanTarget};
 use crate::storage::cache::ScanCache;
+
+/// A `jwalk` walker with its own threads. The default borrows rayon's global
+/// pool and gives up after 1 s when that is busy; since walk errors are skipped,
+/// a busy pool silently produced empty results.
+pub(crate) fn walker(root: &Path) -> WalkDir {
+    WalkDir::new(root)
+        .skip_hidden(false)
+        .parallelism(Parallelism::RayonNewPool(WALK_THREADS))
+}
+
+const WALK_THREADS: usize = 4;
 
 /// Raised when the user asks to stop a running scan. Read (never written) by
 /// the walker and the measurer, so it is safe to call from any thread.

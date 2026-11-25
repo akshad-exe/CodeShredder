@@ -248,11 +248,11 @@ mod tests {
     fn measure_dir_skips_symlinks() {
         let base = temp_tree("symlink");
         let target = base.join("SymTarget");
-        let real = base.join("A/B");
         fs::create_dir_all(&target).expect("create target");
         fs::write(target.join("file.txt"), "x").expect("write file");
         #[cfg(unix)]
-        std::os::unix::fs::symlink(&real, target.join("linked-dir")).expect("symlink dir");
+        std::os::unix::fs::symlink(base.join("A/B"), target.join("linked-dir"))
+            .expect("symlink dir");
 
         let stats = Arc::new(ScanStats::default());
         let measure = MeasureState::new(&stats);

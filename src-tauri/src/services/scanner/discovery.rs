@@ -8,7 +8,6 @@ use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, SystemTime};
 
-use jwalk::WalkDir;
 use uuid::Uuid;
 
 use crate::domain::mtime::format_time;
@@ -18,7 +17,7 @@ use crate::services::safety::classify;
 use crate::services::scanner::display::{display_path_for, project_root_name, project_root_path};
 use crate::services::scanner::measure::measure_target;
 use crate::services::scanner::prune::prune_children;
-use crate::services::scanner::{venv_enabled, ScanStats, CANCEL_REQUESTED};
+use crate::services::scanner::{venv_enabled, walker, ScanStats, CANCEL_REQUESTED};
 use crate::storage::cache::is_snapshot_fresh;
 use crate::storage::cache::{DirStamp, RootSnapshot, ScanCache, StoredTarget};
 
@@ -38,7 +37,7 @@ pub(super) fn walk_root(
     measure_pool: &Arc<rayon::ThreadPool>,
     tx: &Sender<ScanTarget>,
 ) {
-    let walker = WalkDir::new(root).skip_hidden(false).process_read_dir({
+    let entries = walker(root).process_read_dir({
         let patterns = patterns.clone();
         let ignore = ignore.clone();
         move |_depth, _path, _state, children| {
@@ -50,7 +49,7 @@ pub(super) fn walk_root(
     let mut matched = Vec::new();
 
     let discovering_started = Instant::now();
-    for entry in walker {
+    for entry in entries {
         if CANCEL_REQUESTED.load(Ordering::Relaxed) {
             break;
         }
