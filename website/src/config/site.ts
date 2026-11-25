@@ -69,7 +69,7 @@ export const siteConfig = {
     },
     linux: {
       platform: 'Linux',
-      requirements: 'GLIBC 2.31+ / Ubuntu 20.04+, Fedora 36+, Arch',
+      requirements: 'GLIBC 2.35+ / Ubuntu 22.04+, Fedora 36+, Arch',
       assets: [
         {
           label: 'AppImage',

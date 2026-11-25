@@ -10,7 +10,7 @@ interface DownloadModalProps {
   selectedPlatform?: Platform;
 }
 
-const BUILD_FROM_SOURCE = 'git clone https://github.com/akshad-exe/CodeShredder && cd CodeShredder && bun install && bun run tauri:build';
+const BUILD_FROM_SOURCE = 'git clone https://github.com/akshad-exe/CodeShredder && cd CodeShredder && bun install && bun run tauri:build --no-bundle';
 
 export const DownloadModal: React.FC<DownloadModalProps> = ({
   isOpen,
