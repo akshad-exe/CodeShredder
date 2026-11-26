@@ -10,7 +10,7 @@
     },
     "desktop": {
       "name": "codeshredder-frontend",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@fontsource-variable/jetbrains-mono": "^5.3.0",
         "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
