@@ -21,19 +21,20 @@ sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev patchelf libaya
 
 ## Before you open a PR
 
-All three must pass:
+These are what CI runs:
 
 ```bash
-cargo test  --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
 bun run lint
+bun run test
+bun run build
+(cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test)
 ```
 
-If you touch the frontend:
+If you touch the website: `cd website && bun install && bun run build`.
 
-```bash
-bun run --filter codeshredder-frontend build   # includes tsc typecheck
-```
+New here? Look for [`good first issue`](https://github.com/akshad-exe/CodeShredder/labels/good%20first%20issue),
+or pick from the "Still open" list in [AUDIT.md](AUDIT.md). Everyone follows the
+[Code of Conduct](CODE_OF_CONDUCT.md); report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ## Where things live
 
@@ -58,7 +59,7 @@ bun run --filter codeshredder-frontend build   # includes tsc typecheck
 
 ## Reporting bugs
 
-Open an issue with: your OS and architecture, the CodeShredder version, what you expected, what happened, and the relevant part of the log. If the bug involves data loss, lead with that.
+Use the [issue forms](https://github.com/akshad-exe/CodeShredder/issues/new/choose). If the bug involves data loss, use the safety form.
 
 ## Pull requests
 
