@@ -115,7 +115,12 @@ jobs:
           if [ -d "$BUNDLE_DIR" ]; then
             cd "$BUNDLE_DIR"
             # Bare file names, so `sha256sum -c` works next to the downloaded assets.
-            find . -type f -exec sha256sum {} \; | sed 's|\./.*/||' > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
+            # tauri-action uploads the macOS archive under a versioned name.
+            VERSION="${{ github.event.release.tag_name }}"
+            find . -type f \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o -name '*.exe' \
+              -o -name '*.deb' -o -name '*.rpm' -o -name '*.AppImage' \) -exec sha256sum {} \; \
+              | sed -e 's|\./.*/||' -e "s|CodeShredder\.app\.tar\.gz$|CodeShredder_${VERSION#v}_universal.app.tar.gz|" \
+              > "$GITHUB_WORKSPACE/checksums-${{ matrix.os }}.sha256"
           else
             echo "Bundle directory not found, skipping checksums"
           fi
