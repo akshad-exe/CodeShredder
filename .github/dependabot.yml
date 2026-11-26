@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule: { interval: monthly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+  - package-ecosystem: bun
+    directories: [/, /website]
+    schedule: { interval: monthly }
+    groups: { minor-and-patch: { update-types: [minor, patch] } }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups: { actions: { patterns: ["*"] } }
+    ignore:
+      # Its ref is the Rust version, pinned on purpose.
+      - dependency-name: dtolnay/rust-toolchain
