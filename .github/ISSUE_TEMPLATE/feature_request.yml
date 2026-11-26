@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a feature or a folder pattern to support
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: What problem would this solve
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: What you'd like
+      description: For a new pattern, name the folder, the tool that creates it and how it is rebuilt.
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: Alternatives you've tried

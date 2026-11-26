@@ -1,38 +1,38 @@
 name: Bug report
-about: Something isn't working as expected
-title: ''
-labels: bug
-assignees: ''
-
----
-
-**What happened**
-
-<!-- What did you observe? -->
-
-**What you expected**
-
-<!-- What should have happened instead? -->
-
-**Environment**
-
-- CodeShredder version:
-- OS and architecture: <!-- e.g. Windows 11 x64, macOS 15 arm64, Ubuntu 24.04 x86_64 -->
-- Install method: <!-- .msi / .exe / .dmg / AppImage / .deb / .rpm / from source -->
-
-**Steps to reproduce**
-
-1.
-2.
-3.
-
-**Logs**
-
-<!-- Paste the relevant part of the app log. Redact anything sensitive. -->
-
-```
-```
-
-**Anything else**
-
-<!-- Screenshots, etc. -->
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: What you expected
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+    validations: { required: true }
+  - type: input
+    attributes:
+      label: CodeShredder version
+    validations: { required: true }
+  - type: input
+    attributes:
+      label: OS and architecture
+      placeholder: Windows 11 x64, macOS 15 arm64, Ubuntu 24.04 x86_64
+    validations: { required: true }
+  - type: dropdown
+    attributes:
+      label: Install method
+      options: [.exe, .msi, .dmg, AppImage, .deb, .rpm, From source]
+    validations: { required: true }
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Redact anything sensitive.
+      render: text

@@ -1,5 +1,5 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Question or idea
+  - name: Question or open-ended idea
     url: https://github.com/akshad-exe/CodeShredder/discussions
-    about: Ask how to use CodeShredder, or propose a feature.
+    about: Ask how to use CodeShredder, or discuss an idea.
