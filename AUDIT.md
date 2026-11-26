@@ -59,11 +59,13 @@ Windows and macOS behaviour is **not** verified until CI and a manual run on tho
 
 | # | Issue | Fix | Status |
 |:--|:--|:--|:--|
-| 13 | In-app updater has nothing to find | Needs a release that is not marked pre-release | **Open: your action** |
+| 13 | In-app updater had nothing to find | v0.1.2 is a full release with `latest.json` for all three platforms. Updating from one version to the next is untested | Fixed |
 | 14 | Website build-from-source command needed the signing key | Uses `--no-bundle` | Fixed |
 | 15 | Website claimed glibc 2.31 | 2.35 | Fixed |
 | 16 | Unused plugins and crates | Removed `fs`, `shell`, `os` plugins and `tokio`, `walkdir`, `ignore`, `futures`, `serde_with`, `sysinfo`, `winapi`, `wmi` as direct dependencies | Fixed |
 | 30 | Release only checked one version file | Checks all four | Fixed |
+| 35 | macOS release build failed: the bundler tried to ship the `scan_bench` developer tool | Moved to `examples/`; CI builds macOS universal like the release | Fixed |
+| 36 | Linux and macOS checksum files listed internal bundle files, and the macOS archive under the wrong name | The release hashes only installers, under their download names | Fixed from the next release |
 | 31 | CI built three bundles on every PR, floated the Bun version, never tested on Windows, never built the website, allowed warnings and unformatted code | See below | Fixed |
 
 CI now: skips docs-only changes; read-only token; pinned Bun (`packageManager`); lint, frontend tests,
@@ -75,7 +77,7 @@ on Linux and Windows; bundles only outside pull requests; caches saved from `mai
 
 | # | Issue | Fix | Status |
 |:--|:--|:--|:--|
-| W1 | Downloads point to the old pre-release | Labelled as an older pre-release; needs a new release, then `site.ts` | **Open: your action** |
+| W1 | Downloads pointed to the old pre-release | Point at v0.1.2 | Fixed |
 | W2 | Mobile header cut off | Header Download button hidden on narrow phones | Fixed |
 | W3 | Privacy text ignored the update check | Reworded | Fixed |
 | W4 | Docker listed as supported | Removed | Fixed |

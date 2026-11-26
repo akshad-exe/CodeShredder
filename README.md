@@ -58,26 +58,26 @@ CodeShredder scans the folders you point it at and lists **known generated artif
 
 ## 📦 Download
 
-Current pre-release: [v0.1.0-beta.1](https://github.com/akshad-exe/CodeShredder/releases/tag/v0.1.0-beta.1). It is older than `main`: the About page, in-app updater and several fixes are only in source builds for now.
+Latest release: [v0.1.2](https://github.com/akshad-exe/CodeShredder/releases/tag/v0.1.2).
 
 <table>
 <tr><th align="left">Platform</th><th align="left">Installer</th><th align="left">Size</th><th align="left">Requires</th></tr>
 <tr>
 <td align="left">🪟 <strong>Windows</strong></td>
-<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_x64_en-US.msi">.msi</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_x64-setup.exe">.exe</a></td>
-<td align="left">5.0 MB / 3.4 MB</td>
+<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_x64_en-US.msi">.msi</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_x64-setup.exe">.exe</a></td>
+<td align="left">5.8 MB / 4.2 MB</td>
 <td align="left">Windows 10/11 (64-bit)</td>
 </tr>
 <tr>
 <td align="left">🍎 <strong>macOS</strong></td>
-<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_universal.dmg">.dmg</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_universal.app.tar.gz">.app.tar.gz</a></td>
-<td align="left">9.8 MB / 9.7 MB</td>
+<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_universal.dmg">.dmg</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_universal.app.tar.gz">.app.tar.gz</a></td>
+<td align="left">11.9 MB / 12.0 MB</td>
 <td align="left">macOS 12+ (Intel &amp; Apple Silicon)</td>
 </tr>
 <tr>
 <td align="left">🐧 <strong>Linux</strong></td>
-<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_amd64.AppImage">AppImage</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder_0.1.0_amd64.deb">.deb</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.0-beta.1/CodeShredder-0.1.0-1.x86_64.rpm">.rpm</a></td>
-<td align="left">79.8 MB / 6.2 MB / 6.2 MB</td>
+<td align="left"><a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_amd64.AppImage">AppImage</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder_0.1.2_amd64.deb">.deb</a> · <a href="https://github.com/akshad-exe/CodeShredder/releases/download/v0.1.2/CodeShredder-0.1.2-1.x86_64.rpm">.rpm</a></td>
+<td align="left">81.4 MB / 7.3 MB / 7.3 MB</td>
 <td align="left">glibc 2.35+ (Ubuntu 22.04+), x86_64</td>
 </tr>
 </table>
@@ -90,7 +90,7 @@ Builds are not code-signed, so Windows SmartScreen and macOS Gatekeeper will war
 Compare the hash of your file with the line for it in `checksums-<os>.sha256` from the same release:
 
 ```bash
-sha256sum CodeShredder_0.1.0_amd64.deb
+sha256sum CodeShredder_0.1.2_amd64.deb
 grep 'amd64.deb$' checksums-linux.sha256
 ```
 </details>
@@ -181,7 +181,6 @@ Rust tests cover path protection, the cleanup allow-list, the cache guard, trash
 
 ## ⚠️ Known limitations
 
-- The updater activates with the first release that is not marked as pre-release.
 - macOS: items go to Trash, but listing and restoring them in the app is not supported.
 - Large Files, Videos and Duplicates scans cannot be cancelled.
 - Builds are not code-signed.
@@ -196,7 +195,7 @@ Rust tests cover path protection, the cleanup allow-list, the cache guard, trash
 - [x] Duplicate detection via BLAKE3
 - [x] WSL cleanup + disk compaction
 - [x] Videos page
-- [x] In-app updater (activates with the first full release)
+- [x] In-app updater
 - [ ] Scheduled / automatic scans
 - [ ] Global "exclude these paths" preferences
 

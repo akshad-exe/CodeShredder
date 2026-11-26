@@ -1,5 +1,5 @@
 const REPO = 'akshad-exe/CodeShredder';
-const RELEASE_TAG = 'v0.1.0-beta.1';
+const RELEASE_TAG = 'v0.1.2';
 const RELEASE_DOWNLOAD = `https://github.com/${REPO}/releases/download/${RELEASE_TAG}`;
 
 export interface DownloadAsset {
@@ -40,15 +40,15 @@ export const siteConfig = {
       assets: [
         {
           label: '.exe (installer)',
-          filename: 'CodeShredder_0.1.0_x64-setup.exe',
-          size: '3.4 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_x64-setup.exe`,
+          filename: 'CodeShredder_0.1.2_x64-setup.exe',
+          size: '4.2 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_x64-setup.exe`,
         },
         {
           label: '.msi',
-          filename: 'CodeShredder_0.1.0_x64_en-US.msi',
-          size: '5.0 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_x64_en-US.msi`,
+          filename: 'CodeShredder_0.1.2_x64_en-US.msi',
+          size: '5.8 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_x64_en-US.msi`,
         },
       ],
     },
@@ -58,15 +58,15 @@ export const siteConfig = {
       assets: [
         {
           label: '.dmg',
-          filename: 'CodeShredder_0.1.0_universal.dmg',
-          size: '9.8 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_universal.dmg`,
+          filename: 'CodeShredder_0.1.2_universal.dmg',
+          size: '11.9 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_universal.dmg`,
         },
         {
           label: '.app.tar.gz',
-          filename: 'CodeShredder_0.1.0_universal.app.tar.gz',
-          size: '9.7 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_universal.app.tar.gz`,
+          filename: 'CodeShredder_0.1.2_universal.app.tar.gz',
+          size: '12.0 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_universal.app.tar.gz`,
         },
       ],
     },
@@ -76,21 +76,21 @@ export const siteConfig = {
       assets: [
         {
           label: 'AppImage',
-          filename: 'CodeShredder_0.1.0_amd64.AppImage',
-          size: '79.8 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_amd64.AppImage`,
+          filename: 'CodeShredder_0.1.2_amd64.AppImage',
+          size: '81.4 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_amd64.AppImage`,
         },
         {
           label: '.deb',
-          filename: 'CodeShredder_0.1.0_amd64.deb',
-          size: '6.2 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.0_amd64.deb`,
+          filename: 'CodeShredder_0.1.2_amd64.deb',
+          size: '7.3 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder_0.1.2_amd64.deb`,
         },
         {
           label: '.rpm',
-          filename: 'CodeShredder-0.1.0-1.x86_64.rpm',
-          size: '6.2 MB',
-          url: `${RELEASE_DOWNLOAD}/CodeShredder-0.1.0-1.x86_64.rpm`,
+          filename: 'CodeShredder-0.1.2-1.x86_64.rpm',
+          size: '7.3 MB',
+          url: `${RELEASE_DOWNLOAD}/CodeShredder-0.1.2-1.x86_64.rpm`,
         },
       ],
     },

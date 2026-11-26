@@ -87,9 +87,9 @@ export const RustAndPrivacy: React.FC = () => {
             <ul className="space-y-2 list-disc list-inside text-white/90">
               <li><span className="font-semibold text-white">No telemetry:</span> no analytics, accounts or usage reporting.</li>
               <li><span className="font-semibold text-white">Local scans:</span> file lists and scan caches stay on your disk.</li>
-              <li><span className="font-semibold text-white">One network call:</span> newer builds check GitHub for updates.</li>
+              <li><span className="font-semibold text-white">One network call:</span> the app checks GitHub for updates.</li>
               <li><span className="font-semibold text-white">Open source:</span> every line is auditable on GitHub.</li>
-              <li><span className="font-semibold text-white">Trash first:</span> scanned items go to your Trash by default. Cache cleaning is permanent and asks first in newer builds.</li>
+              <li><span className="font-semibold text-white">Trash first:</span> scanned items go to your Trash by default. Cache cleaning is permanent and asks first.</li>
             </ul>
           </div>
 
