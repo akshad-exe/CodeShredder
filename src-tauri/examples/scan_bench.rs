@@ -6,7 +6,7 @@
 //! Usage:
 //!
 //! ```sh
-//! cargo run --release --bin scan_bench -- \
+//! cargo run --release --example scan_bench -- \
 //!   --cache /tmp/scan-cache.json \
 //!   --roots ~/Codebase
 //! ```

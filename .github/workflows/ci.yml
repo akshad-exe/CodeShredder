@@ -93,6 +93,8 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
       - uses: oven-sh/setup-bun@v2
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
@@ -101,11 +103,14 @@ jobs:
       - name: Build Tauri app
         shell: bash
         # Updater artifacts need the private signing key; only release.yml gets it.
-        run: bun run tauri:build --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        # macOS builds universal, exactly like release.yml.
+        run: bun run tauri:build ${{ runner.os == 'macOS' && '--target universal-apple-darwin' || '' }} --config '{"bundle":{"createUpdaterArtifacts":false}}'
       - name: Upload bundles
         uses: actions/upload-artifact@v4
         with:
           name: bundles-${{ matrix.platform }}
-          path: src-tauri/target/release/bundle/*
+          path: |
+            src-tauri/target/release/bundle/*
+            src-tauri/target/universal-apple-darwin/release/bundle/*
           if-no-files-found: error
           retention-days: 7
