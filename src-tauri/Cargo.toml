@@ -35,7 +35,7 @@ anyhow = "1"
 
 # File system
 dunce = "1"
-jwalk = "0.8"
+jwalk = "0.9"
 directories = "5"
 
 # Parallelism
