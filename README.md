@@ -12,7 +12,13 @@ A fast, safe desktop cleanup app for developers — built with Rust and Tauri v2
 [![Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-555?style=flat-square)](#-download)
 [![Built with](https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%20v2-orange?style=flat-square&logo=rust)](https://tauri.app)
 
-[Website](https://akshad-exe.github.io/CodeShredder/) · [Releases](https://github.com/akshad-exe/CodeShredder/releases) · [Report a Bug](https://github.com/akshad-exe/CodeShredder/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+[**⬇️ Download**](https://akshad-exe.github.io/CodeShredder/download.html) · [Website](https://akshad-exe.github.io/CodeShredder/) · [Releases](https://github.com/akshad-exe/CodeShredder/releases) · [Report a Bug](https://github.com/akshad-exe/CodeShredder/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+
+<img src=".github/assets/shred.webp" alt="CodeShredder Shred page listing generated folders with their size and safety grade" width="900">
+
+<sub>Interface preview with sample data</sub>
+
+⭐ **If it frees some space for you, a star helps other developers find it.**
 
 </div>
 
@@ -55,6 +61,13 @@ CodeShredder scans the folders you point it at and lists **known generated artif
 | **Recycle Bin** | Restore trashed items, or delete them permanently | Windows, Linux |
 | **WSL Optimizer** | Clean distros and compact their virtual disks | Windows |
 | **Settings / About** | Scan folders, patterns, ignore rules, delete mode, in-app updates | All |
+
+<details>
+<summary><b>More screens</b></summary>
+<br>
+<img src=".github/assets/overview.webp" alt="Overview page with reclaimable space and biggest folders" width="49%"> <img src=".github/assets/caches.webp" alt="Caches page listing package-manager caches" width="49%">
+<img src=".github/assets/duplicates.webp" alt="Duplicates page grouping identical files" width="49%">
+</details>
 
 ## 📦 Download
 
