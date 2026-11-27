@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🗑️ CodeShredder
+<img src="src-tauri/icons/icon.png" alt="CodeShredder logo" width="128">
+
+# CodeShredder
 
 **Find junk fast. Explain what it is. Delete safely.**
 
